@@ -206,7 +206,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 01/11/2026 · מערכת ומכסות 4</div>
+  <div class="ver">גרסה 01/11/2026 · מערכת ומכסות 5</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -272,6 +272,7 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"נופית", tab:"נופית", filter:""},
     {branch:"עמק יזרעאל", name:"שמשית ילדים", tab:"שמשית", filter:"ילדים"},
     {branch:"עמק יזרעאל", name:"שמשית מאסטרס", tab:"שמשית", filter:"מאסטרס"},
+    {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""}
   ]
@@ -281,19 +282,24 @@ const store = {
   get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}
 };
-let cfg = Object.assign({}, DEFAULTS, store.get(KEY, {}));
+const savedCfg = store.get(KEY, null);
+let cfg = Object.assign({}, DEFAULTS, savedCfg||{});
 cfg.locations=cfg.locations.map(l=>Object.assign({branch:"עמק יזרעאל"},l));
-// every built-in branch is always present (hide it with its checkbox in Settings instead of deleting it)
+// A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
+  cfg.hiddenBranches=[];   // every branch is always shown
+  if(!savedCfg){ store.set("seen-locs",DEFAULTS.locations.map(l=>l.name)); return; }   // first run: defaults as they are
+  const seen=store.get("seen-locs",null)||["נופית","שמשית ילדים","שמשית מאסטרס","תל אביב","כוכב יאיר"];
   let changed=false;
   DEFAULTS.locations.forEach(d=>{
-    if(!cfg.locations.some(l=>(l.branch||"")===d.branch)){ cfg.locations.push(Object.assign({},d)); changed=true; }
+    if(seen.includes(d.name)) return;
+    seen.push(d.name);
+    if(!cfg.locations.some(l=>l.name===d.name)){
+      const at=cfg.locations.map(l=>l.branch).lastIndexOf(d.branch);   // next to its branch
+      cfg.locations.splice(at<0?cfg.locations.length:at+1,0,Object.assign({},d)); changed=true;
+    }
   });
-  cfg.hiddenBranches=[];   // iPhone version: every branch is always shown
-  if(!store.get("added-kochav-yair",false)){
-    if(!cfg.locations.some(l=>l.name==="כוכב יאיר")){ cfg.locations.push({branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""}); changed=true; }
-    store.set("added-kochav-yair",true);
-  }
+  store.set("seen-locs",seen);
   if(changed) store.set(KEY,cfg);
 })();
 // the sheet keeps both Shimshit groups in one tab named "שמשית" – fix older saved settings
