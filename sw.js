@@ -1,5 +1,5 @@
 // Keeps the app itself available offline. Names always come fresh from the sheet (never cached here).
-const CACHE = "attendance-iphone-v5";
+const CACHE = "attendance-iphone-v6";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
