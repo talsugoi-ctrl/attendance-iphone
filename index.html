@@ -276,7 +276,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות 3</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות 4</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -1181,7 +1181,8 @@ function ofTxt(n,of){ return of?`${n} מתוך ${of} (${Math.round(n/of*100)}%)`
 function repCoach(){
   const c=$("repCoach").value; if(!c) return `<div class="rep-empty">אין עדיין דיווחים במערכת.</div>`;
   const all=c==="*", rows=inPeriod(REP.log).filter(r=>all||r.coach===c), ses=new Map();
-  rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{r,n:0,of:regCount(r.loc)}); ses.get(r.id).n++; });
+  rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{r,n:0,t:0,of:regCount(r.loc)}); const x=ses.get(r.id);
+    if(!r.trial&&REP.roster.some(p=>p.loc===r.loc&&p.name===r.name)) x.n++; else x.t++; });   // trial / not registered → not counted
   const list=[...ses.values()].sort((a,b)=>a.r.key-b.r.key);
   const hours=list.reduce((s,x)=>s+(x.r.dur||0),0), came=list.reduce((s,x)=>s+x.n,0), of=list.reduce((s,x)=>s+x.of,0);
   if(!list.length) return `<div class="rep-empty">${all?"אין אימונים מדווחים":esc(c)+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.</div>`;
@@ -1190,8 +1191,8 @@ function repCoach(){
   const byType={}; list.forEach(x=>{ const t=x.r.type||"לא צוין"; byType[t]=(byType[t]||0)+1; });
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
     ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th></tr></thead><tbody>
-    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint">"מתוך" = מספר הרשומים למקום בגיליון. מי שהגיע לניסיון / לא רשום נספר בהגיעו, לכן לפעמים יותר מ־100%.</p>`;
+    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint">"הגיעו מתוך" = רק רשומים למקום בגיליון. מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון".</p>`;
 }
 
 $("repBtn").onclick=openReports;
