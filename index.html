@@ -276,7 +276,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות 5</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות 6</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -583,7 +583,7 @@ function setStatus(t,err){const s=$("status");s.textContent=t;s.classList.toggle
 
 // ---------- weekly quota (from the "נוכחות" tab) ----------
 // "לא רשום" / "עזב" / "הקפאה" in the subscription column = no active subscription
-function activeSub(sub){ return !/לא\s*רשומ|עזב|הקפא|לא\s*פעיל|סיימ/.test(String(sub||"")); }
+function activeSub(sub){ return !/לא\s*רשו[םמ]|עזב|הקפא|לא\s*פעיל|סיימ/.test(String(sub||"")); }
 function quotaOf(sub){
   const s=String(sub||"");
   if(!activeSub(s)) return 0;
