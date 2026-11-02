@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · Arbox עמק יזרעאל</div>
+  <div class="ver">גרסה 02/11/2026 · רשימה מ-Arbox</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -522,6 +522,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <input type="text" id="waPhone2" dir="ltr" placeholder="השאר ריק אם יש רק מספר אחד">
       <div class="hint">אם ממלאים, יופיע כפתור שליחה נוסף למספר הזה.</div>
     </div>
+    <div>
+      <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
+      <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
+      <div class="hint">Arbox דורש קוד גישה (⚙ ← 🔗 Arbox). מקום שאין לו ספורטאים ב-Arbox (כמו כוכב יאיר) נטען מהגיליון.</div>
+    </div>
     <div class="row">
       <button type="button" class="btn primary" id="saveSetup">שמור</button>
       <button type="button" class="btn" id="cancelSetup">ביטול</button>
@@ -673,6 +678,33 @@ function extractPeople(rows, filter){
   }
   return out;
 }
+// ---------- roster from Arbox ----------
+// which Arbox athletes belong to an app place: by program name (עמק יזרעאל) or by Arbox location
+function arbInLoc(u,loc){
+  const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
+  const fw=(loc.filter||"").split(/\s+/).filter(Boolean);
+  if(/נופית/.test(n)) return has(/נופית|קריטריום/);
+  if(/שמשית/.test(n)) return ps.some(p=>/שמשית/.test(p)&&fw.every(w=>p.includes(w)));
+  if(/ציפורי/.test(n)) return has(/ציפורי/);
+  if(arbBranch(u)==="עמק יזרעאל") return false;
+  if(!ps.some(p=>!/שטח|הקמת לקוח|ייעוץ|חסות/.test(p))) return false;      // off-road riders / admin entries are not training groups here
+  if(/תל אביב/.test(n)) return u.location==="תל אביב"||has(/טריאתלון תל אביב/);
+  return u.location===n;
+}
+async function arbEnsure(){
+  await new Promise(r=>setTimeout(r,0));             // let the whole script initialise (ARB, arbPin) first
+  if(!arbPin()) return false;
+  if(ARB.users&&Date.now()-(ARB.at||0)<10*60*1000) return true;
+  const u=scriptUrl();
+  const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxUsers",pin:arbPin()}))}`,60000);
+  if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; } throw new Error((r&&r.error)||"אין תשובה מ-Arbox"); }
+  ARB.users=r.users||[]; ARB.at=Date.now(); return true;
+}
+async function arboxRoster(loc){
+  if(!(await arbEnsure())) return null;              // no access code on this phone
+  return ARB.users.filter(u=>u.active&&arbInLoc(u,loc)).map(u=>({name:normName(u.name),sub:arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + "),phone:u.phone,arbox:u.id}))
+    .sort((a,b)=>a.name.localeCompare(b.name,"he"));
+}
 async function loadPeople(){
   if(current==null) return;
   const loc=cfg.locations[current];
@@ -680,6 +712,17 @@ async function loadPeople(){
   [...selected].forEach(n=>{if(!trials.includes(n)) selected.delete(n);}); $("resultCard").hidden=true;
   setStatus("טוען את רשימת הנרשמים…");
   $("roster").innerHTML="";
+  let arbNote="";
+  if((cfg.rosterSource||"arbox")==="arbox"){
+    try{
+      const list=await arboxRoster(loc);
+      if(list===null) arbNote="אין קוד גישה ל-Arbox בטלפון הזה (⚙ ← 🔗 Arbox) – ";
+      else if(list.length){
+        people=list; store.set(cacheKey,people); loadWeekLog();
+        setStatus(`${people.length} נרשמים · ${loc.name} · מ-Arbox`); renderRoster(); return;
+      } else arbNote=`אין ב-Arbox ספורטאים ל"${loc.name}" – `;
+    }catch(e){ arbNote=`Arbox לא זמין (${e.message}) – `; }
+  }
   const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
   const gidM=String(cfg.sheetUrl).match(/gid=(\d+)/); const gid=gidM?gidM[1]:"0";
   async function get(u){
@@ -715,7 +758,7 @@ async function loadPeople(){
     store.set(cacheKey, people);
     loadWeekLog();
     setStatus(people.length
-      ? `${people.length} נרשמים · ${loc.name}${viaTab?"":" (לפי עמודת מנוי)"}`
+      ? `${arbNote?arbNote+"מהגיליון: ":""}${people.length} נרשמים · ${loc.name}${viaTab?"":" (לפי עמודת מנוי)"}`
       : (why||`לא נמצאו נרשמים ל"${loc.name}".`), !people.length);
   }catch(e){
     people=store.get(cacheKey, []);
@@ -1082,7 +1125,7 @@ function draftToConfig(){
   return {locations,hidden};
 }
 $("setupBtn").onclick=()=>{
-  $("sheetUrl").value=cfg.sheetUrl; $("waPhone").value=cfg.waPhone||DEFAULTS.waPhone; $("waPhone2").value=cfg.waPhone2||"";
+  $("sheetUrl").value=cfg.sheetUrl; $("waPhone").value=cfg.waPhone||DEFAULTS.waPhone; $("waPhone2").value=cfg.waPhone2||""; $("rosterSource").value=cfg.rosterSource||"arbox";
  
   draft=toDraft(); renderBranchEditor();
   $("setup").showModal();
@@ -1091,7 +1134,7 @@ $("cancelSetup").onclick=()=>$("setup").close();
 $("saveSetup").onclick=()=>{
   const dc=draftToConfig(), locs=dc.locations;
   const prevLoc=current!=null?cfg.locations[current]:null;
-  cfg={hiddenBranches:dc.hidden, sheetUrl:$("sheetUrl").value.trim()||DEFAULTS.sheetUrl, waPhone:$("waPhone").value.trim()||DEFAULTS.waPhone, waPhone2:$("waPhone2").value.trim(), locations:locs.length?locs:DEFAULTS.locations};
+  cfg={hiddenBranches:dc.hidden, sheetUrl:$("sheetUrl").value.trim()||DEFAULTS.sheetUrl, waPhone:$("waPhone").value.trim()||DEFAULTS.waPhone, waPhone2:$("waPhone2").value.trim(), rosterSource:$("rosterSource").value, locations:locs.length?locs:DEFAULTS.locations};
   store.set(KEY,cfg);
   $("setup").close();
   // keep the chosen location if it still exists and its branch is still shown
