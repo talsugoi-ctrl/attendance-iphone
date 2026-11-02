@@ -276,7 +276,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות 4</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות 5</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -582,13 +582,16 @@ async function getJsonp(u){
 function setStatus(t,err){const s=$("status");s.textContent=t;s.classList.toggle("err",!!err);}
 
 // ---------- weekly quota (from the "נוכחות" tab) ----------
+// "לא רשום" / "עזב" / "הקפאה" in the subscription column = no active subscription
+function activeSub(sub){ return !/לא\s*רשומ|עזב|הקפא|לא\s*פעיל|סיימ/.test(String(sub||"")); }
 function quotaOf(sub){
   const s=String(sub||"");
-  if(/פעמיים\s*בשבוע/.test(s)) return 2;
-  if(/פעם(\s*אחת)?\s*בשבוע/.test(s)) return 1;
-  let m=s.match(/(\d+)\s*(אימונים|פעמים)\s*בשבוע/); if(m) return +m[1];
+  if(!activeSub(s)) return 0;
+  if(/פעמיים/.test(s)) return 2;
+  if(/פעם(\s*אחת)?\s*בשבוע|אימון\s*(יחיד|אחד)|אימון\s*1(?!\d)/.test(s)) return 1;
+  let m=s.match(/(\d+)\s*(אימונ|פעמים)/); if(m) return +m[1];
   const w={"שלוש":3,"שלושה":3,"ארבע":4,"ארבעה":4,"חמש":5,"חמישה":5};
-  m=s.match(/(שלוש|שלושה|ארבע|ארבעה|חמש|חמישה)\s*(אימונים|פעמים)\s*בשבוע/); if(m) return w[m[1]];
+  m=s.match(/(שלוש|שלושה|ארבע|ארבעה|חמש|חמישה)\s*(אימונ|פעמים)/); if(m) return w[m[1]];
   return 0;   // no weekly limit
 }
 function quotaWords(q){ return q===1?"פעם בשבוע":q===2?"פעמיים בשבוע":`${q} פעמים בשבוע`; }
@@ -982,6 +985,8 @@ async function repLoad(force){
       REP.log=h<0?[]:lr.slice(h+1).filter(r=>r[0]).map(r=>({id:r[0],date:g(r,"date"),key:ymdKey(g(r,"date")),week:g(r,"week"),branch:g(r,"branch"),loc:g(r,"loc"),
         type:g(r,"type"),coach:g(r,"coach"),dur:parseFloat(g(r,"dur"))||0,name:normName(g(r,"name")),sub:g(r,"sub"),quota:+g(r,"quota")||0,
         trial:g(r,"trial")==="כן",over:g(r,"over")==="כן"}));
+      { const cnt={}; REP.log.slice().sort((a,b)=>a.key-b.key).forEach(r=>{ if(r.trial) return; const q=quotaOf(r.sub); if(!q) return;
+          const k=r.name+"|"+r.week; cnt[k]=(cnt[k]||0)+1; r.quota=q; if(cnt[k]>q) r.over=true; }); }
       // registration tabs of every place
       const first=await sheetGet(base+"&gid="+gid), tabs=new Map(), roster=[];
       for(const loc of cfg.locations){
@@ -1100,7 +1105,9 @@ function repExceptions(){
     const why=[];
     if(r.trial) why.push({k:"trial",t:"אימון ניסיון"});
     if(r.over) why.push({k:"over",t:`מעבר למכסה (מנוי: ${r.quota?quotaWords(r.quota):"—"})`});
-    if(!r.trial&&!REP.roster.some(p=>p.name===r.name&&p.loc===r.loc)) why.push({k:"unpaid",t:`לא רשום ב${r.loc}`});
+    const ent=REP.roster.find(p=>p.name===r.name&&p.loc===r.loc);
+    if(!r.trial&&!ent) why.push({k:"unpaid",t:`לא רשום ב${r.loc}`});
+    else if(!r.trial&&(!activeSub(ent.sub)||!activeSub(r.sub))) why.push({k:"unpaid",t:`אין מנוי פעיל – "${activeSub(ent.sub)?r.sub:ent.sub}"`});
     if(!r.trial&&!typeCovered(r.sub||(REP.roster.find(p=>p.name===r.name)||{}).sub,r.type)) why.push({k:"unpaid",t:`${r.type} לא כלול במנוי`});
     if(!why.length) return;
     if(!by.has(r.name)) by.set(r.name,{name:r.name,branches:new Set(),items:[]});
@@ -1114,7 +1121,7 @@ function repExceptions(){
       <div class="rc-sub">${[...a.branches].filter(Boolean).map(b=>"סניף "+esc(b)).join(", ")}</div>
       <ul class="rc-list">${a.items.sort((x,y)=>x.r.key-y.r.key).map(i=>`<li><span class="d">${dayName(i.r.date)} ${esc(i.r.date.slice(0,5))}</span> ${esc(i.r.loc)}${i.r.type?" · "+esc(i.r.type):""}
         <div class="tags">${i.why.map(w=>`<span class="tag ${w.k}">${esc(w.t)}</span>`).join("")}</div></li>`).join("")}</ul></section>`).join("")+
-    `<p class="hint">"לא כלול במנוי" – סוג האימון לא מופיע בטקסט המנוי (למשל מנוי שחייה שהגיע לריצה). מנוי טריאתלון / תכנית אישית / מנוי בלי סוג – לא מסומן.</p>`;
+    `<p class="hint">"לא כלול במנוי" – סוג האימון לא מופיע בטקסט המנוי (למשל מנוי שחייה שהגיע לריצה). "אין מנוי פעיל" – במנוי כתוב לא רשום / עזב / הקפאה. מנוי טריאתלון / תכנית אישית / מנוי בלי סוג – לא מסומן.</p>`;
 }
 
 // 2) attendance by branch – pie
@@ -1142,7 +1149,7 @@ function repPie(){
   locs.forEach(l=>{
     const lr=rows.filter(r=>r.loc===l), ses=new Set(lr.map(r=>r.id)).size;
     if(!ses){ per.push(`<tr class="off"><td>${esc(l)}</td><td>0</td><td colspan="3">לא התקיים אימון – לא נספר</td></tr>`); return; }
-    const reg=[], seen=new Set(); REP.roster.filter(p=>p.loc===l).forEach(p=>{ if(!seen.has(p.name)){ seen.add(p.name); reg.push(p); } });
+    const reg=[], seen=new Set(); REP.roster.filter(p=>p.loc===l&&activeSub(p.sub)).forEach(p=>{ if(!seen.has(p.name)){ seen.add(p.name); reg.push(p); } });
     const att=new Set(lr.map(r=>r.name));
     const cn=reg.filter(p=>att.has(p.name)).length, ms=reg.filter(p=>!att.has(p.name));
     visitors+=[...att].filter(n=>!seen.has(n)).length;
@@ -1176,13 +1183,13 @@ function repAthlete(){
 }
 
 // 4) coach
-function regCount(loc){ return new Set(REP.roster.filter(p=>p.loc===loc).map(p=>p.name)).size; }
+function regCount(loc){ return new Set(REP.roster.filter(p=>p.loc===loc&&activeSub(p.sub)).map(p=>p.name)).size; }
 function ofTxt(n,of){ return of?`${n} מתוך ${of} (${Math.round(n/of*100)}%)`:`${n}`; }
 function repCoach(){
   const c=$("repCoach").value; if(!c) return `<div class="rep-empty">אין עדיין דיווחים במערכת.</div>`;
   const all=c==="*", rows=inPeriod(REP.log).filter(r=>all||r.coach===c), ses=new Map();
   rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{r,n:0,t:0,of:regCount(r.loc)}); const x=ses.get(r.id);
-    if(!r.trial&&REP.roster.some(p=>p.loc===r.loc&&p.name===r.name)) x.n++; else x.t++; });   // trial / not registered → not counted
+    if(!r.trial&&REP.roster.some(p=>p.loc===r.loc&&p.name===r.name&&activeSub(p.sub))) x.n++; else x.t++; });   // trial / not registered → not counted
   const list=[...ses.values()].sort((a,b)=>a.r.key-b.r.key);
   const hours=list.reduce((s,x)=>s+(x.r.dur||0),0), came=list.reduce((s,x)=>s+x.n,0), of=list.reduce((s,x)=>s+x.of,0);
   if(!list.length) return `<div class="rep-empty">${all?"אין אימונים מדווחים":esc(c)+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.</div>`;
@@ -1192,7 +1199,7 @@ function repCoach(){
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
     ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th></tr></thead><tbody>
     ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint">"הגיעו מתוך" = רק רשומים למקום בגיליון. מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון".</p>`;
+    <p class="hint">"הגיעו מתוך" = רק רשומים למקום בגיליון. מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון". "לא רשום" / "עזב" במנוי = לא נחשב רשום.</p>`;
 }
 
 $("repBtn").onclick=openReports;
