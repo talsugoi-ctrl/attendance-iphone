@@ -153,6 +153,26 @@ body.rep-open{overflow:hidden}
 .pie-wrap{justify-content:center}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-inline-end:6px;vertical-align:middle}
 .rep-fab{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:block;text-align:center;padding:14px;font-size:1.05rem;margin-top:12px;box-shadow:0 6px 18px rgba(0,0,0,.28);z-index:3}
+.toast.ok{background:#1fa855}
+.mgr-open-btn{display:flex;align-items:center;gap:10px;width:100%;justify-content:center;padding:12px;font-size:1rem}
+.seg{display:flex;gap:6px;flex-wrap:wrap}
+.seg button{flex:1 1 30%;font:700 .9rem var(--body);padding:10px 6px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg);cursor:pointer}
+.seg button.on{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.mg-list{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.mg-item{display:flex;align-items:center;gap:10px;text-align:start;width:100%;padding:12px 14px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font:inherit;cursor:pointer}
+.mg-item .tx{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}
+.mg-item b{font-size:1rem} .mg-item small{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mg-item .ph{color:var(--accent);font-variant-numeric:tabular-nums;font-size:.85rem}
+.mg-item.off{opacity:.65} .mg-item.off b::after{content:" · לא פעיל";color:var(--danger);font-size:.8rem;font-weight:700}
+.btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
+.sep{border:0;border-top:1px dashed var(--line);margin:4px 0}
+.mg-ses{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.mg-ses label,.mg-pick label{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);cursor:pointer}
+.mg-ses input,.mg-pick input{width:20px;height:20px;accent-color:var(--accent);flex:none}
+.mg-ses label:has(input:checked),.mg-pick label:has(input:checked){border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.mg-pick{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}
+.mg-pick .in{margin-inline-start:auto;font-size:.78rem;color:var(--muted)}
+.mg-new{display:flex;flex-direction:column;gap:10px;padding:10px;border:1px dashed var(--line);border-radius:12px}
 .tsel{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tsel.missing{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
 .dur{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -277,7 +297,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות + וואטסאפ 2</div>
+  <div class="ver">גרסה 02/11/2026 · ניהול ספורטאים</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -329,6 +349,81 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </section>
 
+<section class="rep" id="mgr" hidden aria-labelledby="mgrTitle">
+  <div class="rep-in">
+    <div class="rep-head">
+      <button class="icon-btn" id="mgrBack" aria-label="חזרה">→</button>
+      <h1 id="mgrTitle">ניהול ספורטאים</h1>
+      <button class="icon-btn" id="mgrReload" aria-label="טען מחדש מהגיליון">↻</button>
+    </div>
+    <div class="card">
+      <label class="lbl" for="mgrLoc">מקום אימון</label>
+      <select id="mgrLoc" class="tsel"></select>
+      <div class="seg" role="tablist">
+        <button type="button" class="on" data-v="list">👥 ספורטאים</button>
+        <button type="button" data-v="add">＋ הוספה</button>
+        <button type="button" data-v="late">🕓 נוכחות שנשכחה</button>
+      </div>
+    </div>
+    <div class="status" id="mgrStatus"></div>
+
+    <!-- list -->
+    <div id="mgrList">
+      <input type="search" id="mgrSearch" placeholder="חיפוש שם / טלפון…" autocomplete="off">
+      <div class="mg-list" id="mgrItems"></div>
+    </div>
+
+    <!-- add / edit -->
+    <form class="card" id="mgrForm" hidden autocomplete="off">
+      <h2 class="rep-h2" id="mfTitle">ספורטאי חדש</h2>
+      <div><label class="lbl" for="mfName">שם מלא *</label><input type="text" id="mfName" required></div>
+      <div><label class="lbl" for="mfPhone">טלפון</label><input type="text" id="mfPhone" dir="ltr" inputmode="tel" placeholder="050-0000000"></div>
+      <div><label class="lbl" for="mfLoc">מקום אימון</label><select id="mfLoc" class="tsel"></select></div>
+      <div><label class="lbl" for="mfSub">תוכנית / מסגרת (מנוי)</label><select id="mfSub" class="tsel"></select>
+        <input type="text" id="mfSubOther" placeholder="כתוב את המנוי, למשל: טריאתלון ציפורי - פעמיים בשבוע" hidden style="margin-top:8px">
+        <div class="hint" id="mfQuota"></div></div>
+      <div><label class="lbl" for="mfStart">תאריך התחלה</label><input type="date" id="mfStart"></div>
+      <div id="mfNotesBox"><label class="lbl" for="mfNotes">הערות</label><input type="text" id="mfNotes"></div>
+      <div class="row">
+        <button type="submit" class="btn primary" id="mfSave">שמור בגיליון</button>
+        <button type="button" class="btn" id="mfCancel">ביטול</button>
+      </div>
+      <div id="mfArchBox" hidden>
+        <hr class="sep">
+        <h2 class="rep-h2">📦 העברה לארכיון</h2>
+        <div class="hint">הספורטאי יימחק מרשימת המקום ויישמר בלשונית "ארכיון" עם כל הפרטים וסיבת העזיבה.</div>
+        <div><label class="lbl" for="maReason">סיבת עזיבה *</label>
+          <select id="maReason" class="tsel">
+            <option value="">בחר סיבה…</option>
+            <option>מעבר דירה</option><option>עלות</option><option>חוסר זמן</option><option>פציעה / בריאות</option>
+            <option>עבר למועדון אחר</option><option>סיום עונה / תחרות</option><option>לא מגיע / ללא מענה</option><option value="other">סיבה אחרת…</option>
+          </select>
+          <input type="text" id="maOther" placeholder="פרט את הסיבה" hidden style="margin-top:8px"></div>
+        <div><label class="lbl" for="maDate">תאריך עזיבה</label><input type="date" id="maDate"></div>
+        <button type="button" class="btn danger" id="maGo">העבר לארכיון</button>
+      </div>
+    </form>
+
+    <!-- forgotten attendance -->
+    <form class="card" id="mgrLate" hidden autocomplete="off">
+      <h2 class="rep-h2">הוספת נוכחות שנשכחה</h2>
+      <div class="hint">ספורטאי שהגיע לאימון ולא סומן. בוחרים תאריך, אימון וספורטאים – והם נוספים ללשונית "נוכחות".</div>
+      <div><label class="lbl" for="mlDate">תאריך האימון</label><input type="date" id="mlDate"></div>
+      <div><span class="lbl">לאיזה אימון?</span><div class="mg-ses" id="mlSessions"></div></div>
+      <div id="mlNew" hidden class="mg-new">
+        <div><label class="lbl" for="mlType">סוג אימון *</label>
+          <select id="mlType" class="tsel"><option value="">בחר…</option><option value="שחייה">🏊 שחייה</option><option value="רכיבה">🚴 רכיבה</option><option value="ריצה">🏃 ריצה</option><option value="משולב">🔁 משולב</option></select></div>
+        <div class="row"><label class="dfield">מאמן<input type="text" id="mlCoach"></label><label class="dfield">שעות<input type="text" id="mlDur" inputmode="decimal" value="1" style="max-width:70px"></label></div>
+      </div>
+      <div><span class="lbl">מי הגיע? (<span id="mlCount">0</span> נבחרו)</span>
+        <input type="search" id="mlSearch" placeholder="חיפוש…" autocomplete="off" style="margin:6px 0">
+        <div class="mg-pick" id="mlPeople"></div>
+        <div class="row" style="margin-top:8px"><input type="text" id="mlTrial" placeholder="שם ספורטאי לניסיון (לא ברשימה)" style="flex:1"><button type="button" class="btn" id="mlTrialAdd">+ הוסף</button></div></div>
+      <button type="submit" class="btn primary big" id="mlSave">הוסף לנוכחות</button>
+    </form>
+  </div>
+</section>
+
 <div class="toast" id="toast" role="alert" hidden></div>
 
 <div class="ask" id="askBox" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
@@ -344,6 +439,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 <dialog id="setup">
   <form method="dialog" id="setupForm" style="display:flex;flex-direction:column;gap:12px">
     <h1 style="font-size:1.15rem">הגדרות</h1>
+    <button type="button" class="btn primary mgr-open-btn" id="mgrBtn"><span aria-hidden="true">👥</span> ניהול ספורטאים – הוספה, עריכה, ארכיון ונוכחות שנשכחה</button>
     <div>
       <label class="lbl" for="sheetUrl">קישור לגיליון הנרשמים</label>
       <input type="url" id="sheetUrl" dir="ltr">
@@ -655,8 +751,8 @@ function paintOver(li,p){
     li.querySelector(".nm").appendChild(m); }
 }
 let toastT=null;
-function showToast(t){
-  const el=$("toast"); el.textContent=t; el.hidden=false;
+function showToast(t,ok){
+  const el=$("toast"); el.textContent=t; el.hidden=false; el.classList.toggle("ok",!!ok);
   try{ navigator.vibrate&&navigator.vibrate(200); }catch(e){}
   clearTimeout(toastT); toastT=setTimeout(()=>{el.hidden=true;},4500);
 }
@@ -1250,6 +1346,184 @@ function repCoach(){
 $("repBtn").onclick=openReports;
 $("repBack").onclick=()=>{ if(REP.cur) showRepList(); else closeReports(); };
 $("repReload").onclick=()=>{ REP.loaded=false; repLoad(true).then(runReport); };
+// ================= athlete management =================
+const MG={li:0, mode:"list", tabs:{}, edit:null, lateSel:new Set(), lateTrials:[], ses:null};
+function toastOk(t){ showToast(t,true); }
+function isoOfDmy(d){ const m=String(d||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:""; }
+function mgStatus(t,err){ const s=$("mgrStatus"); s.textContent=t||""; s.classList.toggle("err",!!err); }
+async function scriptCall(payload){
+  const url=scriptUrl(); if(!url) throw new Error("לא הוגדרה כתובת הסקריפט של הגיליון");
+  const r=await jsonp(cb=>`${url}${url.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify(payload))}`,30000);
+  if(!r||!r.ok){ const e=new Error((r&&r.error)||"הגיליון לא אישר את השינוי"); e.resp=r; throw e; }
+  return r;
+}
+const mgLoc=()=>cfg.locations[MG.li];
+const tabOf=l=>(l.tab||l.name).trim();
+function inLoc(a,l){ if(!l.filter) return true; const w=l.filter.split(/\s+/).filter(Boolean), hay=a.sub||a.name; return w.every(x=>hay.includes(x)); }
+async function mgLoad(force){
+  const tab=tabOf(mgLoc());
+  if(MG.tabs[tab]&&!force) return MG.tabs[tab];
+  mgStatus("טוען את רשימת "+mgLoc().name+"…");
+  try{ const r=await scriptCall({action:"athletes",tab}); MG.tabs[tab]=r; mgStatus(""); return r; }
+  catch(e){ mgStatus("לא הצלחתי לקרוא את הלשונית \""+tab+"\": "+e.message,true); throw e; }
+}
+function locOptions(sel,selected){
+  const brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
+  sel.innerHTML=brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.map((l,i)=>[l,i]).filter(([l])=>(l.branch||"")===b).map(([l,i])=>`<option value="${i}">${esc(l.name)}</option>`).join("")}</optgroup>`).join("");
+  sel.value=String(selected);
+}
+function openMgr(){
+  $("setup").close(); $("mgr").hidden=false; document.body.classList.add("rep-open");
+  MG.li=current!=null?current:0; locOptions($("mgrLoc"),MG.li);
+  $("mlDate").value=todayISO(); setMode("list");
+}
+function closeMgr(){ $("mgr").hidden=true; document.body.classList.remove("rep-open"); }
+function setMode(m){
+  MG.mode=m; document.querySelectorAll("#mgr .seg button").forEach(b=>b.classList.toggle("on",b.dataset.v===m||(m==="edit"&&b.dataset.v==="list")));
+  $("mgrList").hidden=m!=="list"; $("mgrForm").hidden=!(m==="add"||m==="edit"); $("mgrLate").hidden=m!=="late";
+  $("mgrTitle").textContent=m==="edit"?"עריכת ספורטאי":m==="add"?"הוספת ספורטאי":m==="late"?"נוכחות שנשכחה":"ניהול ספורטאים";
+  if(m==="list") renderMgrList(); if(m==="add") openForm(null); if(m==="late") renderLate();
+  $("mgr").scrollTop=0;
+}
+$("mgrLoc").onchange=()=>{ MG.li=+$("mgrLoc").value; MG.ses=null; MG.lateSel.clear(); MG.lateTrials=[]; setMode(MG.mode==="edit"?"list":MG.mode); };
+document.querySelectorAll("#mgr .seg button").forEach(b=>b.onclick=()=>setMode(b.dataset.v));
+$("mgrBack").onclick=()=>{ if(MG.mode==="edit") setMode("list"); else closeMgr(); };
+$("mgrReload").onclick=()=>{ MG.tabs={}; REP.loaded=false; setMode(MG.mode==="edit"?"list":MG.mode); };
+
+// ---------- list ----------
+async function renderMgrList(){
+  const box=$("mgrItems"); box.innerHTML=`<p class="hint">טוען…</p>`;
+  let d; try{ d=await mgLoad(false); }catch(e){ box.innerHTML=""; return; }
+  const l=mgLoc(), q=$("mgrSearch").value.trim();
+  const list=d.athletes.filter(a=>inLoc(a,l)).filter(a=>!q||a.name.includes(q)||String(a.phone).replace(/\D/g,"").includes(q.replace(/\D/g,"")||"~"));
+  list.sort((a,b)=>(activeSub(b.sub)-activeSub(a.sub))||a.name.localeCompare(b.name,"he"));
+  const act=d.athletes.filter(a=>inLoc(a,l)&&activeSub(a.sub)).length;
+  mgStatus(`${l.name}: ${act} פעילים${d.athletes.filter(a=>inLoc(a,l)).length-act?` · ${d.athletes.filter(a=>inLoc(a,l)).length-act} לא פעילים`:""} · לחץ על ספורטאי לעריכה או להעברה לארכיון`);
+  box.innerHTML=list.length?"":`<div class="rep-empty">אין ספורטאים${q?" שמתאימים לחיפוש":" במקום הזה"}.</div>`;
+  list.forEach(a=>{ const b=document.createElement("button"); b.type="button"; b.className="mg-item"+(activeSub(a.sub)?"":" off");
+    b.innerHTML=`<span class="tx"><b>${esc(a.name)}</b><small>${esc(a.sub||"ללא מנוי")}</small></span><span class="ph" dir="ltr">${esc(a.phone||"")}</span><span class="ri-go">‹</span>`;
+    b.onclick=()=>{ MG.edit=a; setMode("edit"); openForm(a); }; box.appendChild(b); });
+}
+$("mgrSearch").addEventListener("input",()=>renderMgrList());
+
+// ---------- add / edit ----------
+function subOptions(li){
+  const l=cfg.locations[li], d=MG.tabs[tabOf(l)], cnt={};
+  (d?d.athletes:[]).filter(a=>inLoc(a,l)&&a.sub&&activeSub(a.sub)).forEach(a=>{ const s=a.sub.replace(/\s+/g," ").trim(); cnt[s]=(cnt[s]||0)+1; });
+  return Object.keys(cnt).sort((a,b)=>(quotaOf(a)||9)-(quotaOf(b)||9)||cnt[b]-cnt[a]);
+}
+async function fillSub(li,cur){
+  try{ await (MG.tabs[tabOf(cfg.locations[li])]?Promise.resolve():(async()=>{ const keep=MG.li; MG.li=li; try{ await mgLoad(false); } finally{ MG.li=keep; } })()); }catch(e){}
+  const opts=subOptions(li), sel=$("mfSub");
+  const all=cur&&!opts.includes(cur)?[cur,...opts]:opts;
+  sel.innerHTML=`<option value="">בחר תוכנית…</option>`+all.map(o=>`<option>${esc(o)}</option>`).join("")+`<option value="__other">אחר… (כתיבה חופשית)</option>`;
+  sel.value=cur||""; $("mfSubOther").hidden=true; showQuota();
+  const d=MG.tabs[tabOf(cfg.locations[li])]; $("mfNotesBox").hidden=!!(d&&d.fields&&!d.fields.notes);
+}
+function curSub(){ return $("mfSub").value==="__other"?$("mfSubOther").value.trim():$("mfSub").value; }
+function showQuota(){ const s=curSub(), q=quotaOf(s); $("mfQuota").textContent=s?(!activeSub(s)?"מנוי לא פעיל":q?`מכסה שבועית: ${quotaWords(q)}`:"ללא מכסה שבועית"):""; }
+$("mfSub").onchange=()=>{ $("mfSubOther").hidden=$("mfSub").value!=="__other"; if(!$("mfSubOther").hidden) $("mfSubOther").focus(); showQuota(); };
+$("mfSubOther").oninput=showQuota;
+$("mfLoc").onchange=()=>fillSub(+$("mfLoc").value,curSub());
+function openForm(a){
+  MG.edit=a; $("mfTitle").textContent=a?`עריכה – ${a.name}`:`ספורטאי חדש – ${mgLoc().name}`;
+  $("mfName").value=a?a.name:""; $("mfPhone").value=a?a.phone:""; $("mfNotes").value=a?a.notes:"";
+  $("mfStart").value=a?isoOfDmy(a.start):todayISO();
+  locOptions($("mfLoc"),MG.li); fillSub(MG.li,a?a.sub:"");
+  $("mfSave").textContent=a?"שמור שינויים":"הוסף לגיליון";
+  $("mfArchBox").hidden=!a; $("maReason").value=""; $("maOther").hidden=true; $("maOther").value=""; $("maDate").value=todayISO();
+  if(!a) setTimeout(()=>$("mfName").focus(),50);
+}
+$("mfCancel").onclick=()=>setMode("list");
+$("mgrForm").onsubmit=async ev=>{
+  ev.preventDefault();
+  const name=normName($("mfName").value); if(!name){ $("mfName").focus(); return; }
+  const sub=curSub(); if(!sub&&!confirm("לא נבחרה תוכנית / מנוי. לשמור בכל זאת?")) return;
+  const li=+$("mfLoc").value, l=cfg.locations[li];
+  const athlete={name, phone:$("mfPhone").value.trim(), sub, start:$("mfStart").value?dmyOf($("mfStart").value):"", notes:$("mfNotes").value.trim()};
+  const btn=$("mfSave"); btn.disabled=true; const old=btn.textContent; btn.textContent="שומר…";
+  try{
+    if(MG.edit){ const e=MG.edit, from=tabOf(mgLoc());
+      await scriptCall({action:"editAthlete",tab:from,row:e.row,name:e.name,newTab:tabOf(l)!==from?tabOf(l):"",athlete});
+      toastOk(`הפרטים של ${name} עודכנו ✓${tabOf(l)!==from?` (הועבר ל${l.name})`:""}`);
+      delete MG.tabs[from];
+    } else {
+      try{ await scriptCall({action:"addAthlete",tab:tabOf(l),athlete}); }
+      catch(e){ if(e.resp&&e.resp.exists&&confirm(e.message+".\nלהוסיף שורה נוספת בכל זאת?")) await scriptCall({action:"addAthlete",tab:tabOf(l),athlete,force:true}); else throw e; }
+      toastOk(`${name} נוסף/ה ל${l.name} ✓`);
+    }
+    delete MG.tabs[tabOf(l)]; REP.loaded=false; MG.li=li; $("mgrLoc").value=String(li);
+    try{ loadPeople(); }catch(e){}
+    setMode("list");
+  }catch(e){ mgStatus("השמירה נכשלה: "+e.message,true); showToast("השמירה נכשלה: "+e.message); }
+  finally{ btn.disabled=false; btn.textContent=old; }
+};
+$("maReason").onchange=()=>{ $("maOther").hidden=$("maReason").value!=="other"; };
+$("maGo").onclick=async()=>{
+  const e=MG.edit; if(!e) return;
+  const reason=$("maReason").value==="other"?$("maOther").value.trim():$("maReason").value;
+  if(!reason){ showToast("בחר סיבת עזיבה"); $("maReason").focus(); return; }
+  if(!confirm(`להעביר את ${e.name} לארכיון?\nהשורה תימחק מלשונית "${tabOf(mgLoc())}" ותישמר בלשונית "ארכיון".`)) return;
+  const btn=$("maGo"); btn.disabled=true; btn.textContent="מעביר…";
+  try{
+    await scriptCall({action:"archiveAthlete",tab:tabOf(mgLoc()),row:e.row,name:e.name,reason,date:$("maDate").value?dmyOf($("maDate").value):"",branch:mgLoc().branch||"",location:mgLoc().name,by:coachName()});
+    toastOk(`${e.name} הועבר/ה לארכיון ✓`); delete MG.tabs[tabOf(mgLoc())]; REP.loaded=false; try{ loadPeople(); }catch(_){}
+    setMode("list");
+  }catch(err){ showToast("ההעברה נכשלה: "+err.message); }
+  finally{ btn.disabled=false; btn.textContent="העבר לארכיון"; }
+};
+
+// ---------- forgotten attendance ----------
+async function renderLate(){
+  const l=mgLoc(), date=$("mlDate").value?dmyOf($("mlDate").value):"";
+  $("mlCoach").value=$("mlCoach").value||coachName();
+  const sb=$("mlSessions"); sb.innerHTML=`<p class="hint">טוען אימונים מדווחים…</p>`;
+  try{ await repLoad(false); }catch(e){}
+  const rows=(REP.log||[]).filter(r=>r.date===date&&r.loc===l.name), ses=new Map();
+  rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{id:r.id,r,names:new Set()}); ses.get(r.id).names.add(r.name); });
+  const list=[...ses.values()];
+  if(MG.ses!=="new"&&!ses.has(MG.ses)) MG.ses=list.length?list[0].id:"new";
+  sb.innerHTML=list.map(s=>`<label><input type="radio" name="mlS" value="${esc(s.id)}"${MG.ses===s.id?" checked":""}><span>אימון ${esc(s.r.type||"")} · ${esc(s.r.coach||"")} · ${s.names.size} נוכחים${s.r.dur?" · "+esc(durWords(s.r.dur)):""}</span></label>`).join("")+
+    `<label><input type="radio" name="mlS" value="new"${MG.ses==="new"?" checked":""}><span>${list.length?"אימון אחר שלא דווח":"לא דווח אימון ביום הזה – אימון חדש"}</span></label>`;
+  sb.querySelectorAll("input").forEach(i=>i.onchange=()=>{ MG.ses=i.value; renderLate(); });
+  $("mlNew").hidden=MG.ses!=="new";
+  const already=MG.ses!=="new"&&ses.get(MG.ses)?ses.get(MG.ses).names:new Set();
+  let d; try{ d=await mgLoad(false); }catch(e){ $("mlPeople").innerHTML=""; return; }
+  const q=$("mlSearch").value.trim();
+  const ppl=d.athletes.filter(a=>inLoc(a,l)).sort((a,b)=>(activeSub(b.sub)-activeSub(a.sub))||a.name.localeCompare(b.name,"he"));
+  const all=ppl.concat(MG.lateTrials.map(n=>({name:n,sub:"",trial:true}))).filter(a=>!q||a.name.includes(q));
+  $("mlPeople").innerHTML=all.map(a=>{ const inS=already.has(a.name);
+    return `<label><input type="checkbox" value="${esc(a.name)}"${inS?" disabled checked":MG.lateSel.has(a.name)?" checked":""}><span>${esc(a.name)}${a.trial?" (ניסיון)":""}${activeSub(a.sub)?"":" · לא פעיל"}</span>${inS?`<span class="in">כבר נרשם באימון</span>`:""}</label>`; }).join("")||`<p class="hint">אין ספורטאים ברשימה.</p>`;
+  $("mlPeople").querySelectorAll("input:not([disabled])").forEach(i=>i.onchange=()=>{ i.checked?MG.lateSel.add(i.value):MG.lateSel.delete(i.value); $("mlCount").textContent=MG.lateSel.size; });
+  $("mlCount").textContent=MG.lateSel.size;
+}
+$("mlDate").onchange=()=>{ MG.ses=null; MG.lateSel.clear(); renderLate(); };
+$("mlSearch").addEventListener("input",()=>renderLate());
+$("mlTrialAdd").onclick=()=>{ const n=normName($("mlTrial").value); if(!n) return; if(!MG.lateTrials.includes(n)) MG.lateTrials.push(n); MG.lateSel.add(n); $("mlTrial").value=""; renderLate(); };
+$("mgrLate").onsubmit=async ev=>{
+  ev.preventDefault();
+  const l=mgLoc(), date=$("mlDate").value?dmyOf($("mlDate").value):"";
+  if(!date){ showToast("בחר תאריך"); return; }
+  if(!MG.lateSel.size){ showToast("סמן לפחות ספורטאי אחד"); return; }
+  const d=MG.tabs[tabOf(l)]||{athletes:[]};
+  const people=[...MG.lateSel].map(n=>{ const a=d.athletes.find(x=>x.name===n); return a?{name:n,sub:a.sub||""}:{name:n,sub:"",trial:true}; });
+  let report;
+  if(MG.ses&&MG.ses!=="new"){ const r=REP.log.find(x=>x.id===MG.ses);
+    report={id:MG.ses,append:true,date,branch:r.branch||l.branch||"",location:l.name,type:r.type,coach:r.coach,duration:r.dur,people};
+  } else {
+    if(!$("mlType").value){ showToast("בחר סוג אימון"); $("mlType").focus(); return; }
+    report={id:Date.now().toString(36)+Math.random().toString(36).slice(2,7),date,branch:l.branch||"",location:l.name,type:$("mlType").value,coach:$("mlCoach").value.trim()||coachName(),duration:parseFloat($("mlDur").value)||1,people};
+  }
+  const btn=$("mlSave"); btn.disabled=true; btn.textContent="שומר…";
+  try{
+    const r=await scriptCall({action:"late",report});
+    toastOk(`נוספו ${r.added} לנוכחות של ${date} ✓${r.over&&r.over.length?` · מעבר למכסה: ${r.over.join(", ")}`:""}`);
+    MG.lateSel.clear(); MG.lateTrials=[]; REP.loaded=false; MG.ses=report.id; try{ loadWeekLog(); }catch(_){}
+    renderLate();
+  }catch(e){ showToast("ההוספה נכשלה: "+e.message); }
+  finally{ btn.disabled=false; btn.textContent="הוסף לנוכחות"; }
+};
+$("mgrBtn").onclick=openMgr;
 </script>
 </body>
 </html>
