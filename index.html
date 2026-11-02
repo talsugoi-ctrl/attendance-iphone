@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · כפתור גיליון</div>
+  <div class="ver">גרסה 02/11/2026 · סניף שטח</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -562,7 +562,13 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
     {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
-    {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""}
+    {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
+    {branch:"שטח", name:"שטח תל מונד", tab:"", filter:"תל מונד"},
+    {branch:"שטח", name:"שטח תל אביב", tab:"", filter:"תל אביב"},
+    {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
+    {branch:"שטח", name:"שטח שוהם", tab:"", filter:"שוהם"},
+    {branch:"שטח", name:"שטח השרון", tab:"", filter:"השרון"},
+    {branch:"שטח", name:"שטח כללי", tab:"", filter:""}
   ]
 };
 const KEY = "attendance-setup-v1";
@@ -691,8 +697,13 @@ function extractPeople(rows, filter){
 }
 // ---------- roster from Arbox ----------
 // which Arbox athletes belong to an app place: by program name (עמק יזרעאל) or by Arbox location
+// off-road riding places ("שטח …"): by the words in the Arbox program name; "שטח כללי" = an off-road program that names no place
+const OFF_KEYS=["תל מונד","תל אביב","ירושלים","שוהם","השרון"];
+const isOffLoc=l=>/^שטח/.test(l.name||"");
 function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
+  if(isOffLoc(loc)){ const off=ps.filter(p=>/שטח/.test(p)), k=(loc.filter||n.replace(/^שטח\s*/,"")).trim();
+    return k&&k!=="כללי"?off.some(p=>p.includes(k)):off.some(p=>!OFF_KEYS.some(w=>p.includes(w))); }
   const fw=(loc.filter||"").split(/\s+/).filter(Boolean);
   if(/קריטריום/.test(n)) return has(/קריטריום/);
   if(/נופית/.test(n)) return has(/נופית/);
@@ -758,6 +769,7 @@ async function loadPeople(){
       } else arbNote=`אין ב-Arbox ספורטאים ל"${loc.name}" – `;
     }catch(e){ arbNote=`Arbox לא זמין (${e.message}) – `; }
   }
+  if(isOffLoc(loc)){ people=[]; setStatus(arbNote+"רשימת רוכבי השטח קיימת רק ב-Arbox.",true); renderRoster(); return; }
   const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
   const gidM=String(cfg.sheetUrl).match(/gid=(\d+)/); const gid=gidM?gidM[1]:"0";
   async function get(u){
@@ -1239,6 +1251,7 @@ async function repLoad(force){
       // registration tabs of every place
       const first=await sheetGet(base+"&gid="+gid), tabs=new Map(), roster=[];
       for(const loc of cfg.locations){
+        if(isOffLoc(loc)) continue;                      // off-road riders exist only in Arbox
         const tab=(loc.tab||loc.name).trim();
         if(!tabs.has(tab)){ let tr=null; try{ tr=await sheetGet(base+"&sheet="+encodeURIComponent(tab)); }catch(e){}
           tabs.set(tab, tr&&(!same(tr,first)||firstTabName(first,tab))?tr:null); }
