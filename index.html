@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות וניהול מ-Arbox</div>
+  <div class="ver">גרסה 02/11/2026 · Arbox בלי קוד לרשימה</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -525,7 +525,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div>
       <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
       <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
-      <div class="hint">Arbox דורש קוד גישה (⚙ ← 🔗 Arbox). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
+      <div class="hint">הרשימה מ-Arbox מתעדכנת בכל טלפון בלי קוד (מסך Arbox המלא עדיין דורש קוד גישה). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
     </div>
     <div class="row">
       <button type="button" class="btn primary" id="saveSetup">שמור</button>
@@ -692,13 +692,14 @@ function arbInLoc(u,loc){
   return u.location===n;
 }
 async function arbEnsure(){
-  await new Promise(r=>setTimeout(r,0));             // let the whole script initialise (ARB, arbPin) first
-  if(!arbPin()) return false;
-  if(ARB.users&&Date.now()-(ARB.at||0)<10*60*1000) return true;
+  await new Promise(r=>setTimeout(r,0));             // let the whole script initialise (ARB) first
+  // attendance list only (names, programs, place, phone) – works on every phone without the access code.
+  // The full Arbox screen (⚙ ← 🔗 Arbox) still needs the code.
+  if(ARB.lite&&Date.now()-(ARB.liteAt||0)<10*60*1000) return true;
   const u=scriptUrl();
-  const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxUsers",pin:arbPin()}))}`,60000);
-  if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; } throw new Error((r&&r.error)||"אין תשובה מ-Arbox"); }
-  ARB.users=r.users||[]; ARB.at=Date.now(); return true;
+  const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxRoster"}))}`,60000);
+  if(!r||!r.ok||!Array.isArray(r.users)) throw new Error((r&&r.error)||"אין תשובה מ-Arbox");
+  ARB.lite=r.users; ARB.liteAt=Date.now(); return true;
 }
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
 const SHEET_ONLY=/כוכב יאיר/;
@@ -712,11 +713,11 @@ function arbSplit(name){
   return t.slice(0,k).concat(t[k].slice(1)).map(f=>f+" "+last);
 }
 // a place whose list comes from Arbox on this phone
-function isArbLoc(l){ return (cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(l.name)&&!!arbPin(); }
+function isArbLoc(l){ return (cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(l.name); }
 async function arboxRoster(loc){
   if(!(await arbEnsure())) return null;              // no access code on this phone
   const out=[], seen=new Set();
-  ARB.users.filter(u=>u.active).forEach(u=>{
+  ARB.lite.filter(u=>u.active).forEach(u=>{
     const inLoc=arbInLoc(u,loc), sub=arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + ");
     arbSplit(u.name).forEach(n=>{
       const pin=ARB_PIN_LOC[n];
@@ -1502,7 +1503,7 @@ async function mgLoad(force){
   if(isArbLoc(l0)){
     const key=mgKey(l0); if(MG.tabs[key]&&!force) return MG.tabs[key];
     mgStatus("טוען את רשימת "+l0.name+" מ-Arbox…");
-    try{ if(force) ARB.at=0; const list=await arboxRoster(l0);
+    try{ if(force) ARB.liteAt=0; const list=await arboxRoster(l0);
       if(list){ const r={athletes:list.map(p=>Object.assign({},p)),arbox:true}; MG.tabs[key]=r; mgStatus(""); return r; } }
     catch(e){ mgStatus("Arbox לא זמין: "+e.message,true); throw e; }
   }
@@ -1535,7 +1536,7 @@ function setMode(m){
 $("mgrLoc").onchange=()=>{ MG.li=+$("mgrLoc").value; MG.ses=null; MG.lateSel.clear(); MG.lateTrials=[]; setMode(MG.mode==="edit"?"list":MG.mode); };
 document.querySelectorAll("#mgr .seg button").forEach(b=>b.onclick=()=>setMode(b.dataset.v));
 $("mgrBack").onclick=()=>{ if(MG.mode==="edit") setMode("list"); else closeMgr(); };
-$("mgrReload").onclick=()=>{ MG.tabs={}; REP.loaded=false; ARB.at=0; setMode(MG.mode==="edit"?"list":MG.mode); };
+$("mgrReload").onclick=()=>{ MG.tabs={}; REP.loaded=false; ARB.liteAt=0; setMode(MG.mode==="edit"?"list":MG.mode); };
 
 // ---------- list ----------
 async function renderMgrList(){
