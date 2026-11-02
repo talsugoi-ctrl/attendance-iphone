@@ -453,6 +453,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <input type="search" id="arbSearch" placeholder="חיפוש שם / טלפון / מנוי…" autocomplete="off">
       <div class="row" style="margin-top:8px">
         <select id="arbFilter" class="tsel" style="flex:1"><option value="1">פעילים</option><option value="0">לא פעילים</option><option value="all">כולם</option></select>
+        <select id="arbLoc" class="tsel" style="flex:1"><option value="">כל הסניפים</option></select>
       </div>
       <div class="chips" id="arbChips" style="margin-top:8px"></div>
       <div class="mg-list" id="arbList"></div>
@@ -1588,13 +1589,15 @@ function arbRender(){
   const all=ARB.users||[], f=$("arbFilter").value, q=$("arbSearch").value.trim(), qd=q.replace(/\D/g,"");
   const act=all.filter(u=>u.active).length;
   arbStatus(`${all.length} ספורטאים ב-Arbox · ${act} פעילים · ${all.length-act} לא פעילים`);
-  let list=all.filter(u=>f==="all"||(f==="1")===u.active);
+  const lsel=$("arbLoc"), lv=lsel.value, locs=[...new Set(all.map(u=>u.location).filter(Boolean))].sort();
+  if(lsel.options.length!==locs.length+1){ lsel.innerHTML=`<option value="">כל הסניפים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); lsel.value=lv; }
+  let list=all.filter(u=>(f==="all"||(f==="1")===u.active)&&(!lsel.value||u.location===lsel.value));
   if(q) list=list.filter(u=>u.name.includes(q)||(qd&&(u.phone+u.phone2).replace(/\D/g,"").includes(qd))||u.memberships.some(m=>m.name.includes(q))||(u.notes||"").includes(q));
   list.sort((a,b)=>a.name.localeCompare(b.name,"he"));
   $("arbChips").innerHTML=`<span class="chip">${list.length} מוצגים</span><span class="chip blue">${list.filter(u=>u.memberships.length).length} עם מנוי פעיל</span><span class="chip amber">${list.filter(u=>u.notes).length} עם הערות</span>`;
   const tel=p=>p?`<a href="tel:${esc(String(p).replace(/[^\d+]/g,""))}" dir="ltr">📞 ${esc(p)}</a><a href="https://wa.me/${waDigits(p)}" target="_blank" rel="noopener">💬</a>`:"";
   $("arbList").innerHTML=list.map(u=>`<section class="ab-card${u.active?"":" off"}">
-    <div class="ab-top"><b>${esc(u.name)}</b>${u.active?"":`<span class="tag over">לא פעיל</span>`}</div>
+    <div class="ab-top"><b>${esc(u.name)}</b><span>${u.location?`<span class="tag">${esc(u.location)}</span>`:""}${u.active?"":` <span class="tag over">לא פעיל</span>`}${+u.debt>0?` <span class="tag over">חוב ₪${esc(u.debt)}</span>`:""}</span></div>
     <div class="ab-ph">${tel(u.phone)}${u.phone2?tel(u.phone2):""}${u.email?`<a href="mailto:${esc(u.email)}" dir="ltr">✉️ ${esc(u.email)}</a>`:""}</div>
     ${u.memberships.length?`<div class="chips">${u.memberships.map(m=>`<span class="chip blue">${esc(m.name||"מנוי")}${m.end?` · עד ${esc(fmtIso(m.end))}`:""}${m.left!==""?` · נותרו ${esc(m.left)}`:""}</span>`).join("")}</div>`:`<div class="hint">אין מנוי פעיל ב-Arbox</div>`}
     ${u.notes?`<div class="ab-note">📝 ${esc(u.notes)}</div>`:""}
@@ -1602,7 +1605,7 @@ function arbRender(){
   </section>`).join("")||`<div class="rep-empty">אין ספורטאים שמתאימים לחיפוש.</div>`;
 }
 $("arbPinBox").onsubmit=ev=>{ ev.preventDefault(); const v=$("arbPin").value.trim(); if(!v) return; store.set("arbox-pin",v); $("arbPin").value=""; ARB.users=null; arbShow(); };
-$("arbSearch").addEventListener("input",arbRender); $("arbFilter").onchange=arbRender;
+$("arbSearch").addEventListener("input",arbRender); $("arbFilter").onchange=arbRender; $("arbLoc").onchange=arbRender;
 $("arbForget").onclick=()=>{ store.set("arbox-pin",""); ARB.users=null; arbShow(); };
 $("arbBack").onclick=closeArb;
 $("arbReload").onclick=()=>{ ARB.users=null; arbShow(); };
