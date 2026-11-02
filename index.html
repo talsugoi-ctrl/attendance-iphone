@@ -275,7 +275,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות 2</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -1032,7 +1032,7 @@ function phoneOf(name){ const p=REP.roster.find(x=>x.name===name&&x.phone); retu
 // ---------- report definitions ----------
 const REPORTS=[
   {id:"exc",icon:"⚠️",title:"דוח חריגים",desc:"מעבר למכסה, אימון ניסיון, ואימונים שלא כלולים במנוי",period:"week",extra:null},
-  {id:"pie",icon:"🥧",title:"נוכחות לפי סניף",desc:"כמה מהרשומים הגיעו – מספרים ואחוזים, ומי לא הגיע",period:"month",extra:"branch"},
+  {id:"pie",icon:"🥧",title:"נוכחות לפי מקום",desc:"כמה מהרשומים הגיעו – לפי מקום או סניף, ומי לא הגיע",period:"month",extra:"branch"},
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
   {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"}
 ];
@@ -1060,7 +1060,9 @@ function openReport(id){
   const ex=$("repExtra"); ex.innerHTML="";
   if(r.extra==="branch"){
     const branches=[...new Set(cfg.locations.map(l=>l.branch||""))];
-    ex.innerHTML=`<label class="lbl" for="repBranch">סניף</label><select id="repBranch" class="tsel">${branches.map(b=>`<option value="${esc(b)}">${esc(b?"סניף "+b:"ללא סניף")}</option>`).join("")}</select>`;
+    ex.innerHTML=`<label class="lbl" for="repBranch">מקום</label><select id="repBranch" class="tsel">${branches.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${
+      cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option value="l:${esc(l.name)}">${esc(l.name)}</option>`).join("")
+    }<option value="b:${esc(b)}">כל ${esc(b?"סניף "+b:"המקומות")}</option></optgroup>`).join("")}</select>`;
   } else if(r.extra==="athlete"){
     ex.innerHTML=`<label class="lbl" for="repAth">ספורטאי</label><input id="repAth" class="tsel" list="repAthList" placeholder="הקלד שם…" autocomplete="off"><datalist id="repAthList"></datalist>`;
   } else if(r.extra==="coach"){
@@ -1075,8 +1077,8 @@ function fillExtra(){
   if(REP.cur.extra==="athlete"){ const names=[...new Set(REP.roster.map(p=>p.name).concat(REP.log.map(r=>r.name)))].sort((a,b)=>a.localeCompare(b,"he"));
     $("repAthList").innerHTML=names.map(n=>`<option value="${esc(n)}">`).join(""); }
   if(REP.cur.extra==="coach"){ const sel=$("repCoach"), keep=sel.value; const cs=[...new Set(REP.log.map(r=>r.coach).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he"));
-    sel.innerHTML=cs.length?cs.map(c=>`<option>${esc(c)}</option>`).join(""):`<option value="">אין עדיין דיווחים</option>`;
-    const me=coachName(); sel.value=keep&&cs.includes(keep)?keep:(cs.includes(me)?me:cs[0]||""); }
+    sel.innerHTML=cs.length?`<option value="*">כל המאמנים (${cs.length})</option>`+cs.map(c=>`<option>${esc(c)}</option>`).join(""):`<option value="">אין עדיין דיווחים</option>`;
+    sel.value=keep&&(keep==="*"||cs.includes(keep))?keep:(cs.length?"*":""); }
 }
 $("repPeriod").addEventListener("change",()=>{ $("repCustom").hidden=$("repPeriod").value!=="custom"; runReport(); });
 $("repFrom").addEventListener("change",runReport); $("repTo").addEventListener("change",runReport);
@@ -1129,9 +1131,11 @@ function pieSVG(a,b){
     <text x="${cx}" y="${cy+22}" text-anchor="middle" class="pie-small">הגיעו</text></svg>`;
 }
 function repPie(){
-  const br=$("repBranch").value, locs=cfg.locations.filter(l=>(l.branch||"")===br).map(l=>l.name);
+  const sv=$("repBranch").value, isB=sv.startsWith("b:"), br=sv.slice(2);
+  const locs=isB?cfg.locations.filter(l=>(l.branch||"")===br).map(l=>l.name):[br];
+  const scope=isB?"בסניף":"במקום";
   const reg=REP.roster.filter(p=>locs.includes(p.loc)), regNames=new Set(reg.map(p=>p.name));
-  const rows=inPeriod(REP.log).filter(r=>locs.includes(r.loc)||r.branch===br);
+  const rows=inPeriod(REP.log).filter(r=>locs.includes(r.loc));
   const came=new Set(rows.map(r=>r.name).filter(n=>regNames.has(n)));
   const visitors=new Set(rows.map(r=>r.name).filter(n=>!regNames.has(n)));
   const a=came.size, b=regNames.size-a, tot=regNames.size, pct=n=>tot?Math.round(n/tot*100)+"%":"—";
@@ -1142,7 +1146,7 @@ function repPie(){
   return `<div class="pie-wrap">${pieSVG(a,b)}<div class="legend">
       <div><i style="background:var(--ok)"></i>הגיעו לפחות פעם אחת: <b>${a}</b> (${pct(a)})</div>
       <div><i style="background:var(--pie-off)"></i>לא הגיעו: <b>${b}</b> (${pct(b)})</div>
-      <div class="hint">רשומים בסניף: ${tot} · אימונים בתקופה: ${new Set(rows.map(r=>r.id)).size}${visitors.size?` · הגיעו ולא רשומים בסניף: ${visitors.size}`:""}</div></div></div>
+      <div class="hint">רשומים ${scope}: ${tot} · אימונים בתקופה: ${new Set(rows.map(r=>r.id)).size}${visitors.size?` · הגיעו ולא רשומים ${scope}: ${visitors.size}`:""}</div></div></div>
     <div class="tw"><table class="rtable"><thead><tr><th>מקום</th><th>רשומים</th><th>הגיעו</th><th>%</th></tr></thead><tbody>${per}</tbody></table></div>
     <h2 class="rep-h2">לא הגיעו בתקופה (${b})</h2>${missing||`<p class="hint">כל הרשומים הגיעו לפחות פעם אחת ✓</p>`}`;
 }
@@ -1166,15 +1170,17 @@ function repAthlete(){
 // 4) coach
 function repCoach(){
   const c=$("repCoach").value; if(!c) return `<div class="rep-empty">אין עדיין דיווחים במערכת.</div>`;
-  const rows=inPeriod(REP.log).filter(r=>r.coach===c), ses=new Map();
+  const all=c==="*", rows=inPeriod(REP.log).filter(r=>all||r.coach===c), ses=new Map();
   rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{r,n:0}); ses.get(r.id).n++; });
   const list=[...ses.values()].sort((a,b)=>a.r.key-b.r.key);
   const hours=list.reduce((s,x)=>s+(x.r.dur||0),0);
-  if(!list.length) return `<div class="rep-empty">${esc(c)} לא העביר/ה אימונים מדווחים בתקופה הזו.</div>`;
+  if(!list.length) return `<div class="rep-empty">${all?"אין אימונים מדווחים":esc(c)+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.</div>`;
+  const per={}; list.forEach(x=>{ const k=x.r.coach||"—"; per[k]=per[k]||{n:0,h:0,a:0}; per[k].n++; per[k].h+=x.r.dur||0; per[k].a+=x.n; });
+  const perHtml=all?`<div class="tw"><table class="rtable"><thead><tr><th>מאמן</th><th>אימונים</th><th>שעות</th><th>הגעות</th></tr></thead><tbody>${Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${Math.round(v.h*100)/100}</td><td>${v.a}</td></tr>`).join("")}</tbody></table></div><h2 class="rep-h2">כל האימונים</h2>`:"";
   const byType={}; list.forEach(x=>{ const t=x.r.type||"לא צוין"; byType[t]=(byType[t]||0)+1; });
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">${rows.length} הגעות</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
-    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>מקום</th><th>סוג</th><th>זמן</th><th>נוכחים</th></tr></thead><tbody>
-    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td><td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${x.n}</td></tr>`).join("")}</tbody></table></div>`;
+    ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>נוכחים</th></tr></thead><tbody>
+    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${x.n}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 $("repBtn").onclick=openReports;
