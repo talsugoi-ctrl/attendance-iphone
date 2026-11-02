@@ -297,7 +297,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · ניהול ספורטאים</div>
+  <div class="ver">גרסה 02/11/2026 · וואטסאפ למורן</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -453,8 +453,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     </div>
     <div>
       <label class="lbl" for="waPhone">מספר וואטסאפ 1 לשליחת הדוח</label>
-      <input type="text" id="waPhone" dir="ltr" placeholder="+972509015006">
-      <div class="hint">אם משאירים ריק, נשלח ל-+972509015006.</div>
+      <input type="text" id="waPhone" dir="ltr" placeholder="+972504555426">
+      <div class="hint">אם משאירים ריק, נשלח למורן כפתורי (050-4555426).</div>
     </div>
     <div>
       <label class="lbl" for="waPhone2">מספר וואטסאפ 2 (לא חובה)</label>
@@ -477,7 +477,7 @@ window.onerror=function(msg){
 <script>
 const DEFAULTS = {
   sheetUrl: "https://docs.google.com/spreadsheets/d/1fFCDLbp7Y_61uX2h8s2MZJPOWBbGGlDKxU8mfF-S1wI/edit?gid=0#gid=0",
-  waPhone: "+972509015006",
+  waPhone: "+972504555426",   // מורן כפתורי
   scriptUrl: "https://script.google.com/macros/s/AKfycby1ZB37OEsLwvRUVMmb5FX1lsGX6zjSVaDlbQuwsABdlSGRcomS-EfQZ6A-jSX0mFZbUQ/exec",   // Moran's system – the sheet's web-app address (…/exec)
   locations: [
     {branch:"עמק יזרעאל", name:"נופית", tab:"נופית", filter:""},
@@ -496,6 +496,8 @@ const store = {
 const savedCfg = store.get(KEY, null);
 let cfg = Object.assign({}, DEFAULTS, savedCfg||{});
 cfg.locations=cfg.locations.map(l=>Object.assign({branch:"עמק יזרעאל"},l));
+// the default number changed (Tal → Moran): phones that still hold the old default get the new one
+if(String(cfg.waPhone||"").replace(/\D/g,"").replace(/^0/,"972")==="972509015006"){ cfg.waPhone=DEFAULTS.waPhone; if(savedCfg) store.set(KEY,Object.assign({},savedCfg,{waPhone:DEFAULTS.waPhone})); }
 // A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
   cfg.hiddenBranches=[];   // every branch is always shown
