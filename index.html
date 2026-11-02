@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · Arbox דוחות</div>
+  <div class="ver">גרסה 02/11/2026 · Arbox עמק יזרעאל</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -1606,20 +1606,25 @@ async function arbLoad(){
   }catch(e){ arbStatus("לא הצלחתי לקרוא מ-Arbox: "+e.message,true); }
   finally{ ARB.loading=false; }
 }
+// Arbox has no עמק יזרעאל location – those athletes sit under "נתניה והשרון הצפוני".
+// The app derives the branch from the program name.
+const ARB_EMEK=/ציפורי|נופית|שמשית|קריטריום/;
+function arbProgs(u){ return u.memberships.flatMap(m=>String(m.name||"").split(/,\s+/)).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean); }
+function arbBranch(u){ return arbProgs(u).some(p=>ARB_EMEK.test(p))?"עמק יזרעאל":(u.location||""); }
 function fmtIso(d){ const m=String(d||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(d||""); }
 function arbRender(){
   const all=ARB.users||[], f=$("arbFilter").value, q=$("arbSearch").value.trim(), qd=q.replace(/\D/g,"");
   const act=all.filter(u=>u.active).length;
   arbStatus(`${all.length} ספורטאים ב-Arbox · ${act} פעילים · ${all.length-act} לא פעילים`);
-  const lsel=$("arbLoc"), lv=lsel.value, locs=[...new Set(all.map(u=>u.location).filter(Boolean))].sort();
+  const lsel=$("arbLoc"), lv=lsel.value, locs=[...new Set(all.map(arbBranch).filter(Boolean))].sort();
   if(lsel.options.length!==locs.length+1){ lsel.innerHTML=`<option value="">כל הסניפים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); lsel.value=lv; }
-  let list=all.filter(u=>(f==="all"||(f==="1")===u.active)&&(!lsel.value||u.location===lsel.value));
+  let list=all.filter(u=>(f==="all"||(f==="1")===u.active)&&(!lsel.value||arbBranch(u)===lsel.value));
   if(q) list=list.filter(u=>u.name.includes(q)||(qd&&(u.phone+u.phone2).replace(/\D/g,"").includes(qd))||u.memberships.some(m=>m.name.includes(q))||(u.notes||"").includes(q));
   list.sort((a,b)=>a.name.localeCompare(b.name,"he"));
   $("arbChips").innerHTML=`<span class="chip">${list.length} מוצגים</span><span class="chip blue">${list.filter(u=>u.memberships.length).length} עם מנוי פעיל</span><span class="chip amber">${list.filter(u=>u.notes).length} עם הערות</span>`;
   const tel=p=>p?`<a href="tel:${esc(String(p).replace(/[^\d+]/g,""))}" dir="ltr">📞 ${esc(p)}</a><a href="https://wa.me/${waDigits(p)}" target="_blank" rel="noopener">💬</a>`:"";
   $("arbList").innerHTML=list.map(u=>`<section class="ab-card${u.active?"":" off"}">
-    <div class="ab-top"><b>${esc(u.name)}</b><span>${u.location?`<span class="tag">${esc(u.location)}</span>`:""}${u.active?"":` <span class="tag over">לא פעיל</span>`}${+u.debt>0?` <span class="tag over">חוב ₪${esc(u.debt)}</span>`:""}</span></div>
+    <div class="ab-top"><b>${esc(u.name)}</b><span>${arbBranch(u)?`<span class="tag">${esc(arbBranch(u))}</span>`:""}${u.active?"":` <span class="tag over">לא פעיל</span>`}${+u.debt>0?` <span class="tag over">חוב ₪${esc(u.debt)}</span>`:""}</span></div>
     <div class="ab-ph">${tel(u.phone)}${u.phone2?tel(u.phone2):""}${u.email?`<a href="mailto:${esc(u.email)}" dir="ltr">✉️ ${esc(u.email)}</a>`:""}</div>
     ${u.memberships.length?`<div class="chips">${u.memberships.map(m=>`<span class="chip blue">${esc(m.name||"מנוי")}${m.end?` · עד ${esc(fmtIso(m.end))}`:""}${m.left!==""?` · נותרו ${esc(m.left)}`:""}</span>`).join("")}</div>`:`<div class="hint">אין מנוי פעיל ב-Arbox</div>`}
     ${u.notes?`<div class="ab-note">📝 ${esc(u.notes)}</div>`:""}
@@ -1643,16 +1648,16 @@ function arbRepRender(){
   const out=$("arbRepOut"), today=new Date().toLocaleDateString("he-IL");
   if(arbRepKind==="loc"){
     $("arbRepLocBox").hidden=true;
-    const c={}; act.forEach(u=>{ const k=u.location||"ללא סניף"; c[k]=(c[k]||0)+1; });
+    const c={}; act.forEach(u=>{ const k=arbBranch(u)||"ללא סניף"; c[k]=(c[k]||0)+1; });
     const rows=Object.entries(c).sort((a,b)=>b[1]-a[1]);
-    out.innerHTML=`<p class="rep-period">נכון ל־${today} · ספורטאים פעילים ב-Arbox</p><div class="rep-total">סה״כ ${act.length} ספורטאים פעילים ב־${rows.length} סניפים</div>`+hbars(rows,act.length)+
+    out.innerHTML=`<p class="rep-period">נכון ל־${today} · ספורטאים פעילים ב-Arbox</p><div class="rep-total">סה״כ ${act.length} ספורטאים פעילים ב־${rows.length} סניפים</div>`+hbars(rows,act.length)+`<p class="hint">עמק יזרעאל לא מוגדר כסניף ב-Arbox (רשום שם תחת "נתניה והשרון הצפוני"). האפליקציה משייכת לעמק יזרעאל לפי שם התוכנית: ציפורי, נופית, שמשית או קריטריום.</p>`+
       `<div class="tw"><table class="rtable"><thead><tr><th>סניף</th><th>פעילים</th><th>%</th></tr></thead><tbody>${rows.map(([l,n])=>`<tr><td>${esc(l)}</td><td>${n}</td><td>${Math.round(n/act.length*100)}%</td></tr>`).join("")}<tr><td><b>סה״כ</b></td><td><b>${act.length}</b></td><td>100%</td></tr></tbody></table></div>`;
     arbRepText=`🏢 *ספורטאים פעילים לפי סניף (Arbox)*\nנכון ל־${today}\n\n`+rows.map(([l,n])=>`• ${l}: ${n} (${Math.round(n/act.length*100)}%)`).join("\n")+`\n\n*סה״כ: ${act.length}*`;
   } else {
-    const box=$("arbRepLocBox"), sel=$("arbRepLoc"), keep=sel.value, locs=[...new Set(act.map(u=>u.location).filter(Boolean))].sort();
+    const box=$("arbRepLocBox"), sel=$("arbRepLoc"), keep=sel.value, locs=[...new Set(act.map(arbBranch).filter(Boolean))].sort();
     box.hidden=false; sel.innerHTML=`<option value="">כל הסניפים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); sel.value=keep;
-    const list=act.filter(u=>!sel.value||u.location===sel.value), c={}; let none=0;
-    list.forEach(u=>{ if(!u.memberships.length){ none++; return; } u.memberships.forEach(m=>{ const k=(m.name||"ללא שם").trim(); c[k]=(c[k]||0)+1; }); });
+    const list=act.filter(u=>!sel.value||arbBranch(u)===sel.value), c={}; let none=0;
+    list.forEach(u=>{ const ps=arbProgs(u); if(!ps.length){ none++; return; } new Set(ps).forEach(k=>{ c[k]=(c[k]||0)+1; }); });
     const rows=Object.entries(c).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"he"));
     if(none) rows.push(["ללא מנוי פעיל",none]);
     out.innerHTML=`<p class="rep-period">נכון ל־${today} · ${sel.value?"סניף "+esc(sel.value):"כל הסניפים"}</p><div class="rep-total">${list.length} ספורטאים פעילים · ${rows.length} סוגי תוכניות</div>`+hbars(rows,list.length)+
