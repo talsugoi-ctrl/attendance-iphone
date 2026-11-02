@@ -144,6 +144,7 @@ body.rep-open{overflow:hidden}
 .rtable{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
 .rtable th{background:var(--chip);font-weight:700;text-align:start;padding:8px 10px;white-space:nowrap}
 .rtable td{padding:8px 10px;border-top:1px solid var(--line);white-space:nowrap}
+.rtable tr.off td{color:var(--muted)}
 .rtable tr.over td{background:color-mix(in srgb,var(--danger) 9%,var(--surface));color:var(--danger)}
 .pie-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
 .pie{width:170px;height:170px;flex:none}
@@ -275,7 +276,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות 2</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות 3</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -1133,22 +1134,29 @@ function pieSVG(a,b){
 function repPie(){
   const sv=$("repBranch").value, isB=sv.startsWith("b:"), br=sv.slice(2);
   const locs=isB?cfg.locations.filter(l=>(l.branch||"")===br).map(l=>l.name):[br];
-  const scope=isB?"בסניף":"במקום";
-  const reg=REP.roster.filter(p=>locs.includes(p.loc)), regNames=new Set(reg.map(p=>p.name));
   const rows=inPeriod(REP.log).filter(r=>locs.includes(r.loc));
-  const came=new Set(rows.map(r=>r.name).filter(n=>regNames.has(n)));
-  const visitors=new Set(rows.map(r=>r.name).filter(n=>!regNames.has(n)));
-  const a=came.size, b=regNames.size-a, tot=regNames.size, pct=n=>tot?Math.round(n/tot*100)+"%":"—";
-  const per=locs.map(l=>{ const rn=new Set(reg.filter(p=>p.loc===l).map(p=>p.name)); const cn=[...rn].filter(n=>came.has(n)).length;
-    return `<tr><td>${esc(l)}</td><td>${rn.size}</td><td>${cn}</td><td>${rn.size?Math.round(cn/rn.size*100)+"%":"—"}</td></tr>`; }).join("");
-  const missing=locs.map(l=>{ const ms=reg.filter(p=>p.loc===l&&!came.has(p.name)); if(!ms.length) return "";
-    return `<h3 class="rep-h3">${esc(l)} (${ms.length})</h3><ul class="rc-list miss">${ms.map(p=>`<li>${esc(p.name)} <span>${telLink(p.phone)}</span></li>`).join("")}</ul>`; }).join("");
+  const held=locs.filter(l=>rows.some(r=>r.loc===l));            // only places where a training actually took place
+  if(!held.length) return `<div class="rep-empty">לא התקיימו אימונים מדווחים ${isB?"בסניף "+esc(br):"ב"+esc(br)} בתקופה הזו.</div>`;
+  let a=0, tot=0, visitors=0;
+  const per=[], missing=[];
+  locs.forEach(l=>{
+    const lr=rows.filter(r=>r.loc===l), ses=new Set(lr.map(r=>r.id)).size;
+    if(!ses){ per.push(`<tr class="off"><td>${esc(l)}</td><td>0</td><td colspan="3">לא התקיים אימון – לא נספר</td></tr>`); return; }
+    const reg=[], seen=new Set(); REP.roster.filter(p=>p.loc===l).forEach(p=>{ if(!seen.has(p.name)){ seen.add(p.name); reg.push(p); } });
+    const att=new Set(lr.map(r=>r.name));
+    const cn=reg.filter(p=>att.has(p.name)).length, ms=reg.filter(p=>!att.has(p.name));
+    visitors+=[...att].filter(n=>!seen.has(n)).length;
+    a+=cn; tot+=reg.length;
+    per.push(`<tr><td>${esc(l)}</td><td>${ses}</td><td>${reg.length}</td><td>${cn}</td><td>${reg.length?Math.round(cn/reg.length*100)+"%":"—"}</td></tr>`);
+    if(ms.length) missing.push(`<h3 class="rep-h3">${esc(l)} (${ms.length})</h3><ul class="rc-list miss">${ms.map(p=>`<li>${esc(p.name)} <span>${telLink(p.phone)}</span></li>`).join("")}</ul>`);
+  });
+  const b=tot-a, pct=n=>tot?Math.round(n/tot*100)+"%":"—";
   return `<div class="pie-wrap">${pieSVG(a,b)}<div class="legend">
       <div><i style="background:var(--ok)"></i>הגיעו לפחות פעם אחת: <b>${a}</b> (${pct(a)})</div>
       <div><i style="background:var(--pie-off)"></i>לא הגיעו: <b>${b}</b> (${pct(b)})</div>
-      <div class="hint">רשומים ${scope}: ${tot} · אימונים בתקופה: ${new Set(rows.map(r=>r.id)).size}${visitors.size?` · הגיעו ולא רשומים ${scope}: ${visitors.size}`:""}</div></div></div>
-    <div class="tw"><table class="rtable"><thead><tr><th>מקום</th><th>רשומים</th><th>הגיעו</th><th>%</th></tr></thead><tbody>${per}</tbody></table></div>
-    <h2 class="rep-h2">לא הגיעו בתקופה (${b})</h2>${missing||`<p class="hint">כל הרשומים הגיעו לפחות פעם אחת ✓</p>`}`;
+      <div class="hint">מתוך ${tot} רשומים במקומות שהתקיים בהם אימון · אימונים בתקופה: ${new Set(rows.map(r=>r.id)).size}${visitors?` · הגיעו ולא רשומים במקום: ${visitors}`:""}</div></div></div>
+    <div class="tw"><table class="rtable"><thead><tr><th>מקום</th><th>אימונים</th><th>רשומים</th><th>הגיעו</th><th>%</th></tr></thead><tbody>${per.join("")}</tbody></table></div>
+    <h2 class="rep-h2">לא הגיעו בתקופה (${b})</h2>${missing.join("")||`<p class="hint">כל הרשומים הגיעו לפחות פעם אחת ✓</p>`}`;
 }
 
 // 3) athlete
@@ -1168,19 +1176,22 @@ function repAthlete(){
 }
 
 // 4) coach
+function regCount(loc){ return new Set(REP.roster.filter(p=>p.loc===loc).map(p=>p.name)).size; }
+function ofTxt(n,of){ return of?`${n} מתוך ${of} (${Math.round(n/of*100)}%)`:`${n}`; }
 function repCoach(){
   const c=$("repCoach").value; if(!c) return `<div class="rep-empty">אין עדיין דיווחים במערכת.</div>`;
   const all=c==="*", rows=inPeriod(REP.log).filter(r=>all||r.coach===c), ses=new Map();
-  rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{r,n:0}); ses.get(r.id).n++; });
+  rows.forEach(r=>{ if(!ses.has(r.id)) ses.set(r.id,{r,n:0,of:regCount(r.loc)}); ses.get(r.id).n++; });
   const list=[...ses.values()].sort((a,b)=>a.r.key-b.r.key);
-  const hours=list.reduce((s,x)=>s+(x.r.dur||0),0);
+  const hours=list.reduce((s,x)=>s+(x.r.dur||0),0), came=list.reduce((s,x)=>s+x.n,0), of=list.reduce((s,x)=>s+x.of,0);
   if(!list.length) return `<div class="rep-empty">${all?"אין אימונים מדווחים":esc(c)+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.</div>`;
-  const per={}; list.forEach(x=>{ const k=x.r.coach||"—"; per[k]=per[k]||{n:0,h:0,a:0}; per[k].n++; per[k].h+=x.r.dur||0; per[k].a+=x.n; });
-  const perHtml=all?`<div class="tw"><table class="rtable"><thead><tr><th>מאמן</th><th>אימונים</th><th>שעות</th><th>הגעות</th></tr></thead><tbody>${Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${Math.round(v.h*100)/100}</td><td>${v.a}</td></tr>`).join("")}</tbody></table></div><h2 class="rep-h2">כל האימונים</h2>`:"";
+  const per={}; list.forEach(x=>{ const k=x.r.coach||"—"; per[k]=per[k]||{n:0,h:0,a:0,o:0}; per[k].n++; per[k].h+=x.r.dur||0; per[k].a+=x.n; per[k].o+=x.of; });
+  const perHtml=all?`<div class="tw"><table class="rtable"><thead><tr><th>מאמן</th><th>אימונים</th><th>שעות</th><th>הגיעו מתוך רשומים</th></tr></thead><tbody>${Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${Math.round(v.h*100)/100}</td><td>${ofTxt(v.a,v.o)}</td></tr>`).join("")}</tbody></table></div><h2 class="rep-h2">כל האימונים</h2>`:"";
   const byType={}; list.forEach(x=>{ const t=x.r.type||"לא צוין"; byType[t]=(byType[t]||0)+1; });
-  return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">${rows.length} הגעות</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
-    ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>נוכחים</th></tr></thead><tbody>
-    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${x.n}</td></tr>`).join("")}</tbody></table></div>`;
+  return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
+    ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th></tr></thead><tbody>
+    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint">"מתוך" = מספר הרשומים למקום בגיליון. מי שהגיע לניסיון / לא רשום נספר בהגיעו, לכן לפעמים יותר מ־100%.</p>`;
 }
 
 $("repBtn").onclick=openReports;
