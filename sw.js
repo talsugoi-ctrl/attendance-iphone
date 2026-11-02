@@ -1,5 +1,5 @@
 // Keeps the app itself available offline. Names always come fresh from the sheet (never cached here).
-const CACHE = "attendance-iphone-v26";
+const CACHE = "attendance-iphone-v27";
 const SHELL = ["./", "./index.html", "./manifest.webmanifest", "./icon-192.png", "./icon-512.png", "./icon-maskable-512.png", "./apple-touch-icon.png"];
 
 self.addEventListener("install", e => {
@@ -17,7 +17,7 @@ self.addEventListener("fetch", e => {
   if (e.request.method !== "GET" || url.origin !== location.origin) return; // Google Sheets etc. go straight to the network
   // network first, so an updated app shows up right away; cache when offline
   e.respondWith(
-    fetch(e.request)
+    fetch(new Request(e.request.url, { cache: "no-cache", credentials: "same-origin" }))   // skip the 10-minute browser cache
       .then(res => { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)); return res; })
       .catch(() => caches.match(e.request).then(r => r || caches.match("./index.html")))
   );
