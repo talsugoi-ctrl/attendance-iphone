@@ -52,7 +52,7 @@ h1 small{display:block;font:400 .85rem var(--body);color:var(--muted)}
 .icon-btn svg{width:22px;height:22px}
 .card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:12px}
 .lbl{display:block;font-weight:700;font-size:.8rem;color:var(--muted);letter-spacing:.04em}
-input[type=date],input[type=text],input[type=url],input[type=search]{width:100%;font:inherit;padding:10px 12px;border-radius:10px;
+input[type=date],input[type=text],input[type=url],input[type=search],input[type=password]{width:100%;font:inherit;padding:10px 12px;border-radius:10px;
   border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .locs{display:flex;flex-wrap:wrap;gap:8px}
 .loc{font:600 .95rem var(--body);padding:9px 14px;border-radius:999px;border:1.5px solid var(--line);background:var(--chip);color:var(--fg);cursor:pointer}
@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · קריטריום</div>
+  <div class="ver">גרסה 02/11/2026 · כפתור גיליון</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -501,6 +501,15 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <h1 style="font-size:1.15rem">הגדרות</h1>
     <button type="button" class="btn primary mgr-open-btn" id="mgrBtn"><span aria-hidden="true">👥</span> ניהול ספורטאים – הוספה, עריכה, ארכיון ונוכחות שנשכחה</button>
     <button type="button" class="btn mgr-open-btn arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span> Arbox – ספורטאים מהמערכת</button>
+    <button type="button" class="btn mgr-open-btn" id="sheetBtn"><span aria-hidden="true">📊</span> פתיחת גיליון הנוכחות בדפדפן</button>
+    <div class="card" id="sheetPwBox" hidden style="margin:0">
+      <label class="lbl" for="sheetPw">סיסמה לגיליון הנוכחות</label>
+      <input type="password" id="sheetPw" autocomplete="off" autocapitalize="characters" enterkeyhint="go">
+      <div class="row" style="display:flex;gap:8px;margin-top:10px">
+        <button type="button" class="btn primary" id="sheetPwGo" style="flex:1">פתח את הגיליון</button>
+        <button type="button" class="btn" id="sheetPwCancel">ביטול</button>
+      </div>
+    </div>
     <div>
       <label class="lbl" for="sheetUrl">קישור לגיליון הנרשמים</label>
       <input type="url" id="sheetUrl" dir="ltr">
@@ -1771,6 +1780,18 @@ $("arbRepBtn").onclick=()=>{ if(!ARB.users) return; $("arbRep").hidden?arbOpenRe
 $("arbBack").onclick=()=>{ if(!$("arbRep").hidden) arbCloseRep(); else closeArb(); };
 $("arbReload").onclick=()=>{ ARB.users=null; arbShow(); };
 $("arbBtn").onclick=openArb;
+// ---------- open the attendance sheet (password) ----------
+const SHEET_PW="T";
+function sheetPwHide(){ $("sheetPwBox").hidden=true; $("sheetPw").value=""; $("sheetBtn").hidden=false; }
+$("sheetBtn").onclick=()=>{ $("sheetBtn").hidden=true; $("sheetPwBox").hidden=false; $("sheetPw").value=""; setTimeout(()=>$("sheetPw").focus(),50); };
+$("sheetPwCancel").onclick=sheetPwHide;
+$("sheetPwGo").onclick=()=>{
+  const ok=$("sheetPw").value.trim()===SHEET_PW;
+  sheetPwHide();
+  if(!ok){ showToast("סיסמה שגויה"); $("setup").scrollTop=0; return; }      // stays on the settings screen
+  window.open(cfg.sheetUrl||DEFAULTS.sheetUrl,"_blank","noopener");
+};
+$("sheetPw").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); $("sheetPwGo").click(); } });
 </script>
 </body>
 </html>
