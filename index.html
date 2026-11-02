@@ -173,6 +173,18 @@ body.rep-open{overflow:hidden}
 .mg-pick{display:flex;flex-direction:column;gap:6px;max-height:340px;overflow-y:auto}
 .mg-pick .in{margin-inline-start:auto;font-size:.78rem;color:var(--muted)}
 .mg-new{display:flex;flex-direction:column;gap:10px;padding:10px;border:1px dashed var(--line);border-radius:12px}
+.arb-btn{background:#2b2d42;border-color:#2b2d42;color:#fff}
+.ab-card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.ab-card.off{opacity:.7}
+.ab-top{display:flex;justify-content:space-between;align-items:baseline;gap:8px;flex-wrap:wrap}
+.ab-top b{font:700 1.02rem var(--display)}
+.ab-ph{display:flex;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
+.ab-ph a{color:var(--accent);text-decoration:none}
+.ab-note{background:color-mix(in srgb,#e0a100 14%,var(--surface));border-radius:8px;padding:6px 10px;font-size:.9rem}
+.ab-card details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+.ab-card details table{width:100%;font-size:.82rem;border-collapse:collapse;margin-top:6px}
+.ab-card details td{padding:3px 6px;border-top:1px solid var(--line);word-break:break-word}
+.ab-card details td:first-child{color:var(--muted);white-space:nowrap;direction:ltr;text-align:left}
 .tsel{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tsel.missing{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
 .dur{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -297,7 +309,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · וואטסאפ למורן</div>
+  <div class="ver">גרסה 02/11/2026 · Arbox שלב 1</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -424,6 +436,31 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   </div>
 </section>
 
+<section class="rep" id="arb" hidden aria-labelledby="arbTitle">
+  <div class="rep-in">
+    <div class="rep-head">
+      <button class="icon-btn" id="arbBack" aria-label="חזרה">→</button>
+      <h1 id="arbTitle">Arbox · ספורטאים</h1>
+      <button class="icon-btn" id="arbReload" aria-label="טען מחדש מ-Arbox">↻</button>
+    </div>
+    <div class="status" id="arbStatus"></div>
+    <form class="card" id="arbPinBox" hidden autocomplete="off">
+      <b>קוד גישה ל-Arbox</b>
+      <div class="hint">רשימת הספורטאים כוללת טלפונים ופרטים אישיים, ולכן מוגנת בקוד. מקלידים פעם אחת בכל טלפון.</div>
+      <div class="row"><input type="password" id="arbPin" inputmode="numeric" placeholder="קוד גישה" style="flex:1"><button type="submit" class="btn primary">כניסה</button></div>
+    </form>
+    <div id="arbMain" hidden>
+      <input type="search" id="arbSearch" placeholder="חיפוש שם / טלפון / מנוי…" autocomplete="off">
+      <div class="row" style="margin-top:8px">
+        <select id="arbFilter" class="tsel" style="flex:1"><option value="1">פעילים</option><option value="0">לא פעילים</option><option value="all">כולם</option></select>
+      </div>
+      <div class="chips" id="arbChips" style="margin-top:8px"></div>
+      <div class="mg-list" id="arbList"></div>
+      <button type="button" class="btn" id="arbForget" style="margin-top:14px">החלף קוד גישה</button>
+    </div>
+  </div>
+</section>
+
 <div class="toast" id="toast" role="alert" hidden></div>
 
 <div class="ask" id="askBox" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
@@ -440,6 +477,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
   <form method="dialog" id="setupForm" style="display:flex;flex-direction:column;gap:12px">
     <h1 style="font-size:1.15rem">הגדרות</h1>
     <button type="button" class="btn primary mgr-open-btn" id="mgrBtn"><span aria-hidden="true">👥</span> ניהול ספורטאים – הוספה, עריכה, ארכיון ונוכחות שנשכחה</button>
+    <button type="button" class="btn mgr-open-btn arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span> Arbox – ספורטאים מהמערכת</button>
     <div>
       <label class="lbl" for="sheetUrl">קישור לגיליון הנרשמים</label>
       <input type="url" id="sheetUrl" dir="ltr">
@@ -1526,6 +1564,49 @@ $("mgrLate").onsubmit=async ev=>{
   finally{ btn.disabled=false; btn.textContent="הוסף לנוכחות"; }
 };
 $("mgrBtn").onclick=openMgr;
+// ================= Arbox (stage 1: read the client list) =================
+const ARB={users:null, loading:false};
+const arbPin=()=>store.get("arbox-pin","");
+function arbStatus(t,err){ const s=$("arbStatus"); s.textContent=t||""; s.classList.toggle("err",!!err); }
+function openArb(){ $("setup").close(); $("arb").hidden=false; document.body.classList.add("rep-open"); arbShow(); }
+function closeArb(){ $("arb").hidden=true; document.body.classList.remove("rep-open"); }
+function arbShow(){
+  const has=!!arbPin(); $("arbPinBox").hidden=has; $("arbMain").hidden=!has||!ARB.users;
+  if(has&&!ARB.users) arbLoad(); else if(!has) arbStatus("");
+}
+async function arbLoad(){
+  if(ARB.loading) return; ARB.loading=true; arbStatus("טוען ספורטאים מ-Arbox…");
+  try{
+    const r=await jsonp(cb=>{ const u=scriptUrl(); return `${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxUsers",pin:arbPin()}))}`; },60000);
+    if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; arbShow(); arbStatus("קוד הגישה שגוי – נסה שוב.",true); return; } throw new Error((r&&r.error)||"אין תשובה"); }
+    ARB.users=r.users||[]; ARB.diag=r.diag; $("arbMain").hidden=false; arbRender();
+  }catch(e){ arbStatus("לא הצלחתי לקרוא מ-Arbox: "+e.message,true); }
+  finally{ ARB.loading=false; }
+}
+function fmtIso(d){ const m=String(d||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(d||""); }
+function arbRender(){
+  const all=ARB.users||[], f=$("arbFilter").value, q=$("arbSearch").value.trim(), qd=q.replace(/\D/g,"");
+  const act=all.filter(u=>u.active).length;
+  arbStatus(`${all.length} ספורטאים ב-Arbox · ${act} פעילים · ${all.length-act} לא פעילים`);
+  let list=all.filter(u=>f==="all"||(f==="1")===u.active);
+  if(q) list=list.filter(u=>u.name.includes(q)||(qd&&(u.phone+u.phone2).replace(/\D/g,"").includes(qd))||u.memberships.some(m=>m.name.includes(q))||(u.notes||"").includes(q));
+  list.sort((a,b)=>a.name.localeCompare(b.name,"he"));
+  $("arbChips").innerHTML=`<span class="chip">${list.length} מוצגים</span><span class="chip blue">${list.filter(u=>u.memberships.length).length} עם מנוי פעיל</span><span class="chip amber">${list.filter(u=>u.notes).length} עם הערות</span>`;
+  const tel=p=>p?`<a href="tel:${esc(String(p).replace(/[^\d+]/g,""))}" dir="ltr">📞 ${esc(p)}</a><a href="https://wa.me/${waDigits(p)}" target="_blank" rel="noopener">💬</a>`:"";
+  $("arbList").innerHTML=list.map(u=>`<section class="ab-card${u.active?"":" off"}">
+    <div class="ab-top"><b>${esc(u.name)}</b>${u.active?"":`<span class="tag over">לא פעיל</span>`}</div>
+    <div class="ab-ph">${tel(u.phone)}${u.phone2?tel(u.phone2):""}${u.email?`<a href="mailto:${esc(u.email)}" dir="ltr">✉️ ${esc(u.email)}</a>`:""}</div>
+    ${u.memberships.length?`<div class="chips">${u.memberships.map(m=>`<span class="chip blue">${esc(m.name||"מנוי")}${m.end?` · עד ${esc(fmtIso(m.end))}`:""}${m.left!==""?` · נותרו ${esc(m.left)}`:""}</span>`).join("")}</div>`:`<div class="hint">אין מנוי פעיל ב-Arbox</div>`}
+    ${u.notes?`<div class="ab-note">📝 ${esc(u.notes)}</div>`:""}
+    <details><summary>כל הפרטים ב-Arbox</summary><table>${Object.entries(u.all||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></details>
+  </section>`).join("")||`<div class="rep-empty">אין ספורטאים שמתאימים לחיפוש.</div>`;
+}
+$("arbPinBox").onsubmit=ev=>{ ev.preventDefault(); const v=$("arbPin").value.trim(); if(!v) return; store.set("arbox-pin",v); $("arbPin").value=""; ARB.users=null; arbShow(); };
+$("arbSearch").addEventListener("input",arbRender); $("arbFilter").onchange=arbRender;
+$("arbForget").onclick=()=>{ store.set("arbox-pin",""); ARB.users=null; arbShow(); };
+$("arbBack").onclick=closeArb;
+$("arbReload").onclick=()=>{ ARB.users=null; arbShow(); };
+$("arbBtn").onclick=openArb;
 </script>
 </body>
 </html>
