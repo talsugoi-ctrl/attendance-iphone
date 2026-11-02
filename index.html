@@ -152,6 +152,7 @@ body.rep-open{overflow:hidden}
 .legend{display:flex;flex-direction:column;gap:8px;min-width:0;flex:1 1 220px}
 .pie-wrap{justify-content:center}
 .legend i{display:inline-block;width:12px;height:12px;border-radius:3px;margin-inline-end:6px;vertical-align:middle}
+.rep-fab{position:sticky;bottom:calc(12px + env(safe-area-inset-bottom,0px));display:block;text-align:center;padding:14px;font-size:1.05rem;margin-top:12px;box-shadow:0 6px 18px rgba(0,0,0,.28);z-index:3}
 .tsel{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tsel.missing{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
 .dur{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -276,7 +277,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות + וואטסאפ</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות + וואטסאפ 2</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -323,6 +324,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         </div>
         <div class="hint">נשלח כטקסט – עובד באייפון ובאנדרואיד.</div>
       </div>
+      <a class="btn wa rep-fab" id="repFab" target="_blank" rel="noopener" hidden>📤 שלח את הדוח בוואטסאפ</a>
     </div>
   </div>
 </section>
@@ -1112,8 +1114,8 @@ function runReport(){
 }
 let RT=[];
 function setRepSend(){
-  const box=$("repSend"), t=REP.text; box.hidden=!t; if(!t) return;
-  $("repWa").href="https://wa.me/?text="+encodeURIComponent(t);
+  const box=$("repSend"), t=REP.text; box.hidden=!t; $("repFab").hidden=!t; if(!t) return;
+  $("repWa").href=$("repFab").href="https://wa.me/?text="+encodeURIComponent(t);
   const nums=[cfg.waPhone||DEFAULTS.waPhone,(cfg.waPhone2||"").trim()].filter(n=>waDigits(n).length>=9);
   $("repWaNums").innerHTML=nums.map(n=>`<a class="btn wa" target="_blank" rel="noopener" href="${waHref(t,n)}">שלח ל-${esc(fmtPhone(n))}</a>`).join("");
   $("repShare").hidden=!navigator.share;
