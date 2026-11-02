@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · רשימה מ-Arbox 2</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות וניהול מ-Arbox</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -711,6 +711,8 @@ function arbSplit(name){
   const last=t.slice(k+1).join(" ");
   return t.slice(0,k).concat(t[k].slice(1)).map(f=>f+" "+last);
 }
+// a place whose list comes from Arbox on this phone
+function isArbLoc(l){ return (cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(l.name)&&!!arbPin(); }
 async function arboxRoster(loc){
   if(!(await arbEnsure())) return null;              // no access code on this phone
   const out=[], seen=new Set();
@@ -1229,8 +1231,18 @@ async function repLoad(force){
         const list=rows?rosterPeople(rows,loc.filter):rosterPeople(first,loc.filter||loc.name);
         list.forEach(p=>roster.push(Object.assign({loc:loc.name,branch:loc.branch||""},p)));
       }
-      REP.roster=roster; REP.loaded=true;
-      repStatus(`${REP.log.length} רישומי נוכחות · ${new Set(roster.map(p=>p.name)).size} ספורטאים רשומים`);
+      // places that work against Arbox: their registered list comes from Arbox (same list as attendance marking)
+      let arbN=0, arbErr="";
+      for(const loc of cfg.locations){
+        if(!isArbLoc(loc)) continue;
+        try{ const list=await arboxRoster(loc);
+          if(list&&list.length){ arbN++; for(let i=roster.length-1;i>=0;i--) if(roster[i].loc===loc.name) roster.splice(i,1);
+            list.forEach(p=>roster.push({loc:loc.name,branch:loc.branch||"",name:p.name,sub:p.sub,phone:p.phone,arbox:true})); } }
+        catch(e){ arbErr=e.message; break; }
+      }
+      REP.roster=roster; REP.loaded=true; REP.arbN=arbN;
+      repStatus(`${REP.log.length} רישומי נוכחות · ${new Set(roster.map(p=>p.name)).size} ספורטאים רשומים`+
+        (arbN?` · רשומים מ-Arbox ב־${arbN} מקומות (כוכב יאיר מהגיליון)`:"")+(arbErr?` · Arbox לא זמין (${arbErr}) – לפי הגיליון`:""), !!arbErr);
     }catch(e){ repStatus("לא הצלחתי לטעון את הגיליון ("+e.message+"). בדוק חיבור לאינטרנט ולחץ ↻.",true); }
     REP.loading=null;
   })();
@@ -1464,7 +1476,7 @@ function repCoach(){
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
     ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th></tr></thead><tbody>
     ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint">"הגיעו מתוך" = רק רשומים למקום בגיליון. מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון". "לא רשום" / "עזב" במנוי = לא נחשב רשום.</p>`;
+    <p class="hint">"הגיעו מתוך" = רק רשומים למקום (מ-Arbox; בכוכב יאיר – מהגיליון). מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון". "לא רשום" / "עזב" במנוי = לא נחשב רשום.</p>`;
 }
 
 $("repBtn").onclick=openReports;
@@ -1484,7 +1496,16 @@ async function scriptCall(payload){
 const mgLoc=()=>cfg.locations[MG.li];
 const tabOf=l=>(l.tab||l.name).trim();
 function inLoc(a,l){ if(!l.filter) return true; const w=l.filter.split(/\s+/).filter(Boolean), hay=a.sub||a.name; return w.every(x=>hay.includes(x)); }
+const mgKey=l=>isArbLoc(l)?"arb:"+l.name:tabOf(l);
 async function mgLoad(force){
+  const l0=mgLoc();
+  if(isArbLoc(l0)){
+    const key=mgKey(l0); if(MG.tabs[key]&&!force) return MG.tabs[key];
+    mgStatus("טוען את רשימת "+l0.name+" מ-Arbox…");
+    try{ if(force) ARB.at=0; const list=await arboxRoster(l0);
+      if(list){ const r={athletes:list.map(p=>Object.assign({},p)),arbox:true}; MG.tabs[key]=r; mgStatus(""); return r; } }
+    catch(e){ mgStatus("Arbox לא זמין: "+e.message,true); throw e; }
+  }
   const tab=tabOf(mgLoc());
   if(MG.tabs[tab]&&!force) return MG.tabs[tab];
   mgStatus("טוען את רשימת "+mgLoc().name+"…");
@@ -1506,19 +1527,31 @@ function setMode(m){
   MG.mode=m; document.querySelectorAll("#mgr .seg button").forEach(b=>b.classList.toggle("on",b.dataset.v===m||(m==="edit"&&b.dataset.v==="list")));
   $("mgrList").hidden=m!=="list"; $("mgrForm").hidden=!(m==="add"||m==="edit"); $("mgrLate").hidden=m!=="late";
   $("mgrTitle").textContent=m==="edit"?"עריכת ספורטאי":m==="add"?"הוספת ספורטאי":m==="late"?"נוכחות שנשכחה":"ניהול ספורטאים";
+  const arb=isArbLoc(mgLoc()); document.querySelector('#mgr .seg button[data-v="add"]').hidden=arb;
+  if(arb&&(m==="add"||m==="edit")){ setMode("list"); return; }
   if(m==="list") renderMgrList(); if(m==="add") openForm(null); if(m==="late") renderLate();
   $("mgr").scrollTop=0;
 }
 $("mgrLoc").onchange=()=>{ MG.li=+$("mgrLoc").value; MG.ses=null; MG.lateSel.clear(); MG.lateTrials=[]; setMode(MG.mode==="edit"?"list":MG.mode); };
 document.querySelectorAll("#mgr .seg button").forEach(b=>b.onclick=()=>setMode(b.dataset.v));
 $("mgrBack").onclick=()=>{ if(MG.mode==="edit") setMode("list"); else closeMgr(); };
-$("mgrReload").onclick=()=>{ MG.tabs={}; REP.loaded=false; setMode(MG.mode==="edit"?"list":MG.mode); };
+$("mgrReload").onclick=()=>{ MG.tabs={}; REP.loaded=false; ARB.at=0; setMode(MG.mode==="edit"?"list":MG.mode); };
 
 // ---------- list ----------
 async function renderMgrList(){
   const box=$("mgrItems"); box.innerHTML=`<p class="hint">טוען…</p>`;
   let d; try{ d=await mgLoad(false); }catch(e){ box.innerHTML=""; return; }
   const l=mgLoc(), q=$("mgrSearch").value.trim();
+  if(d.arbox){
+    const list=d.athletes.filter(a=>!q||a.name.includes(q)||String(a.phone).replace(/\D/g,"").includes(q.replace(/\D/g,"")||"~"));
+    mgStatus(`${l.name}: ${d.athletes.length} ספורטאים פעילים מ-Arbox`);
+    box.innerHTML=`<div class="card hint" style="margin:0 0 10px">📌 המקום הזה עובד מול <b>Arbox</b>: הוספה, עריכה והעברה לארכיון נעשות ב-Arbox (מורן). שינוי שם יופיע כאן אחרי ↻. "נוכחות שנשכחה" עובדת כרגיל.</div>`+
+      (list.length?"":`<div class="rep-empty">אין ספורטאים${q?" שמתאימים לחיפוש":" במקום הזה"}.</div>`);
+    list.forEach(a=>{ const b=document.createElement("div"); b.className="mg-item";
+      b.innerHTML=`<span class="tx"><b>${esc(a.name)}</b><small>${esc(a.sub||"ללא מנוי")}</small></span><span class="ph" dir="ltr">${a.phone?`<a href="tel:${esc(a.phone)}">${esc(a.phone)}</a>`:""}</span>`;
+      box.appendChild(b); });
+    return;
+  }
   const list=d.athletes.filter(a=>inLoc(a,l)).filter(a=>!q||a.name.includes(q)||String(a.phone).replace(/\D/g,"").includes(q.replace(/\D/g,"")||"~"));
   list.sort((a,b)=>(activeSub(b.sub)-activeSub(a.sub))||a.name.localeCompare(b.name,"he"));
   const act=d.athletes.filter(a=>inLoc(a,l)&&activeSub(a.sub)).length;
@@ -1614,7 +1647,7 @@ async function renderLate(){
   const already=MG.ses!=="new"&&ses.get(MG.ses)?ses.get(MG.ses).names:new Set();
   let d; try{ d=await mgLoad(false); }catch(e){ $("mlPeople").innerHTML=""; return; }
   const q=$("mlSearch").value.trim();
-  const ppl=d.athletes.filter(a=>inLoc(a,l)).sort((a,b)=>(activeSub(b.sub)-activeSub(a.sub))||a.name.localeCompare(b.name,"he"));
+  const ppl=d.athletes.filter(a=>d.arbox||inLoc(a,l)).sort((a,b)=>(activeSub(b.sub)-activeSub(a.sub))||a.name.localeCompare(b.name,"he"));
   const all=ppl.concat(MG.lateTrials.map(n=>({name:n,sub:"",trial:true}))).filter(a=>!q||a.name.includes(q));
   $("mlPeople").innerHTML=all.map(a=>{ const inS=already.has(a.name);
     return `<label><input type="checkbox" value="${esc(a.name)}"${inS?" disabled checked":MG.lateSel.has(a.name)?" checked":""}><span>${esc(a.name)}${a.trial?" (ניסיון)":""}${activeSub(a.sub)?"":" · לא פעיל"}</span>${inS?`<span class="in">כבר נרשם באימון</span>`:""}</label>`; }).join("")||`<p class="hint">אין ספורטאים ברשימה.</p>`;
@@ -1629,7 +1662,7 @@ $("mgrLate").onsubmit=async ev=>{
   const l=mgLoc(), date=$("mlDate").value?dmyOf($("mlDate").value):"";
   if(!date){ showToast("בחר תאריך"); return; }
   if(!MG.lateSel.size){ showToast("סמן לפחות ספורטאי אחד"); return; }
-  const d=MG.tabs[tabOf(l)]||{athletes:[]};
+  const d=MG.tabs[mgKey(l)]||{athletes:[]};
   const people=[...MG.lateSel].map(n=>{ const a=d.athletes.find(x=>x.name===n); return a?{name:n,sub:a.sub||""}:{name:n,sub:"",trial:true}; });
   let report;
   if(MG.ses&&MG.ses!=="new"){ const r=REP.log.find(x=>x.id===MG.ses);
