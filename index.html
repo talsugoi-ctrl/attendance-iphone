@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · רשימה מ-Arbox</div>
+  <div class="ver">גרסה 02/11/2026 · רשימה מ-Arbox 2</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -525,7 +525,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div>
       <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
       <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
-      <div class="hint">Arbox דורש קוד גישה (⚙ ← 🔗 Arbox). מקום שאין לו ספורטאים ב-Arbox (כמו כוכב יאיר) נטען מהגיליון.</div>
+      <div class="hint">Arbox דורש קוד גישה (⚙ ← 🔗 Arbox). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
     </div>
     <div class="row">
       <button type="button" class="btn primary" id="saveSetup">שמור</button>
@@ -700,10 +700,28 @@ async function arbEnsure(){
   if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; } throw new Error((r&&r.error)||"אין תשובה מ-Arbox"); }
   ARB.users=r.users||[]; ARB.at=Date.now(); return true;
 }
+// places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
+const SHEET_ONLY=/כוכב יאיר/;
+// athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
+const ARB_PIN_LOC={"דנה תשובה":"נופית","קדם קרני":"ציפורי"};
+// family accounts: "אמנה זכריה ואגדה אבו ראס" → אמנה אבו ראס, זכריה אבו ראס, אגדה אבו ראס
+function arbSplit(name){
+  const t=normName(name).split(" "), k=t.findIndex((w,i)=>i>0&&i<t.length-1&&/^ו[\u0590-\u05FF]{2,}/.test(w));
+  if(k<0) return [normName(name)];
+  const last=t.slice(k+1).join(" ");
+  return t.slice(0,k).concat(t[k].slice(1)).map(f=>f+" "+last);
+}
 async function arboxRoster(loc){
   if(!(await arbEnsure())) return null;              // no access code on this phone
-  return ARB.users.filter(u=>u.active&&arbInLoc(u,loc)).map(u=>({name:normName(u.name),sub:arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + "),phone:u.phone,arbox:u.id}))
-    .sort((a,b)=>a.name.localeCompare(b.name,"he"));
+  const out=[], seen=new Set();
+  ARB.users.filter(u=>u.active).forEach(u=>{
+    const inLoc=arbInLoc(u,loc), sub=arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + ");
+    arbSplit(u.name).forEach(n=>{
+      const pin=ARB_PIN_LOC[n];
+      if((pin?pin===loc.name:inLoc)&&!seen.has(n)){ seen.add(n); out.push({name:n,sub,phone:u.phone,arbox:u.id}); }
+    });
+  });
+  return out.sort((a,b)=>a.name.localeCompare(b.name,"he"));
 }
 async function loadPeople(){
   if(current==null) return;
@@ -713,7 +731,7 @@ async function loadPeople(){
   setStatus("טוען את רשימת הנרשמים…");
   $("roster").innerHTML="";
   let arbNote="";
-  if((cfg.rosterSource||"arbox")==="arbox"){
+  if((cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(loc.name)){
     try{
       const list=await arboxRoster(loc);
       if(list===null) arbNote="אין קוד גישה ל-Arbox בטלפון הזה (⚙ ← 🔗 Arbox) – ";
@@ -758,7 +776,7 @@ async function loadPeople(){
     store.set(cacheKey, people);
     loadWeekLog();
     setStatus(people.length
-      ? `${arbNote?arbNote+"מהגיליון: ":""}${people.length} נרשמים · ${loc.name}${viaTab?"":" (לפי עמודת מנוי)"}`
+      ? `${arbNote?arbNote+"מהגיליון: ":""}${SHEET_ONLY.test(loc.name)?"מהגיליון: ":""}${people.length} נרשמים · ${loc.name}${viaTab?"":" (לפי עמודת מנוי)"}`
       : (why||`לא נמצאו נרשמים ל"${loc.name}".`), !people.length);
   }catch(e){
     people=store.get(cacheKey, []);
