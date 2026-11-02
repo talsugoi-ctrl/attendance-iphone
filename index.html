@@ -276,7 +276,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · דוחות 6</div>
+  <div class="ver">גרסה 02/11/2026 · דוחות + וואטסאפ</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -313,6 +313,16 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <div id="repExtra"></div>
       </div>
       <div id="repOut" class="rep-out"></div>
+      <div class="card" id="repSend" hidden>
+        <b>שליחת הדוח</b>
+        <a class="btn wa big" id="repWa" target="_blank" rel="noopener">שלח בוואטסאפ – בחירת איש קשר / קבוצה</a>
+        <div class="row" id="repWaNums"></div>
+        <div class="row">
+          <button class="btn share" type="button" id="repShare" hidden>שתף…</button>
+          <button class="btn" type="button" id="repCopy">העתק טקסט</button>
+        </div>
+        <div class="hint">נשלח כטקסט – עובד באייפון ובאנדרואיד.</div>
+      </div>
     </div>
   </div>
 </section>
@@ -1050,7 +1060,7 @@ function openReports(){
 }
 function closeReports(){ $("reports").hidden=true; document.body.classList.remove("rep-open"); }
 function showRepList(){
-  REP.cur=null; $("repView").hidden=true; $("repList").hidden=false; $("repTitle").textContent="דוחות";
+  REP.cur=null; REP.text=""; $("repView").hidden=true; $("repList").hidden=false; $("repTitle").textContent="דוחות";
   const box=$("repList"); box.innerHTML="";
   REPORTS.forEach(r=>{
     const b=document.createElement("button"); b.type="button"; b.className="rep-item";
@@ -1094,9 +1104,26 @@ function runReport(){
   const out=$("repOut");
   if(!REP.loaded){ out.innerHTML=`<p class="hint">${REP.loading?"טוען…":"אין נתונים. לחץ ↻ לטעינה."}</p>`; return; }
   fillExtra();
+  RT=[];
   const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach}[REP.cur.id]();
   out.innerHTML=`<p class="rep-period">תקופה: <b>${periodLabel()}</b></p>`+html;
+  REP.text=RT.length?`${REP.cur.icon} *${REP.cur.title}*\nתקופה: ${periodLabel()}\n\n`+RT.join("\n").trim()+`\n\n— נוכחות אימונים · The Buttons`:"";
+  setRepSend();
 }
+let RT=[];
+function setRepSend(){
+  const box=$("repSend"), t=REP.text; box.hidden=!t; if(!t) return;
+  $("repWa").href="https://wa.me/?text="+encodeURIComponent(t);
+  const nums=[cfg.waPhone||DEFAULTS.waPhone,(cfg.waPhone2||"").trim()].filter(n=>waDigits(n).length>=9);
+  $("repWaNums").innerHTML=nums.map(n=>`<a class="btn wa" target="_blank" rel="noopener" href="${waHref(t,n)}">שלח ל-${esc(fmtPhone(n))}</a>`).join("");
+  $("repShare").hidden=!navigator.share;
+}
+$("repShare").onclick=async()=>{ try{ await navigator.share({text:REP.text}); }catch(e){} };
+$("repCopy").onclick=async()=>{
+  try{ await navigator.clipboard.writeText(REP.text); }
+  catch(e){ const ta=document.createElement("textarea"); ta.value=REP.text; document.body.appendChild(ta); ta.select(); try{document.execCommand("copy");}catch(_){} ta.remove(); }
+  $("repCopy").textContent="הועתק ✓"; setTimeout(()=>$("repCopy").textContent="העתק טקסט",1500);
+};
 
 // 1) exceptions
 function repExceptions(){
@@ -1115,7 +1142,11 @@ function repExceptions(){
   });
   const list=[...by.values()].sort((a,b)=>a.name.localeCompare(b.name,"he"));
   const cnt=k=>list.reduce((s,a)=>s+a.items.filter(i=>i.why.some(w=>w.k===k)).length,0);
-  if(!list.length) return `<div class="rep-empty">אין חריגים בתקופה הזו ✓</div>`;
+  if(!list.length){ RT.push("אין חריגים בתקופה הזו ✓"); return `<div class="rep-empty">אין חריגים בתקופה הזו ✓</div>`; }
+  RT.push(`${list.length} ספורטאים · ${cnt("over")} מעבר למכסה · ${cnt("unpaid")} לא כלול / לא רשום · ${cnt("trial")} ניסיון`);
+  list.forEach(a=>{ const ph=phoneOf(a.name), br=[...a.branches].filter(Boolean);
+    RT.push("",`*${a.name}*${ph?" – "+ph:""}${br.length?" (סניף "+br.join(", ")+")":""}`);
+    a.items.slice().sort((x,y)=>x.r.key-y.r.key).forEach(i=>RT.push(`• ${i.r.date.slice(0,5)} ${i.r.loc}${i.r.type?" · "+i.r.type:""} – ${i.why.map(w=>w.t).join(", ")}`)); });
   return `<div class="chips"><span class="chip">${list.length} ספורטאים</span><span class="chip red">${cnt("over")} מעבר למכסה</span><span class="chip amber">${cnt("unpaid")} לא כלול / לא רשום</span><span class="chip blue">${cnt("trial")} ניסיון</span></div>`+
     list.map(a=>`<section class="rep-card"><div class="rc-head"><b>${esc(a.name)}</b><span>${telLink(phoneOf(a.name))}</span></div>
       <div class="rc-sub">${[...a.branches].filter(Boolean).map(b=>"סניף "+esc(b)).join(", ")}</div>
@@ -1143,7 +1174,8 @@ function repPie(){
   const locs=isB?cfg.locations.filter(l=>(l.branch||"")===br).map(l=>l.name):[br];
   const rows=inPeriod(REP.log).filter(r=>locs.includes(r.loc));
   const held=locs.filter(l=>rows.some(r=>r.loc===l));            // only places where a training actually took place
-  if(!held.length) return `<div class="rep-empty">לא התקיימו אימונים מדווחים ${isB?"בסניף "+esc(br):"ב"+esc(br)} בתקופה הזו.</div>`;
+  if(!held.length){ RT.push(`לא התקיימו אימונים מדווחים ${isB?"בסניף "+br:"ב"+br} בתקופה הזו.`); return `<div class="rep-empty">לא התקיימו אימונים מדווחים ${isB?"בסניף "+esc(br):"ב"+esc(br)} בתקופה הזו.</div>`; }
+  const pt=[], mt=[];
   let a=0, tot=0, visitors=0;
   const per=[], missing=[];
   locs.forEach(l=>{
@@ -1154,10 +1186,14 @@ function repPie(){
     const cn=reg.filter(p=>att.has(p.name)).length, ms=reg.filter(p=>!att.has(p.name));
     visitors+=[...att].filter(n=>!seen.has(n)).length;
     a+=cn; tot+=reg.length;
+    pt.push(`• ${l}: ${ses} אימונים · הגיעו ${cn} מתוך ${reg.length}${reg.length?` (${Math.round(cn/reg.length*100)}%)`:""}`);
+    if(ms.length) mt.push("",`${l} (${ms.length}):`,...ms.map((p,i)=>`${i+1}. ${p.name}${p.phone?" – "+p.phone:""}`));
     per.push(`<tr><td>${esc(l)}</td><td>${ses}</td><td>${reg.length}</td><td>${cn}</td><td>${reg.length?Math.round(cn/reg.length*100)+"%":"—"}</td></tr>`);
     if(ms.length) missing.push(`<h3 class="rep-h3">${esc(l)} (${ms.length})</h3><ul class="rc-list miss">${ms.map(p=>`<li>${esc(p.name)} <span>${telLink(p.phone)}</span></li>`).join("")}</ul>`);
   });
   const b=tot-a, pct=n=>tot?Math.round(n/tot*100)+"%":"—";
+  RT.push(`מקום: ${isB?"כל סניף "+br:br}`,`✅ הגיעו לפחות פעם אחת: ${a} מתוך ${tot} (${pct(a)})`,`❌ לא הגיעו: ${b} (${pct(b)})`,"",...pt);
+  if(mt.length) RT.push("",`*לא הגיעו בתקופה (${b}):*`,...mt);
   return `<div class="pie-wrap">${pieSVG(a,b)}<div class="legend">
       <div><i style="background:var(--ok)"></i>הגיעו לפחות פעם אחת: <b>${a}</b> (${pct(a)})</div>
       <div><i style="background:var(--pie-off)"></i>לא הגיעו: <b>${b}</b> (${pct(b)})</div>
@@ -1175,6 +1211,10 @@ function repAthlete(){
   const subHtml=subs.length?subs.map(p=>`<li><b>${esc(p.loc)}</b>${p.branch?` (סניף ${esc(p.branch)})`:""}: ${esc(p.sub||"—")}${quotaOf(p.sub)?` · מכסה: ${quotaWords(quotaOf(p.sub))}`:""}</li>`).join(""):`<li>לא רשום באף מקום (הגיע לניסיון או שם שונה ברישום)</li>`;
   const weeks=new Map(); rows.forEach(r=>{ const w=r.week||""; if(!weeks.has(w)) weeks.set(w,[]); weeks.get(w).push(r); });
   const q=Math.max(0,...subs.map(p=>quotaOf(p.sub)));
+  RT.push(`*${n}*${phoneOf(n)?" – "+phoneOf(n):""}`,...(subs.length?subs.map(p=>`מנוי ב${p.loc}: ${p.sub||"—"}${quotaOf(p.sub)?` (מכסה: ${quotaWords(quotaOf(p.sub))})`:""}`):["לא רשום באף מקום"]),
+    "",`${rows.length} אימונים בתקופה${rows.filter(r=>r.over).length?` · ${rows.filter(r=>r.over).length} מעבר למכסה`:""}`,
+    ...rows.map(r=>`• ${r.date.slice(0,5)} ${r.loc}${r.type?" · "+r.type:""}${r.coach?" · "+r.coach:""}${r.over?" 📍":""}`));
+  if(rows.length) RT.push("","לפי שבוע:",...[...weeks.entries()].map(([w,rs])=>`• שבוע ${w.slice(0,5)}: ${rs.length}${q?` / ${q}`:""}${q&&rs.length>q?" – חריגה":""}`));
   const wk=[...weeks.entries()].map(([w,rs])=>`<tr class="${q&&rs.length>q?"over":""}"><td>${esc(w)}</td><td>${rs.length}${q?` / ${q}`:""}</td></tr>`).join("");
   return `<section class="rep-card"><div class="rc-head"><b>${esc(n)}</b><span>${telLink(phoneOf(n))}</span></div><ul class="rc-list">${subHtml}</ul></section>
     <div class="chips"><span class="chip">${rows.length} אימונים בתקופה</span>${rows.filter(r=>r.over).length?`<span class="chip red">${rows.filter(r=>r.over).length} מעבר למכסה</span>`:""}</div>
@@ -1192,10 +1232,13 @@ function repCoach(){
     if(!r.trial&&REP.roster.some(p=>p.loc===r.loc&&p.name===r.name&&activeSub(p.sub))) x.n++; else x.t++; });   // trial / not registered → not counted
   const list=[...ses.values()].sort((a,b)=>a.r.key-b.r.key);
   const hours=list.reduce((s,x)=>s+(x.r.dur||0),0), came=list.reduce((s,x)=>s+x.n,0), of=list.reduce((s,x)=>s+x.of,0);
-  if(!list.length) return `<div class="rep-empty">${all?"אין אימונים מדווחים":esc(c)+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.</div>`;
+  if(!list.length){ RT.push(`${all?"אין אימונים מדווחים":c+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.`); return `<div class="rep-empty">${all?"אין אימונים מדווחים":esc(c)+" לא העביר/ה אימונים מדווחים"} בתקופה הזו.</div>`; }
   const per={}; list.forEach(x=>{ const k=x.r.coach||"—"; per[k]=per[k]||{n:0,h:0,a:0,o:0}; per[k].n++; per[k].h+=x.r.dur||0; per[k].a+=x.n; per[k].o+=x.of; });
   const perHtml=all?`<div class="tw"><table class="rtable"><thead><tr><th>מאמן</th><th>אימונים</th><th>שעות</th><th>הגיעו מתוך רשומים</th></tr></thead><tbody>${Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${v.n}</td><td>${Math.round(v.h*100)/100}</td><td>${ofTxt(v.a,v.o)}</td></tr>`).join("")}</tbody></table></div><h2 class="rep-h2">כל האימונים</h2>`:"";
   const byType={}; list.forEach(x=>{ const t=x.r.type||"לא צוין"; byType[t]=(byType[t]||0)+1; });
+  RT.push(`מאמן: ${all?"כל המאמנים":c}`,`${list.length} אימונים · ${Math.round(hours*100)/100} שעות · הגיעו ${ofTxt(came,of)}`,Object.entries(byType).map(([t,n])=>`${t}: ${n}`).join(" · "));
+  if(all) RT.push("",...Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`• ${k}: ${v.n} אימונים · ${Math.round(v.h*100)/100} שעות · הגיעו ${ofTxt(v.a,v.o)}`));
+  RT.push("","*האימונים:*",...list.map(x=>`• ${x.r.date.slice(0,5)}${all?" "+x.r.coach:""} · ${x.r.loc}${x.r.type?" · "+x.r.type:""} · ${x.r.dur?durWords(x.r.dur):"—"} · הגיעו ${ofTxt(x.n,x.of)}${x.t?` (+${x.t} ניסיון/לא רשום)`:""}`));
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
     ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th></tr></thead><tbody>
     ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td></tr>`).join("")}</tbody></table></div>
