@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · Arbox בלי קוד לרשימה</div>
+  <div class="ver">גרסה 02/11/2026 · קריטריום</div>
 </div>
 
 <div class="bar"><div class="in">
@@ -550,6 +550,7 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"שמשית ילדים", tab:"שמשית", filter:"ילדים"},
     {branch:"עמק יזרעאל", name:"שמשית מאסטרס", tab:"שמשית", filter:"מאסטרס"},
     {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
+    {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""}
   ]
@@ -683,7 +684,8 @@ function extractPeople(rows, filter){
 function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
   const fw=(loc.filter||"").split(/\s+/).filter(Boolean);
-  if(/נופית/.test(n)) return has(/נופית|קריטריום/);
+  if(/קריטריום/.test(n)) return has(/קריטריום/);
+  if(/נופית/.test(n)) return has(/נופית/);
   if(/שמשית/.test(n)) return ps.some(p=>/שמשית/.test(p)&&fw.every(w=>p.includes(w)));
   if(/ציפורי/.test(n)) return has(/ציפורי/);
   if(arbBranch(u)==="עמק יזרעאל") return false;
@@ -705,6 +707,8 @@ async function arbEnsure(){
 const SHEET_ONLY=/כוכב יאיר/;
 // athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
 const ARB_PIN_LOC={"דנה תשובה":"נופית","קדם קרני":"ציפורי"};
+// athletes who also train in another place, while their Arbox program doesn't say so
+const ARB_EXTRA_LOC={"קריטריום":["דנה תשובה","יהודה בקל"]};
 // family accounts: "אמנה זכריה ואגדה אבו ראס" → אמנה אבו ראס, זכריה אבו ראס, אגדה אבו ראס
 function arbSplit(name){
   const t=normName(name).split(" "), k=t.findIndex((w,i)=>i>0&&i<t.length-1&&/^ו[\u0590-\u05FF]{2,}/.test(w));
@@ -721,7 +725,7 @@ async function arboxRoster(loc){
     const inLoc=arbInLoc(u,loc), sub=arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + ");
     arbSplit(u.name).forEach(n=>{
       const pin=ARB_PIN_LOC[n];
-      if((pin?pin===loc.name:inLoc)&&!seen.has(n)){ seen.add(n); out.push({name:n,sub,phone:u.phone,arbox:u.id}); }
+      if(((pin?pin===loc.name:inLoc)||(ARB_EXTRA_LOC[loc.name]||[]).includes(n))&&!seen.has(n)){ seen.add(n); out.push({name:n,sub,phone:u.phone,arbox:u.id}); }
     });
   });
   return out.sort((a,b)=>a.name.localeCompare(b.name,"he"));
