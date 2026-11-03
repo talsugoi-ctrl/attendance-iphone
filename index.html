@@ -321,7 +321,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · ימי הולדת</div>
+  <div class="ver">גרסה 03/11/2026 · ימי הולדת מאמנים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1365,6 +1365,7 @@ function openReport(id){
       <div class="bd-scope" role="radiogroup" aria-label="היקף">
         <label><input type="radio" name="bdScope" value="br" checked> לפי סניף</label>
         <label><input type="radio" name="bdScope" value="all"> כל המועדון</label>
+        <label><input type="radio" name="bdScope" value="staff"> מאמנים</label>
       </div>
       <select id="bdBranch" class="tsel" data-def="${esc(myBr)}"></select>
       <label class="lbl" for="bdSearch" style="margin-top:8px">חיפוש ספורטאי (כל החודשים)</label>
@@ -1527,8 +1528,9 @@ function repBday(){
     return `<p class="hint">טוען ימי הולדת מ-Arbox…</p>`;
   }
   const act=ARB.lite.filter(u=>u.active);
-  const people=act.filter(u=>u.bd).map(u=>({name:normName(u.name),bd:u.bd,phone:u.phone||"",br:bdBranches(u)}))
-    .concat((ARB.liteStaff||[]).filter(s=>s.bd&&s.active!==false).map(s=>({name:normName(s.name),bd:s.bd,phone:"",br:[],staff:true})));
+  const athletes=act.filter(u=>u.bd).map(u=>({name:normName(u.name),bd:u.bd,phone:u.phone||"",br:bdBranches(u)}));
+  const staffAll=(ARB.liteStaff||[]).filter(s=>s.active!==false), staffBd=staffAll.filter(s=>s.bd).map(s=>({name:normName(s.name),bd:s.bd,phone:"",br:[],staff:true}));
+  const people=athletes.concat(staffBd);
   // branch list: app branches first, then Arbox locations of athletes outside the app's places
   const sel=$("bdBranch"), brs=[...new Set(cfg.locations.map(l=>l.branch||"").concat(people.flatMap(p=>p.br)))].filter(Boolean);
   if(sel.options.length!==brs.length){ const keep=sel.value||sel.dataset.def; sel.innerHTML=brs.map(b=>`<option>${esc(b)}</option>`).join(""); sel.value=brs.includes(keep)?keep:brs[0]; }
@@ -1536,20 +1538,23 @@ function repBday(){
   sel.hidden=mode!=="br"||!!q; $("bdMonth").disabled=!!q;
   const p2=n=>String(n).padStart(2,"0"), now=new Date(), todayMD=p2(now.getMonth()+1)+"-"+p2(now.getDate()), yr=now.getFullYear();
   let list;
+  const isStaff=mode==="staff"&&!q, showBr=(mode==="all"&&!q)||!!q;
   if(q){ list=people.filter(p=>p.name.includes(q)); REP.bdLabel=`חיפוש: ${q}`; }
-  else { list=people.filter(p=>+p.bd.slice(0,2)===mon&&(mode==="all"||p.br.includes(br))); REP.bdLabel=`${HEB_M[mon-1]} ${yr} · ${mode==="all"?"כל המועדון":"סניף "+br}`; }
+  else { list=(isStaff?staffBd:athletes).filter(p=>+p.bd.slice(0,2)===mon&&(mode!=="br"||p.br.includes(br)));
+    REP.bdLabel=`${HEB_M[mon-1]} ${yr} · ${isStaff?"מאמנים":mode==="all"?"כל המועדון":"סניף "+br}`; }
   list.sort((a,b)=>a.bd.localeCompare(b.bd)||a.name.localeCompare(b.name,"he"));
   const dm=bd=>`${bd.slice(3,5)}/${bd.slice(0,2)}`, wd=bd=>dayName(`${bd.slice(3,5)}/${bd.slice(0,2)}/${yr}`);
   const brTxt=p=>p.staff?"צוות":p.br.join(", ");
-  const noBd=act.length-act.filter(u=>u.bd).length;
+  const noBd=act.length-act.filter(u=>u.bd).length, noBdS=staffAll.length-staffBd.length;
+  const missTxt=isStaff?`${noBdS} אנשי צוות בלי תאריך לידה ב-Arbox – לא מופיעים.`:`${noBd} ספורטאים פעילים בלי תאריך לידה ב-Arbox – לא מופיעים.`;
   if(!list.length){ RT.push(q?`לא נמצא תאריך לידה עבור "${q}".`:"אין ימי הולדת בחודש הזה."); 
-    return `<div class="rep-empty">${q?`לא נמצא תאריך לידה עבור "${esc(q)}" (אולי לא הוזן ב-Arbox).`:"אין ימי הולדת בחודש הזה 🎈"}</div><p class="hint">${noBd} ספורטאים פעילים בלי תאריך לידה ב-Arbox – לא מופיעים בדוח.</p>`; }
-  RT.push(...list.map(p=>`• ${dm(p.bd)}${p.bd===todayMD?" 🎉 היום":""} – ${p.name}${p.staff?" (צוות)":""}${mode==="all"||q?" · "+brTxt(p):""}`));
+    return `<div class="rep-empty">${q?`לא נמצא תאריך לידה עבור "${esc(q)}" (אולי לא הוזן ב-Arbox).`:"אין ימי הולדת בחודש הזה 🎈"}</div><p class="hint">${missTxt}</p>`; }
+  RT.push(...list.map(p=>`• ${dm(p.bd)}${p.bd===todayMD?" 🎉 היום":""} – ${p.name}${p.staff&&!isStaff&&!showBr?" (צוות)":""}${showBr?" · "+brTxt(p):""}`));
   const today=list.filter(p=>p.bd===todayMD).length;
   return `<div class="chips"><span class="chip">🎂 ${list.length} ימי הולדת</span>${today?`<span class="chip blue">🎉 ${today} היום</span>`:""}</div>
-    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${mode==="all"||q?"<th>סניף</th>":""}<th>טלפון</th></tr></thead><tbody>
-    ${list.map(p=>`<tr${p.bd===todayMD?' class="bd-today"':""}><td>${esc(dm(p.bd))} <small style="color:var(--muted)">${esc(wd(p.bd))}</small>${p.bd===todayMD?" 🎉":""}</td><td>${esc(p.name)}${p.staff?' <small style="color:var(--muted)">· צוות</small>':""}</td>${mode==="all"||q?`<td>${esc(brTxt(p))}</td>`:""}<td>${p.phone?telLink(p.phone):""}</td></tr>`).join("")}</tbody></table></div>
-    <p class="hint">מתוך Arbox (יום וחודש בלבד). ${noBd} ספורטאים פעילים בלי תאריך לידה ב-Arbox – לא מופיעים. חשבון משפחתי מופיע בשם החשבון.</p>`;
+    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${showBr?"<th>סניף</th>":""}${isStaff?"":"<th>טלפון</th>"}</tr></thead><tbody>
+    ${list.map(p=>`<tr${p.bd===todayMD?' class="bd-today"':""}><td>${esc(dm(p.bd))} <small style="color:var(--muted)">${esc(wd(p.bd))}</small>${p.bd===todayMD?" 🎉":""}</td><td>${esc(p.name)}${p.staff&&!isStaff&&!showBr?' <small style="color:var(--muted)">· צוות</small>':""}</td>${showBr?`<td>${esc(brTxt(p))}</td>`:""}${isStaff?"":`<td>${p.phone?telLink(p.phone):""}</td>`}</tr>`).join("")}</tbody></table></div>
+    <p class="hint">מתוך Arbox (יום וחודש בלבד). ${missTxt}${isStaff?" הטלפונים של הצוות – במסך Arbox (עם קוד גישה).":" חשבון משפחתי מופיע בשם החשבון."}</p>`;
 }
 
 // 4) coach
