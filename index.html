@@ -193,6 +193,10 @@ body.rep-open{overflow:hidden}
 .hb .v{font:700 .95rem var(--display);font-variant-numeric:tabular-nums;min-width:3.2em;text-align:end}
 .hb .v small{color:var(--muted);font-weight:400}
 .rep-total{font:700 1.05rem var(--display);text-align:center}
+.bd-scope{display:flex;gap:16px;margin:10px 0 6px;flex-wrap:wrap}
+.bd-scope label{display:flex;align-items:center;gap:6px;font-weight:600;cursor:pointer}
+.bd-scope input{width:20px;height:20px;accent-color:var(--accent)}
+.rtable tr.bd-today td{background:color-mix(in srgb,var(--accent) 12%,transparent);font-weight:700}
 .tsel{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tsel.missing{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
 .dur{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -317,7 +321,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · מאמנים מ-Arbox</div>
+  <div class="ver">גרסה 03/11/2026 · ימי הולדת</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -731,7 +735,7 @@ async function arbEnsure(){
   const u=scriptUrl();
   const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxRoster"}))}`,60000);
   if(!r||!r.ok||!Array.isArray(r.users)) throw new Error((r&&r.error)||"אין תשובה מ-Arbox");
-  ARB.lite=r.users; ARB.liteAt=Date.now(); return true;
+  ARB.lite=r.users; ARB.liteStaff=r.staff||[]; ARB.liteAt=Date.now(); return true;
 }
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
 const SHEET_ONLY=/כוכב יאיר/;
@@ -1321,7 +1325,8 @@ const REPORTS=[
   {id:"exc",icon:"⚠️",title:"דוח חריגים",desc:"מעבר למכסה, אימון ניסיון, ואימונים שלא כלולים במנוי",period:"week",extra:null},
   {id:"pie",icon:"🥧",title:"נוכחות לפי מקום",desc:"כמה מהרשומים הגיעו – לפי מקום או סניף, ומי לא הגיע",period:"month",extra:"branch"},
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
-  {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"}
+  {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"},
+  {id:"bday",icon:"🎂",title:"ימי הולדת",desc:"ימי הולדת החודש – לפי סניף או כל המועדון, וחיפוש ספורטאי",period:null,extra:"bday"}
 ];
 
 function openReports(){
@@ -1342,7 +1347,7 @@ function showRepList(){
 function openReport(id){
   const r=REPORTS.find(x=>x.id===id); REP.cur=r;
   $("repList").hidden=true; $("repView").hidden=false; $("repTitle").textContent=r.title;
-  $("repPeriod").value=r.period; $("repCustom").hidden=true;
+  $("repPeriod").parentElement.hidden=!r.period; if(r.period) $("repPeriod").value=r.period; $("repCustom").hidden=true;
   // extra filter
   const ex=$("repExtra"); ex.innerHTML="";
   if(r.extra==="branch"){
@@ -1354,6 +1359,17 @@ function openReport(id){
     ex.innerHTML=`<label class="lbl" for="repAth">ספורטאי</label><input id="repAth" class="tsel" list="repAthList" placeholder="הקלד שם…" autocomplete="off"><datalist id="repAthList"></datalist>`;
   } else if(r.extra==="coach"){
     ex.innerHTML=`<label class="lbl" for="repCoach">מאמן</label><select id="repCoach" class="tsel"></select>`;
+  } else if(r.extra==="bday"){
+    const m0=new Date().getMonth()+1, myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
+    ex.innerHTML=`<label class="lbl" for="bdMonth">חודש</label><select id="bdMonth" class="tsel">${HEB_M.map((m,i)=>`<option value="${i+1}"${i+1===m0?" selected":""}>${m}</option>`).join("")}</select>
+      <div class="bd-scope" role="radiogroup" aria-label="היקף">
+        <label><input type="radio" name="bdScope" value="br" checked> לפי סניף</label>
+        <label><input type="radio" name="bdScope" value="all"> כל המועדון</label>
+      </div>
+      <select id="bdBranch" class="tsel" data-def="${esc(myBr)}"></select>
+      <label class="lbl" for="bdSearch" style="margin-top:8px">חיפוש ספורטאי (כל החודשים)</label>
+      <input type="search" id="bdSearch" placeholder="הקלד שם…" autocomplete="off">`;
+    $("bdSearch").addEventListener("input",runReport);
   }
   ex.querySelectorAll("select,input").forEach(el=>el.addEventListener(el.tagName==="INPUT"?"change":"change",runReport));
   fillExtra(); runReport();
@@ -1376,9 +1392,10 @@ function runReport(){
   if(!REP.loaded){ out.innerHTML=`<p class="hint">${REP.loading?"טוען…":"אין נתונים. לחץ ↻ לטעינה."}</p>`; return; }
   fillExtra();
   RT=[];
-  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach}[REP.cur.id]();
-  out.innerHTML=`<p class="rep-period">תקופה: <b>${periodLabel()}</b></p>`+html;
-  REP.text=RT.length?`${REP.cur.icon} *${REP.cur.title}*\nתקופה: ${periodLabel()}\n\n`+RT.join("\n").trim()+`\n\n— נוכחות אימונים · The Buttons`:"";
+  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,bday:repBday}[REP.cur.id]();
+  const isBd=REP.cur.id==="bday", lab=isBd?(REP.bdLabel||""):periodLabel(), labT=isBd?"":"תקופה: ";
+  out.innerHTML=(lab?`<p class="rep-period">${labT}<b>${esc(lab)}</b></p>`:"")+html;
+  REP.text=RT.length?`${REP.cur.icon} *${REP.cur.title}*\n${labT}${lab}\n\n`+RT.join("\n").trim()+`\n\n— נוכחות אימונים · The Buttons`:"";
   setRepSend();
 }
 let RT=[];
@@ -1491,6 +1508,48 @@ function repAthlete(){
     <div class="chips"><span class="chip">${rows.length} אימונים בתקופה</span>${rows.filter(r=>r.over).length?`<span class="chip red">${rows.filter(r=>r.over).length} מעבר למכסה</span>`:""}</div>
     ${rows.length?`<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>מקום</th><th>סוג</th><th>מאמן</th><th>ש׳</th></tr></thead><tbody>${rows.map(r=>`<tr class="${r.over?"over":""}"><td>${dayName(r.date)} ${esc(r.date.slice(0,5))}</td><td>${esc(r.loc)}</td><td>${esc(r.type||"—")}</td><td>${esc(r.coach)}</td><td>${r.dur||""}</td></tr>`).join("")}</tbody></table></div>
     <h2 class="rep-h2">לפי שבוע</h2><div class="tw"><table class="rtable"><thead><tr><th>שבוע (מיום א׳)</th><th>הגעות${q?" / מכסה":""}</th></tr></thead><tbody>${wk}</tbody></table></div>`:`<div class="rep-empty">לא הגיע לאימונים בתקופה הזו.</div>`}`;
+}
+
+// 5) birthdays (from Arbox: day + month only)
+const HEB_M=["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+function bdBranches(u){
+  const names=arbSplit(u.name), bs=new Set();
+  cfg.locations.forEach(l=>{ if(SHEET_ONLY.test(l.name)) return;
+    if(arbInLoc(u,l)||names.some(n=>ARB_PIN_LOC[n]===l.name||(ARB_EXTRA_LOC[l.name]||[]).includes(n))) bs.add(l.branch||""); });
+  if(!bs.size) bs.add(u.location||"ללא סניף");
+  return [...bs];
+}
+function repBday(){
+  REP.bdLabel="";
+  if(!ARB.lite){
+    arbEnsure().then(()=>{ if(REP.cur&&REP.cur.id==="bday") runReport(); })
+      .catch(e=>{ if(REP.cur&&REP.cur.id==="bday") $("repOut").innerHTML=`<div class="rep-empty">לא הצלחתי לקרוא מ-Arbox: ${esc(e.message)}</div>`; });
+    return `<p class="hint">טוען ימי הולדת מ-Arbox…</p>`;
+  }
+  const act=ARB.lite.filter(u=>u.active);
+  const people=act.filter(u=>u.bd).map(u=>({name:normName(u.name),bd:u.bd,phone:u.phone||"",br:bdBranches(u)}))
+    .concat((ARB.liteStaff||[]).filter(s=>s.bd&&s.active!==false).map(s=>({name:normName(s.name),bd:s.bd,phone:"",br:[],staff:true})));
+  // branch list: app branches first, then Arbox locations of athletes outside the app's places
+  const sel=$("bdBranch"), brs=[...new Set(cfg.locations.map(l=>l.branch||"").concat(people.flatMap(p=>p.br)))].filter(Boolean);
+  if(sel.options.length!==brs.length){ const keep=sel.value||sel.dataset.def; sel.innerHTML=brs.map(b=>`<option>${esc(b)}</option>`).join(""); sel.value=brs.includes(keep)?keep:brs[0]; }
+  const mode=(document.querySelector('input[name=bdScope]:checked')||{}).value||"br", br=sel.value, mon=+$("bdMonth").value, q=normName($("bdSearch").value);
+  sel.hidden=mode!=="br"||!!q; $("bdMonth").disabled=!!q;
+  const p2=n=>String(n).padStart(2,"0"), now=new Date(), todayMD=p2(now.getMonth()+1)+"-"+p2(now.getDate()), yr=now.getFullYear();
+  let list;
+  if(q){ list=people.filter(p=>p.name.includes(q)); REP.bdLabel=`חיפוש: ${q}`; }
+  else { list=people.filter(p=>+p.bd.slice(0,2)===mon&&(mode==="all"||p.br.includes(br))); REP.bdLabel=`${HEB_M[mon-1]} ${yr} · ${mode==="all"?"כל המועדון":"סניף "+br}`; }
+  list.sort((a,b)=>a.bd.localeCompare(b.bd)||a.name.localeCompare(b.name,"he"));
+  const dm=bd=>`${bd.slice(3,5)}/${bd.slice(0,2)}`, wd=bd=>dayName(`${bd.slice(3,5)}/${bd.slice(0,2)}/${yr}`);
+  const brTxt=p=>p.staff?"צוות":p.br.join(", ");
+  const noBd=act.length-act.filter(u=>u.bd).length;
+  if(!list.length){ RT.push(q?`לא נמצא תאריך לידה עבור "${q}".`:"אין ימי הולדת בחודש הזה."); 
+    return `<div class="rep-empty">${q?`לא נמצא תאריך לידה עבור "${esc(q)}" (אולי לא הוזן ב-Arbox).`:"אין ימי הולדת בחודש הזה 🎈"}</div><p class="hint">${noBd} ספורטאים פעילים בלי תאריך לידה ב-Arbox – לא מופיעים בדוח.</p>`; }
+  RT.push(...list.map(p=>`• ${dm(p.bd)}${p.bd===todayMD?" 🎉 היום":""} – ${p.name}${p.staff?" (צוות)":""}${mode==="all"||q?" · "+brTxt(p):""}`));
+  const today=list.filter(p=>p.bd===todayMD).length;
+  return `<div class="chips"><span class="chip">🎂 ${list.length} ימי הולדת</span>${today?`<span class="chip blue">🎉 ${today} היום</span>`:""}</div>
+    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${mode==="all"||q?"<th>סניף</th>":""}<th>טלפון</th></tr></thead><tbody>
+    ${list.map(p=>`<tr${p.bd===todayMD?' class="bd-today"':""}><td>${esc(dm(p.bd))} <small style="color:var(--muted)">${esc(wd(p.bd))}</small>${p.bd===todayMD?" 🎉":""}</td><td>${esc(p.name)}${p.staff?' <small style="color:var(--muted)">· צוות</small>':""}</td>${mode==="all"||q?`<td>${esc(brTxt(p))}</td>`:""}<td>${p.phone?telLink(p.phone):""}</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint">מתוך Arbox (יום וחודש בלבד). ${noBd} ספורטאים פעילים בלי תאריך לידה ב-Arbox – לא מופיעים. חשבון משפחתי מופיע בשם החשבון.</p>`;
 }
 
 // 4) coach
