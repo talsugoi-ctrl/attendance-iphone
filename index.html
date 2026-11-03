@@ -205,7 +205,10 @@ body.rep-open{overflow:hidden}
 .sch-item .nm b{display:block}
 .sch-item .nm small{color:var(--muted)}
 .sch-item .src{font-size:.7rem;border:1px solid var(--line);border-radius:999px;padding:1px 6px;color:var(--muted);margin-inline-start:6px}
-.sch-item .go{font-size:.85rem;padding:8px 10px;white-space:nowrap}
+.sch-item .go,.sch-item .rp{font-size:.85rem;padding:8px 10px;white-space:nowrap}
+.sch-acts{display:flex;flex-direction:column;gap:6px}
+.done-note{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--chip)}
+.done-note a{font-weight:700;cursor:pointer}
 .sch-item.cancel{opacity:.55}
 .tsel{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tsel.missing{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
@@ -312,6 +315,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <button class="btn" id="reloadBtn" aria-label="טען מחדש מהגיליון">↻</button>
     </div>
     <div class="status" id="status">בחר מקום אימון כדי לטעון את רשימת הנרשמים.</div>
+    <div class="hint done-note" id="doneNote" hidden></div>
     <ul class="roster" id="roster"></ul>
     <form class="row trial" id="trialForm">
       <input type="text" id="trialName" placeholder="שם ספורטאי חדש שהגיע לניסיון" aria-label="שם ספורטאי לניסיון">
@@ -335,7 +339,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · ימי הולדת עם קוד</div>
+  <div class="ver">גרסה 03/11/2026 · דוח אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -923,7 +927,18 @@ async function loadWeekLog(){
     const cD=ci("תאריך",1), cW=ci("שבוע (מיום א׳)",2), cL=ci("מקום",4), cN=ci("שם",7);
     weekLog=h<0?[]:rows.slice(h+1).filter(r=>r[0]).map(r=>({id:r[0],date:r[cD],week:r[cW],loc:r[cL],name:normName(r[cN])}));
   }catch(e){ weekLog=[]; }
-  renderRoster();
+  renderRoster(); showDoneNote();
+}
+// main screen: a training was already reported here on this date → link to its report
+function showDoneNote(){
+  const box=$("doneNote"); if(!box) return;
+  if(current==null||!Array.isArray(weekLog)){ box.hidden=true; return; }
+  const d=dmyOf(trainingDate()), L=cfg.locations[current].name, rs=weekLog.filter(x=>x.date===d&&x.loc===L);
+  const ids=[...new Set(rs.map(x=>x.id))];
+  if(!ids.length){ box.hidden=true; return; }
+  box.hidden=false;
+  box.innerHTML=`📋 ${ids.length>1?`דווחו כאן ${ids.length} אימונים`:"דווח כאן אימון"} בתאריך הזה (${rs.length} נוכחים) – <a role="button" tabindex="0" id="doneLink">לצפייה בדוח האימון</a>`;
+  $("doneLink").onclick=()=>openSesReport(L,trainingDate(),ids[ids.length-1]);
 }
 function weekCount(name){
   const d=dmyOf(trainingDate()), w=weekOfDmy(d), L=current!=null?cfg.locations[current].name:"";
@@ -956,7 +971,7 @@ function showToast(t,ok){
   clearTimeout(toastT); toastT=setTimeout(()=>{el.hidden=true;},4500);
 }
 $("toast").onclick=()=>{$("toast").hidden=true;};
-$("date").addEventListener("change",()=>renderRoster());
+$("date").addEventListener("change",()=>{ renderRoster(); showDoneNote(); });
 
 // ---------- roster ----------
 function allPeople(){return people.concat(trials.map(n=>({name:n,sub:"",trial:true})));}
@@ -1372,6 +1387,7 @@ const REPORTS=[
   {id:"pie",icon:"🥧",title:"נוכחות לפי מקום",desc:"כמה מהרשומים הגיעו – לפי מקום או סניף, ומי לא הגיע",period:"month",extra:"branch"},
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
   {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"},
+  {id:"ses",icon:"📋",title:"דוח אימון",desc:"אימון אחד לפי תאריך ומקום – מאמן, מי נכח, מי לא הגיע וחריגים",period:null,extra:"ses"},
   {id:"bday",icon:"🎂",title:"ימי הולדת",desc:"ימי הולדת החודש – לפי סניף או כל המועדון, וחיפוש ספורטאי",period:null,extra:"bday"}
 ];
 
@@ -1405,6 +1421,14 @@ function openReport(id){
     ex.innerHTML=`<label class="lbl" for="repAth">ספורטאי</label><input id="repAth" class="tsel" list="repAthList" placeholder="הקלד שם…" autocomplete="off"><datalist id="repAthList"></datalist>`;
   } else if(r.extra==="coach"){
     ex.innerHTML=`<label class="lbl" for="repCoach">מאמן</label><select id="repCoach" class="tsel"></select>`;
+  } else if(r.extra==="ses"){
+    const pre=REP.sesPreset||{}; REP.sesPreset=null; REP.sesId=pre.id||null;
+    const curL=(cfg.locations[current!=null?current:0]||{}).name||"", L0=pre.loc||curL;
+    const brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
+    ex.innerHTML=`<label class="lbl" for="sesDate">תאריך האימון</label><input type="date" id="sesDate" value="${esc(pre.iso||todayISO())}">
+      <label class="lbl" for="sesLoc" style="margin-top:8px">מקום</label><select id="sesLoc" class="tsel">${brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option${l.name===L0?" selected":""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("")}</select>
+      <div id="sesPickBox" hidden><label class="lbl" for="sesPick" style="margin-top:8px">אימון</label><select id="sesPick" class="tsel"></select></div>`;
+    $("sesPick").addEventListener("change",()=>{ REP.sesId=$("sesPick").value; });
   } else if(r.extra==="bday"){
     const m0=new Date().getMonth()+1, myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
     ex.innerHTML=`<label class="lbl" for="bdMonth">חודש</label><select id="bdMonth" class="tsel">${HEB_M.map((m,i)=>`<option value="${i+1}"${i+1===m0?" selected":""}>${m}</option>`).join("")}</select>
@@ -1439,8 +1463,8 @@ function runReport(){
   if(!REP.loaded){ out.innerHTML=`<p class="hint">${REP.loading?"טוען…":"אין נתונים. לחץ ↻ לטעינה."}</p>`; return; }
   fillExtra();
   RT=[];
-  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,bday:repBday}[REP.cur.id]();
-  const isBd=REP.cur.id==="bday", lab=isBd?(REP.bdLabel||""):periodLabel(), labT=isBd?"":"תקופה: ";
+  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,ses:repSession,bday:repBday}[REP.cur.id]();
+  const isBd=!REP.cur.period, lab=isBd?((REP.cur.id==="ses"?REP.sesLabel:REP.bdLabel)||""):periodLabel(), labT=isBd?"":"תקופה: ";
   out.innerHTML=(lab?`<p class="rep-period">${labT}<b>${esc(lab)}</b></p>`:"")+html;
   REP.text=RT.length?`${REP.cur.icon} *${REP.cur.title}*\n${labT}${lab}\n\n`+RT.join("\n").trim()+`\n\n— נוכחות אימונים · The Buttons`:"";
   setRepSend();
@@ -1605,6 +1629,47 @@ function repBday(){
     <p class="hint">מתוך Arbox · בסוגריים – הגיל שחוגגים השנה. ${missTxt}${isStaff?"":" חשבון משפחתי מופיע בשם החשבון."} 🔒 הדוח זמין רק עם קוד הגישה ל-Arbox.</p>`;
 }
 
+// 6) one training: date + place → coach, who attended, who didn't, exceptions
+function repSession(){
+  const iso=$("sesDate").value||todayISO(), key=isoToKey(iso), L=$("sesLoc").value, dmy=dmyOf(iso);
+  const loc=cfg.locations.find(l=>l.name===L)||{};
+  REP.sesLabel=`${dayName(dmy)} ${dmy} · ${L}`;
+  const day=REP.log.filter(r=>r.key===key), rows=day.filter(r=>r.loc===L), ids=[...new Set(rows.map(r=>r.id))];
+  const pickBox=$("sesPickBox"), pick=$("sesPick");
+  if(!ids.length){ pickBox.hidden=true;
+    const other=[...new Set(day.map(r=>r.loc))];
+    RT.push(`לא דווח אימון ב${L} בתאריך הזה.`);
+    return `<div class="rep-empty">לא דווח אימון ב${esc(L)} בתאריך הזה.${other.length?`<br><small>באותו יום דווחו אימונים ב: ${other.map(esc).join(", ")}</small>`:""}</div>`; }
+  const S=ids.map(id=>{ const rs=rows.filter(r=>r.id===id); return {id,rs,r0:rs[0]}; });
+  pickBox.hidden=S.length<2;
+  if(!ids.includes(REP.sesId)) REP.sesId=ids[0];
+  pick.innerHTML=S.map(s=>`<option value="${esc(s.id)}">${esc([s.r0.type||"אימון",s.r0.coach,s.rs.length+" נוכחים"].filter(Boolean).join(" · "))}</option>`).join(""); pick.value=REP.sesId;
+  const {rs,r0}=S.find(s=>s.id===REP.sesId);
+  const reg=[], seen=new Set(); REP.roster.filter(p=>p.loc===L&&activeSub(p.sub)).forEach(p=>{ if(!seen.has(p.name)){ seen.add(p.name); reg.push(p); } });
+  const att=rs.slice().sort((a,b)=>a.name.localeCompare(b.name,"he")).map(r=>{
+    const ent=REP.roster.find(p=>p.name===r.name&&p.loc===L), tags=[];
+    if(r.trial) tags.push({k:"trial",t:"ניסיון"});
+    if(r.over) tags.push({k:"over",t:`מעבר למכסה${r.quota?" ("+quotaWords(r.quota)+")":""}`});
+    if(!r.trial&&!ent) tags.push({k:"unpaid",t:"לא רשום במקום"});
+    else if(!r.trial&&!typeCovered(r.sub||(ent||{}).sub,r.type)) tags.push({k:"unpaid",t:`${r.type} לא כלול במנוי`});
+    return {r,ent,tags,phone:(ent&&ent.phone)||phoneOf(r.name)}; });
+  const attNames=new Set(rs.map(r=>r.name)), came=reg.filter(p=>attNames.has(p.name)).length, miss=reg.filter(p=>!attNames.has(p.name));
+  const trials=att.filter(a=>a.r.trial).length, exc=att.filter(a=>a.tags.some(t=>t.k!=="trial")).length;
+  const info=[r0.type?`${TYPE_ICON[r0.type]||"🏅"} ${r0.type}`:"",r0.coach?`מאמן: ${r0.coach}`:"",r0.dur?durWords(r0.dur):"",loc.branch?`סניף ${loc.branch}`:""].filter(Boolean);
+  RT.push(info.join(" · "),`✅ נכחו: ${rs.length}${trials?` (מהם ${trials} ניסיון)`:""} · הגיעו ${ofTxt(came,reg.length)} מהרשומים`,"",`*נכחו (${rs.length}):*`,
+    ...att.map((a,i)=>`${i+1}. ${a.r.name}${a.tags.length?" – "+a.tags.map(t=>t.t).join(", "):""}`));
+  if(miss.length) RT.push("",`*לא הגיעו (${miss.length}):*`,...miss.map((p,i)=>`${i+1}. ${p.name}${p.phone?" – "+p.phone:""}`));
+  return `<section class="rep-card"><div class="rc-head"><b>${esc(r0.type||"אימון")} · ${esc(L)}</b><span>${esc(dayName(dmy))} ${esc(dmy)}</span></div>
+      <div class="rc-sub">${info.map(esc).join(" · ")}</div></section>
+    <div class="chips"><span class="chip">✅ ${rs.length} נכחו</span><span class="chip">הגיעו ${esc(ofTxt(came,reg.length))}</span>${trials?`<span class="chip blue">${trials} ניסיון</span>`:""}${exc?`<span class="chip amber">${exc} חריגים</span>`:""}${miss.length?`<span class="chip red">${miss.length} לא הגיעו</span>`:""}</div>
+    <h2 class="rep-h2">נכחו (${rs.length})</h2>
+    <ul class="rc-list">${att.map(a=>`<li>${esc(a.r.name)} <span>${a.phone?telLink(a.phone):""}</span>${a.tags.length?`<div class="tags">${a.tags.map(t=>`<span class="tag ${t.k}">${esc(t.t)}</span>`).join("")}</div>`:""}</li>`).join("")}</ul>
+    <h2 class="rep-h2">לא הגיעו (${miss.length})</h2>
+    ${miss.length?`<ul class="rc-list miss">${miss.map(p=>`<li>${esc(p.name)} <span>${telLink(p.phone)}</span></li>`).join("")}</ul>`:`<p class="hint">כל הרשומים למקום הגיעו ✓</p>`}
+    <p class="hint">"לא הגיעו" = רשומים פעילים למקום (מ-Arbox; בכוכב יאיר – מהגיליון) שלא סומנו באימון הזה.</p>`;
+}
+function openSesReport(loc,iso,id){ REP.sesPreset={loc,iso,id}; closeSched&&closeSched(); openReports(); openReport("ses"); }
+
 // full Arbox lists (access code) for the birthdays report
 async function bdLoadFull(){
   const call=async action=>{ const u=scriptUrl();
@@ -1705,10 +1770,13 @@ function schRender(){
       return `<div class="sch-item${x.cancelled?" cancel":""}"><div class="tm">${esc(x.start)}<small>${esc(x.end)}</small></div>
         <div class="nm"><b>${TYPE_ICON[x.type]||"🏅"} ${esc(x.name||x.type||"אימון")}${x.arbox?'<span class="src">Arbox</span>':""}</b>
         <small>${[x.area,x.type&&x.name&&!x.name.includes(x.type)?x.type:"",x.coach?"מאמן: "+x.coach:"",x.cancelled?"בוטל":"",x.note].filter(Boolean).map(esc).join(" · ")}</small></div>
-        ${k===0&&!x.cancelled?`<button type="button" class="btn primary go" data-i="${id}">סמן נוכחות</button>`:""}</div>`; }).join("");
+        ${k===0&&!x.cancelled?`<span class="sch-acts"><button type="button" class="btn primary go" data-i="${id}">סמן נוכחות</button><button type="button" class="btn rp" data-i="${id}">📋 דוח</button></span>`:""}</div>`; }).join("");
   }
   $("schedOut").innerHTML=html||`<div class="rep-empty">אין אימונים השבוע.</div>`;
   $("schedOut").querySelectorAll(".go").forEach(b=>b.onclick=()=>schUse(all[+b.dataset.i]));
+  $("schedOut").querySelectorAll(".rp").forEach(b=>b.onclick=()=>{ const x=all[+b.dataset.i], want=x.place||x.area||"";
+    const l=cfg.locations.find(l=>l.name===want)||cfg.locations.find(l=>want&&(l.name.includes(want)||want.includes(l.name)))||cfg.locations.find(l=>(l.branch||"")===x.branch&&String(x.name).includes(l.name));
+    openSesReport(l?l.name:"",todayISO()); });
 }
 // fill the attendance form from a session and go back to the main screen
 function schUse(x){
