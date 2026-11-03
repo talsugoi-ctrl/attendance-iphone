@@ -270,7 +270,8 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <select id="ttype" class="tsel">
         <option value="">בחר סוג אימון…</option>
         <option value="שחייה">🏊 שחייה</option>
-        <option value="רכיבה">🚴 רכיבה</option>
+        <option value="רכיבת כביש">🚴 רכיבת כביש</option>
+        <option value="רכיבת שטח">🚵 רכיבת שטח</option>
         <option value="ריצה">🏃 ריצה</option>
         <option value="משולב">🔁 משולב</option>
       </select>
@@ -321,7 +322,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · ימי הולדת מאמנים</div>
+  <div class="ver">גרסה 03/11/2026 · סוגי אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -437,7 +438,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <div><span class="lbl">לאיזה אימון?</span><div class="mg-ses" id="mlSessions"></div></div>
       <div id="mlNew" hidden class="mg-new">
         <div><label class="lbl" for="mlType">סוג אימון *</label>
-          <select id="mlType" class="tsel"><option value="">בחר…</option><option value="שחייה">🏊 שחייה</option><option value="רכיבה">🚴 רכיבה</option><option value="ריצה">🏃 ריצה</option><option value="משולב">🔁 משולב</option></select></div>
+          <select id="mlType" class="tsel"><option value="">בחר…</option><option value="שחייה">🏊 שחייה</option><option value="רכיבת כביש">🚴 רכיבת כביש</option><option value="רכיבת שטח">🚵 רכיבת שטח</option><option value="ריצה">🏃 ריצה</option><option value="משולב">🔁 משולב</option></select></div>
         <div class="row"><label class="dfield">מאמן<input type="text" id="mlCoach"></label><label class="dfield">שעות<input type="text" id="mlDur" inputmode="decimal" value="1" style="max-width:70px"></label></div>
       </div>
       <div><span class="lbl">מי הגיע? (<span id="mlCount">0</span> נבחרו)</span>
@@ -658,7 +659,9 @@ function renderLocs(){
       const b=document.createElement("button");
       b.type="button"; b.className="loc"; b.textContent=l.name;
       b.setAttribute("aria-pressed", String(i===current));
-      b.onclick=()=>{if(current!==i){trials=[];} current=i; renderLocs(); loadPeople();};
+      b.onclick=()=>{if(current!==i){trials=[];} current=i;
+        if(isOffLoc(l)&&!$("ttype").value){ $("ttype").value="רכיבת שטח"; $("ttype").classList.remove("missing"); }   // off-road places: default type
+        renderLocs(); loadPeople();};
       row.appendChild(b);
     });
     g.appendChild(row); box.appendChild(g);
@@ -1109,10 +1112,22 @@ function buildResult(scroll){
   $("resultCard").hidden=false;
   if(scroll) $("resultCard").scrollIntoView({behavior:"smooth",block:"start"});
 }
-const TYPE_ICON={"שחייה":"🏊","רכיבה":"🚴","ריצה":"🏃","משולב":"🔁"};
+const TYPE_ICON={"שחייה":"🏊","רכיבה":"🚴","רכיבת כביש":"🚴","רכיבת שטח":"🚵","ריצה":"🏃","משולב":"🔁"};
+// training types – the same four sports as the Arbox schedule (+ combined). Older reports may still say "רכיבה".
+const TRAIN_TYPES=["שחייה","רכיבת כביש","רכיבת שטח","ריצה"];
+// Arbox schedule / program name → training type (for reading the Arbox schedule later); "" when it names no sport
+function arbSessionType(name){
+  const n=String(name||"");
+  if(/שטח/.test(n)) return "רכיבת שטח";
+  if(/רכיב|אופניים|כביש|קריטריום/.test(n)) return "רכיבת כביש";
+  if(/שחי/.test(n)) return "שחייה";
+  if(/ריצ/.test(n)) return "ריצה";
+  if(/טריאתלון|משולב/.test(n)) return "משולב";
+  return "";
+}
 $("ttype").addEventListener("change",()=>{ $("ttype").classList.toggle("missing",!$("ttype").value); syncResult(); });
 $("confirmBtn").onclick=()=>{
-  if(!$("ttype").value){ $("ttype").classList.add("missing"); showToast("בחר סוג אימון: שחייה, רכיבה, ריצה או משולב"); $("ttype").focus(); $("ttype").scrollIntoView({behavior:"smooth",block:"center"}); return; }
+  if(!$("ttype").value){ $("ttype").classList.add("missing"); showToast("בחר סוג אימון: שחייה, רכיבת כביש, רכיבת שטח, ריצה או משולב"); $("ttype").focus(); $("ttype").scrollIntoView({behavior:"smooth",block:"center"}); return; }
   addTrialFromField();          // a trial name typed but not added yet is included
   $("toast").hidden=true;
   buildResult(true);
@@ -1309,14 +1324,15 @@ function periodLabel(){ const [a,b]=periodRange($("repPeriod").value); return a&
 function inPeriod(rows){ const [a,b]=periodRange($("repPeriod").value); return rows.filter(r=>r.key>=a&&r.key<=b); }
 
 // ---------- "is it paid for" ----------
-const SPORT_RX={"שחייה":/שחי/,"רכיבה":/רכיבה|אופניים/,"ריצה":/ריצה/};
+const SPORT_RX={"שחייה":/שחי/,"רכיבה":/רכיב|אופניים|שטח/,"ריצה":/ריצה/};
 function typeCovered(sub,type){
   if(!type) return true;
   const s=String(sub||"");
   if(/טריאתלון|אישית/.test(s)) return true;
   const has=Object.keys(SPORT_RX).filter(k=>SPORT_RX[k].test(s));
   if(!has.length) return true;                   // the subscription doesn't name sports → not flagged
-  return type==="משולב"?has.length>=2:has.includes(type);
+  const t=/רכיב/.test(type)?"רכיבה":type;      // רכיבת כביש / רכיבת שטח / old "רכיבה" → riding
+  return t==="משולב"?has.length>=2:has.includes(t);
 }
 function phoneOf(name){ const p=REP.roster.find(x=>x.name===name&&x.phone); return p?p.phone:""; }
 
