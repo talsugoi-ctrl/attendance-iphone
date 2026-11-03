@@ -317,7 +317,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 02/11/2026 · סניף שטח</div>
+  <div class="ver">גרסה 03/11/2026 · מאמנים מ-Arbox</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -461,6 +461,15 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <div class="hint">רשימת הספורטאים כוללת טלפונים ופרטים אישיים, ולכן מוגנת בקוד. מקלידים פעם אחת בכל טלפון.</div>
       <div class="row"><input type="password" id="arbPin" inputmode="numeric" placeholder="קוד גישה" style="flex:1"><button type="submit" class="btn primary">כניסה</button></div>
     </form>
+    <div class="seg" id="arbTabs" role="tablist" hidden>
+      <button type="button" class="on" data-t="ath">👥 ספורטאים</button>
+      <button type="button" data-t="staff">🧑‍🏫 מאמנים</button>
+    </div>
+    <div id="arbStaff" hidden>
+      <input type="search" id="arbStaffSearch" placeholder="חיפוש שם / טלפון…" autocomplete="off">
+      <div class="mg-list" id="arbStaffList" style="margin-top:8px"></div>
+      <p class="hint">אנשי הצוות כפי שהם רשומים ב-Arbox (קריאה בלבד). הוספה ועדכון – ב-Arbox.</p>
+    </div>
     <div id="arbMain" hidden>
       <input type="search" id="arbSearch" placeholder="חיפוש שם / טלפון / מנוי…" autocomplete="off">
       <div class="row" style="margin-top:8px">
@@ -1716,7 +1725,7 @@ function arbStatus(t,err){ const s=$("arbStatus"); s.textContent=t||""; s.classL
 function openArb(){ $("setup").close(); $("arb").hidden=false; document.body.classList.add("rep-open"); arbShow(); }
 function closeArb(){ $("arb").hidden=true; document.body.classList.remove("rep-open"); }
 function arbShow(){
-  const has=!!arbPin(); $("arbPinBox").hidden=has; $("arbMain").hidden=!has||!ARB.users; $("arbRep").hidden=true; $("arbRepBtn").hidden=!ARB.users; $("arbTitle").textContent="Arbox · ספורטאים";
+  const has=!!arbPin(); ARB.tab="ath"; $("arbTabs").hidden=!has; $("arbStaff").hidden=true; arbMarkTabs(); $("arbPinBox").hidden=has; $("arbMain").hidden=!has||!ARB.users; $("arbRep").hidden=true; $("arbRepBtn").hidden=!ARB.users; $("arbTitle").textContent="Arbox · ספורטאים";
   if(has&&!ARB.users) arbLoad(); else if(!has) arbStatus("");
 }
 async function arbLoad(){
@@ -1724,7 +1733,7 @@ async function arbLoad(){
   try{
     const r=await jsonp(cb=>{ const u=scriptUrl(); return `${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxUsers",pin:arbPin()}))}`; },60000);
     if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; arbShow(); arbStatus("קוד הגישה שגוי – נסה שוב.",true); return; } throw new Error((r&&r.error)||"אין תשובה"); }
-    ARB.users=r.users||[]; ARB.diag=r.diag; $("arbMain").hidden=false; $("arbRepBtn").hidden=false; arbRender();
+    ARB.users=r.users||[]; ARB.diag=r.diag; if(ARB.tab==="staff") return; $("arbMain").hidden=false; $("arbRepBtn").hidden=false; arbRender();
   }catch(e){ arbStatus("לא הצלחתי לקרוא מ-Arbox: "+e.message,true); }
   finally{ ARB.loading=false; }
 }
@@ -1792,7 +1801,32 @@ document.querySelectorAll("#arbRep .seg button").forEach(b=>b.onclick=()=>{ arbR
 $("arbRepLoc").onchange=arbRepRender;
 $("arbRepBtn").onclick=()=>{ if(!ARB.users) return; $("arbRep").hidden?arbOpenRep():arbCloseRep(); };
 $("arbBack").onclick=()=>{ if(!$("arbRep").hidden) arbCloseRep(); else closeArb(); };
-$("arbReload").onclick=()=>{ ARB.users=null; arbShow(); };
+$("arbReload").onclick=()=>{ if(ARB.tab==="staff"){ ARB.staff=null; arbOpenStaff(); return; } ARB.users=null; arbShow(); };
+// ---------- Arbox staff (coaches) tab ----------
+function arbMarkTabs(){ document.querySelectorAll("#arbTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===(ARB.tab||"ath"))); }
+async function arbOpenStaff(){
+  ARB.tab="staff"; arbMarkTabs(); $("arbMain").hidden=true; $("arbRep").hidden=true; $("arbRepBtn").hidden=true; $("arbStaff").hidden=false; $("arbTitle").textContent="Arbox · מאמנים";
+  if(ARB.staff){ arbRenderStaff(); return; }
+  $("arbStaffList").innerHTML=""; arbStatus("טוען מאמנים מ-Arbox…");
+  try{
+    const r=await jsonp(cb=>{ const u=scriptUrl(); return `${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxStaff",pin:arbPin()}))}`; },60000);
+    if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; ARB.staff=null; arbShow(); arbStatus("קוד הגישה שגוי – נסה שוב.",true); return; } throw new Error((r&&r.error)||"אין תשובה"); }
+    ARB.staff=r.staff||[]; if(ARB.tab==="staff") arbRenderStaff();
+  }catch(e){ arbStatus("לא הצלחתי לקרוא מאמנים מ-Arbox: "+e.message,true); }
+}
+function arbOpenAth(){ ARB.tab="ath"; arbMarkTabs(); $("arbStaff").hidden=true; $("arbTitle").textContent="Arbox · ספורטאים"; $("arbMain").hidden=!ARB.users; $("arbRepBtn").hidden=!ARB.users; if(ARB.users) arbRender(); else arbLoad(); }
+function arbRenderStaff(){
+  const all=ARB.staff||[], q=$("arbStaffSearch").value.trim(), qd=q.replace(/\D/g,""), act=all.filter(s=>s.active).length;
+  arbStatus(`${all.length} אנשי צוות ב-Arbox · ${act} פעילים`);
+  const list=all.filter(s=>!q||s.name.includes(q)||(qd&&String(s.phone).replace(/\D/g,"").includes(qd))).sort((a,b)=>(b.active-a.active)||a.name.localeCompare(b.name,"he"));
+  $("arbStaffList").innerHTML=list.map(s=>{
+    const l1=[s.location,s.role].filter(Boolean).map(esc).join(" · ");
+    const l2=[s.email?`<a href="mailto:${esc(s.email)}" dir="ltr">${esc(s.email)}</a>`:"",s.birthday?"יום הולדת "+esc(fmtIso(s.birthday)):"",s.start?"החל מ־"+esc(fmtIso(s.start)):""].filter(Boolean).join(" · ");
+    return `<div class="mg-item${s.active?"":" off"}"><span class="tx"><b>${esc(s.name||"—")}</b>${l1?`<small>${l1}</small>`:""}${l2?`<small style="white-space:normal">${l2}</small>`:""}</span><span class="ph" dir="ltr">${s.phone?`<a href="tel:${esc(s.phone)}">${esc(s.phone)}</a>`:""}</span></div>`;
+  }).join("")||`<div class="rep-empty">אין אנשי צוות${q?" שמתאימים לחיפוש":""}.</div>`;
+}
+document.querySelectorAll("#arbTabs button").forEach(b=>b.onclick=()=>b.dataset.t==="staff"?arbOpenStaff():arbOpenAth());
+$("arbStaffSearch").addEventListener("input",arbRenderStaff);
 $("arbBtn").onclick=openArb;
 // ---------- open the attendance sheet (password) ----------
 const SHEET_PW="T";
