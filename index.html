@@ -335,7 +335,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · מערכת אימונים</div>
+  <div class="ver">גרסה 03/11/2026 · ימי הולדת עם קוד</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1384,7 +1384,7 @@ function closeReports(){ $("reports").hidden=true; document.body.classList.remov
 function showRepList(){
   REP.cur=null; REP.text=""; $("repView").hidden=true; $("repList").hidden=false; $("repTitle").textContent="דוחות";
   const box=$("repList"); box.innerHTML="";
-  REPORTS.forEach(r=>{
+  REPORTS.filter(r=>r.id!=="bday"||arbPin()).forEach(r=>{      // birthdays: only on a phone with the Arbox access code
     const b=document.createElement("button"); b.type="button"; b.className="rep-item";
     b.innerHTML=`<span class="ri-ic" aria-hidden="true">${r.icon}</span><span class="ri-tx"><b>${esc(r.title)}</b><small>${esc(r.desc)}</small></span><span class="ri-go" aria-hidden="true">‹</span>`;
     b.onclick=()=>openReport(r.id); box.appendChild(b);
@@ -1568,14 +1568,16 @@ function bdBranches(u){
 }
 function repBday(){
   REP.bdLabel="";
-  if(!ARB.lite){
-    arbEnsure().then(()=>{ if(REP.cur&&REP.cur.id==="bday") runReport(); })
+  if(!arbPin()) return `<div class="rep-empty">🔒 דוח ימי הולדת זמין רק עם קוד הגישה ל-Arbox (⚙ ← 🔗 Arbox).</div>`;
+  if(!ARB.users||!ARB.staff){
+    bdLoadFull().then(()=>{ if(REP.cur&&REP.cur.id==="bday") runReport(); })
       .catch(e=>{ if(REP.cur&&REP.cur.id==="bday") $("repOut").innerHTML=`<div class="rep-empty">לא הצלחתי לקרוא מ-Arbox: ${esc(e.message)}</div>`; });
     return `<p class="hint">טוען ימי הולדת מ-Arbox…</p>`;
   }
-  const act=ARB.lite.filter(u=>u.active);
-  const athletes=act.filter(u=>u.bd).map(u=>({name:normName(u.name),bd:u.bd,phone:u.phone||"",br:bdBranches(u)}));
-  const staffAll=(ARB.liteStaff||[]).filter(s=>s.active!==false), staffBd=staffAll.filter(s=>s.bd).map(s=>({name:normName(s.name),bd:s.bd,phone:"",br:[],staff:true}));
+  const yr0=new Date().getFullYear(), bdOf=b=>{ const m=String(b||"").match(/^(\d{4})-(\d{2})-(\d{2})/); return m&&m[1]!=="0000"&&m[1]!=="1900"?{bd:m[2]+"-"+m[3],age:yr0-(+m[1])}:null; };
+  const act=ARB.users.filter(u=>u.active);
+  const athletes=act.map(u=>({u,b:bdOf(u.birthday)})).filter(x=>x.b).map(({u,b})=>({name:normName(u.name),bd:b.bd,age:b.age>0&&b.age<110?b.age:0,phone:u.phone||"",br:bdBranches(u)}));
+  const staffAll=(ARB.staff||[]).filter(s=>s.active!==false), staffBd=staffAll.map(s=>({s,b:bdOf(s.birthday)})).filter(x=>x.b).map(({s,b})=>({name:normName(s.name),bd:b.bd,age:b.age>0&&b.age<110?b.age:0,phone:s.phone||"",br:[],staff:true}));
   const people=athletes.concat(staffBd);
   // branch list: app branches first, then Arbox locations of athletes outside the app's places
   const sel=$("bdBranch"), brs=[...new Set(cfg.locations.map(l=>l.branch||"").concat(people.flatMap(p=>p.br)))].filter(Boolean);
@@ -1595,12 +1597,22 @@ function repBday(){
   const missTxt=isStaff?`${noBdS} אנשי צוות בלי תאריך לידה ב-Arbox – לא מופיעים.`:`${noBd} ספורטאים פעילים בלי תאריך לידה ב-Arbox – לא מופיעים.`;
   if(!list.length){ RT.push(q?`לא נמצא תאריך לידה עבור "${q}".`:"אין ימי הולדת בחודש הזה."); 
     return `<div class="rep-empty">${q?`לא נמצא תאריך לידה עבור "${esc(q)}" (אולי לא הוזן ב-Arbox).`:"אין ימי הולדת בחודש הזה 🎈"}</div><p class="hint">${missTxt}</p>`; }
-  RT.push(...list.map(p=>`• ${dm(p.bd)}${p.bd===todayMD?" 🎉 היום":""} – ${p.name}${p.staff&&!isStaff&&!showBr?" (צוות)":""}${showBr?" · "+brTxt(p):""}`));
+  RT.push(...list.map(p=>`• ${dm(p.bd)}${p.bd===todayMD?" 🎉 היום":""} – ${p.name}${p.age?` (${p.age})`:""}${p.staff&&!isStaff&&!showBr?" · צוות":""}${showBr?" · "+brTxt(p):""}`));
   const today=list.filter(p=>p.bd===todayMD).length;
   return `<div class="chips"><span class="chip">🎂 ${list.length} ימי הולדת</span>${today?`<span class="chip blue">🎉 ${today} היום</span>`:""}</div>
-    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${showBr?"<th>סניף</th>":""}${isStaff?"":"<th>טלפון</th>"}</tr></thead><tbody>
-    ${list.map(p=>`<tr${p.bd===todayMD?' class="bd-today"':""}><td>${esc(dm(p.bd))} <small style="color:var(--muted)">${esc(wd(p.bd))}</small>${p.bd===todayMD?" 🎉":""}</td><td>${esc(p.name)}${p.staff&&!isStaff&&!showBr?' <small style="color:var(--muted)">· צוות</small>':""}</td>${showBr?`<td>${esc(brTxt(p))}</td>`:""}${isStaff?"":`<td>${p.phone?telLink(p.phone):""}</td>`}</tr>`).join("")}</tbody></table></div>
-    <p class="hint">מתוך Arbox (יום וחודש בלבד). ${missTxt}${isStaff?" הטלפונים של הצוות – במסך Arbox (עם קוד גישה).":" חשבון משפחתי מופיע בשם החשבון."}</p>`;
+    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${showBr?"<th>סניף</th>":""}<th>טלפון</th></tr></thead><tbody>
+    ${list.map(p=>`<tr${p.bd===todayMD?' class="bd-today"':""}><td>${esc(dm(p.bd))} <small style="color:var(--muted)">${esc(wd(p.bd))}</small>${p.bd===todayMD?" 🎉":""}</td><td>${esc(p.name)}${p.age?` <small style="color:var(--muted)">(${p.age})</small>`:""}${p.staff&&!isStaff&&!showBr?' <small style="color:var(--muted)">· צוות</small>':""}</td>${showBr?`<td>${esc(brTxt(p))}</td>`:""}<td>${p.phone?telLink(p.phone):""}</td></tr>`).join("")}</tbody></table></div>
+    <p class="hint">מתוך Arbox · בסוגריים – הגיל שחוגגים השנה. ${missTxt}${isStaff?"":" חשבון משפחתי מופיע בשם החשבון."} 🔒 הדוח זמין רק עם קוד הגישה ל-Arbox.</p>`;
+}
+
+// full Arbox lists (access code) for the birthdays report
+async function bdLoadFull(){
+  const call=async action=>{ const u=scriptUrl();
+    const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action,pin:arbPin()}))}`,60000);
+    if(!r||!r.ok){ if(r&&r.pin){ store.set("arbox-pin",""); ARB.users=null; ARB.staff=null; throw new Error("קוד הגישה שגוי – הקלד אותו שוב במסך Arbox"); } throw new Error((r&&r.error)||"אין תשובה"); }
+    return r; };
+  if(!ARB.users){ const r=await call("arboxUsers"); ARB.users=r.users||[]; }
+  if(!ARB.staff){ const r=await call("arboxStaff"); ARB.staff=r.staff||[]; }
 }
 
 // 4) coach
