@@ -341,7 +341,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · מיקומי אימון</div>
+  <div class="ver">גרסה 04/11/2026 · סניף יקנעם</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -624,6 +624,7 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
+    {branch:"יקנעם", name:"טריאתלון נוער יקנעם", tab:"יקנעם", filter:""},
     {branch:"שטח", name:"שטח תל מונד", tab:"", filter:"תל מונד"},
     {branch:"שטח", name:"שטח תל אביב", tab:"", filter:"תל אביב"},
     {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
@@ -788,7 +789,7 @@ async function arbEnsure(){
   ARB.lite=r.users; ARB.liteStaff=r.staff||[]; ARB.liteAt=Date.now(); return true;
 }
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
-const SHEET_ONLY=/כוכב יאיר/;
+const SHEET_ONLY=/כוכב יאיר|יקנעם/;           // יקנעם: a hand-picked youth group (incl. a kid not yet in Arbox) – managed in its sheet tab
 // athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
 const ARB_PIN_LOC={"דנה תשובה":"נופית","קדם קרני":"ציפורי"};
 // athletes who also train in another place, while their Arbox program doesn't say so
