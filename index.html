@@ -207,6 +207,8 @@ body.rep-open{overflow:hidden}
 .sch-item .src{font-size:.7rem;border:1px solid var(--line);border-radius:999px;padding:1px 6px;color:var(--muted);margin-inline-start:6px}
 .sch-item .go,.sch-item .rp{font-size:.85rem;padding:8px 10px;white-space:nowrap}
 .sch-acts{display:flex;flex-direction:column;gap:6px}
+.loc-acts{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.loc-acts .btn{font-size:.85rem;padding:8px 10px;text-decoration:none}
 .done-note{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--chip)}
 .done-note a{font-weight:700;cursor:pointer}
 .sch-item.cancel{opacity:.55}
@@ -339,7 +341,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 03/11/2026 · דוח אימון</div>
+  <div class="ver">גרסה 03/11/2026 · מיקומי אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -544,6 +546,17 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button class="linkbtn" type="button" id="askCancel">ביטול</button>
   </div>
 </div>
+
+<dialog id="locDlg" aria-labelledby="locDlgTitle">
+  <h2 class="rep-h2" id="locDlgTitle" style="margin-top:0">אישור שמירת מיקום</h2>
+  <div id="locDlgBody"></div>
+  <label class="lbl" for="locNote" style="margin-top:10px">הערה (לא חובה) – למשל חניה, נקודת מפגש</label>
+  <textarea id="locNote" rows="2" style="width:100%;font:inherit;padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)"></textarea>
+  <div class="row" style="display:flex;gap:8px;margin-top:12px">
+    <button type="button" class="btn primary" id="locDlgOk" style="flex:1">שמור</button>
+    <button type="button" class="btn" id="locDlgCancel">ביטול</button>
+  </div>
+</dialog>
 
 <dialog id="setup">
   <form method="dialog" id="setupForm" style="display:flex;flex-direction:column;gap:12px">
@@ -1388,6 +1401,7 @@ const REPORTS=[
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
   {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"},
   {id:"ses",icon:"📋",title:"דוח אימון",desc:"אימון אחד לפי תאריך ומקום – מאמן, מי נכח, מי לא הגיע וחריגים",period:null,extra:"ses"},
+  {id:"locs",icon:"📍",title:"מיקומי אימון",desc:"מיקום כל מקום אימון לפי סניף – שמירה מה-GPS, ניווט ושליחה בוואטסאפ",period:null,extra:"locs"},
   {id:"bday",icon:"🎂",title:"ימי הולדת",desc:"ימי הולדת החודש – לפי סניף או כל המועדון, וחיפוש ספורטאי",period:null,extra:"bday"}
 ];
 
@@ -1421,6 +1435,9 @@ function openReport(id){
     ex.innerHTML=`<label class="lbl" for="repAth">ספורטאי</label><input id="repAth" class="tsel" list="repAthList" placeholder="הקלד שם…" autocomplete="off"><datalist id="repAthList"></datalist>`;
   } else if(r.extra==="coach"){
     ex.innerHTML=`<label class="lbl" for="repCoach">מאמן</label><select id="repCoach" class="tsel"></select>`;
+  } else if(r.extra==="locs"){
+    const brs=[...new Set(cfg.locations.map(l=>l.branch||""))].filter(Boolean), myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
+    ex.innerHTML=`<label class="lbl" for="locBr">סניף</label><select id="locBr" class="tsel"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===myBr?" selected":""}>${esc(b)}</option>`).join("")}</select>`;
   } else if(r.extra==="ses"){
     const pre=REP.sesPreset||{}; REP.sesPreset=null; REP.sesId=pre.id||null;
     const curL=(cfg.locations[current!=null?current:0]||{}).name||"", L0=pre.loc||curL;
@@ -1463,8 +1480,8 @@ function runReport(){
   if(!REP.loaded){ out.innerHTML=`<p class="hint">${REP.loading?"טוען…":"אין נתונים. לחץ ↻ לטעינה."}</p>`; return; }
   fillExtra();
   RT=[];
-  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,ses:repSession,bday:repBday}[REP.cur.id]();
-  const isBd=!REP.cur.period, lab=isBd?((REP.cur.id==="ses"?REP.sesLabel:REP.bdLabel)||""):periodLabel(), labT=isBd?"":"תקופה: ";
+  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,ses:repSession,locs:repLocs,bday:repBday}[REP.cur.id]();
+  const isBd=!REP.cur.period, lab=isBd?(({ses:REP.sesLabel,bday:REP.bdLabel,locs:REP.locLabel})[REP.cur.id]||""):periodLabel(), labT=isBd?"":"תקופה: ";
   out.innerHTML=(lab?`<p class="rep-period">${labT}<b>${esc(lab)}</b></p>`:"")+html;
   REP.text=RT.length?`${REP.cur.icon} *${REP.cur.title}*\n${labT}${lab}\n\n`+RT.join("\n").trim()+`\n\n— נוכחות אימונים · The Buttons`:"";
   setRepSend();
@@ -1669,6 +1686,82 @@ function repSession(){
     <p class="hint">"לא הגיעו" = רשומים פעילים למקום (מ-Arbox; בכוכב יאיר – מהגיליון) שלא סומנו באימון הזה.</p>`;
 }
 function openSesReport(loc,iso,id){ REP.sesPreset={loc,iso,id}; closeSched&&closeSched(); openReports(); openReport("ses"); }
+
+// 7) training locations: saved per place in the sheet tab "מיקומים"; save from GPS, navigate, share on WhatsApp
+const LOC_TAB="מיקומים";
+const LOCS={rows:null, loading:null};
+function geoDist(a,b){ const R=6371000, t=x=>x*Math.PI/180, dLa=t(b.lat-a.lat), dLo=t(b.lng-a.lng);
+  const h=Math.sin(dLa/2)**2+Math.cos(t(a.lat))*Math.cos(t(b.lat))*Math.sin(dLo/2)**2; return Math.round(2*R*Math.asin(Math.sqrt(h))); }
+function distTxt(m){ return m>=1000?(m/1000).toFixed(1)+" ק\"מ":m+" מ'"; }
+const gmaps=p=>`https://maps.google.com/?q=${p.lat},${p.lng}`, waze=p=>`https://waze.com/ul?ll=${p.lat},${p.lng}&navigate=yes`;
+async function locsLoad(force){
+  if(LOCS.rows&&!force) return;
+  if(LOCS.loading) return LOCS.loading;
+  LOCS.loading=(async()=>{
+    try{
+      const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
+      const rows=await sheetGet(base+"&sheet="+encodeURIComponent(LOC_TAB)), h=rows.findIndex(r=>r.includes("מקום")&&r.includes("קו רוחב"));
+      if(h<0){ LOCS.rows=[]; return; }                // tab not created yet (first save creates it)
+      const H=rows[h], g=(r,t)=>{ const i=H.indexOf(t); return i<0?"":String(r[i]||"").trim(); };
+      LOCS.rows=rows.slice(h+1).filter(r=>g(r,"מקום")).map(r=>({branch:g(r,"סניף"),place:g(r,"מקום"),lat:parseFloat(g(r,"קו רוחב")),lng:parseFloat(g(r,"קו אורך")),
+        acc:parseFloat(g(r,"דיוק (מ')"))||0,note:g(r,"הערה"),at:g(r,"עודכן"),by:g(r,"עודכן ע\"י")}));
+    }catch(e){ LOCS.rows=LOCS.rows||[]; LOCS.err=e.message; }
+    finally{ LOCS.loading=null; }
+  })();
+  return LOCS.loading;
+}
+function locOf(name){ const r=(LOCS.rows||[]).find(x=>x.place===name); return r&&isFinite(r.lat)&&isFinite(r.lng)?r:null; }
+function locMsg(l,p){ return `📍 *${l.name}*${l.branch?` (סניף ${l.branch})`:""}${p.note?`\n${p.note}`:""}\nGoogle Maps: ${gmaps(p)}\nWaze: ${waze(p)}`; }
+function repLocs(){
+  if(!LOCS.rows){ locsLoad(false).then(()=>{ if(REP.cur&&REP.cur.id==="locs") runReport(); }); REP.locLabel=""; return `<p class="hint">טוען מיקומים…</p>`; }
+  const br=$("locBr").value, locs=cfg.locations.filter(l=>!br||(l.branch||"")===br), brs=[...new Set(locs.map(l=>l.branch||""))];
+  REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
+  const saved=locs.filter(l=>locOf(l.name)).length;
+  RT.push(...locs.filter(l=>locOf(l.name)).map(l=>locMsg(l,locOf(l.name))+"\n"));
+  if(!saved) RT.length=0;
+  let html=`<div class="chips"><span class="chip">📍 ${saved} מתוך ${locs.length} מקומות עם מיקום שמור</span></div>`;
+  brs.forEach(b=>{ html+=`<h2 class="rep-h2">${esc(b?"סניף "+b:"ללא סניף")}</h2>`;
+    locs.filter(l=>(l.branch||"")===b).forEach(l=>{ const p=locOf(l.name), i=cfg.locations.indexOf(l);
+      html+=`<section class="rep-card loc-card"><div class="rc-head"><b>${esc(l.name)}</b><span>${p?"✅ שמור":"— אין מיקום"}</span></div>
+        ${p?`<div class="rc-sub">${p.acc?`דיוק ${distTxt(Math.round(p.acc))} · `:""}${p.at?`עודכן ${esc(p.at)}`:""}${p.by?` ע"י ${esc(p.by)}`:""}</div>${p.note?`<div class="rc-sub">📝 ${esc(p.note)}</div>`:""}`:""}
+        <div class="loc-acts">
+          <button type="button" class="btn primary" data-save="${i}">📍 ${p?"החלף מיקום":"שמור מיקום כאן"}</button>
+          ${p?`<a class="btn" target="_blank" rel="noopener" href="${esc(gmaps(p))}">Google Maps</a><a class="btn" target="_blank" rel="noopener" href="${esc(waze(p))}">Waze</a>
+          <a class="btn wa" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(locMsg(l,p))}">🟢 וואטסאפ</a><button type="button" class="btn" data-note="${i}">✏️ הערה</button>`:""}
+        </div></section>`; }); });
+  setTimeout(()=>{ document.querySelectorAll("#repOut [data-save]").forEach(b=>b.onclick=()=>locSaveStart(cfg.locations[+b.dataset.save]));
+    document.querySelectorAll("#repOut [data-note]").forEach(b=>b.onclick=()=>locNoteStart(cfg.locations[+b.dataset.note])); },0);
+  return html+`<p class="hint">"שמור מיקום כאן" לוקח את המיקום הנוכחי של הטלפון (GPS) – עומדים במקום האימון. לפני כל שמירה או החלפה מופיע מסך אישור. "שלח את הדוח בוואטסאפ" שולח את כל המקומות השמורים בסניף.</p>`;
+}
+// confirm dialog → save through the sheet script
+let LOCDLG=null;
+function locDialog(o){
+  LOCDLG=o; $("locDlgTitle").textContent=o.title; $("locDlgBody").innerHTML=o.body; $("locNote").value=o.note||""; $("locDlgOk").textContent=o.ok; $("locDlgOk").disabled=false; $("locDlg").showModal();
+}
+$("locDlgCancel").onclick=()=>{ $("locDlg").close(); LOCDLG=null; };
+$("locDlgOk").onclick=async()=>{
+  const o=LOCDLG; if(!o) return; const btn=$("locDlgOk"); btn.disabled=true; btn.textContent="שומר…";
+  try{ await scriptCall(Object.assign({action:"savePlace",note:$("locNote").value.trim(),by:coachName()},o.payload));
+    $("locDlg").close(); LOCDLG=null; toastOk(o.done); await locsLoad(true); runReport(); }
+  catch(e){ btn.disabled=false; btn.textContent=o.ok; showToast("השמירה נכשלה: "+e.message); }
+};
+function locSaveStart(l){
+  if(!navigator.geolocation){ showToast("הטלפון לא מאפשר מיקום"); return; }
+  showToast("מאתר מיקום…",true);
+  navigator.geolocation.getCurrentPosition(pos=>{
+    const p={lat:+pos.coords.latitude.toFixed(6),lng:+pos.coords.longitude.toFixed(6)}, acc=Math.round(pos.coords.accuracy||0), old=locOf(l.name);
+    const d=old?geoDist(old,p):0;
+    locDialog({title:old?`להחליף את המיקום של ${l.name}?`:`לשמור מיקום ל${l.name}?`, ok:old?"החלף מיקום":"שמור מיקום",
+      done:`המיקום של ${l.name} ${old?"הוחלף":"נשמר"} ✓`, note:old?old.note:"",
+      payload:{branch:l.branch||"",place:l.name,lat:p.lat,lng:p.lng,acc},
+      body:`<p>המיקום הנוכחי של הטלפון: <b dir="ltr">${p.lat}, ${p.lng}</b><br>דיוק: <b>${distTxt(acc)}</b>${acc>100?' <span style="color:var(--danger)">– דיוק נמוך; כדאי לצאת לשטח פתוח ולנסות שוב</span>':""}</p>
+        ${old?`<p>⚠️ כבר שמור מיקום למקום הזה (עודכן ${esc(old.at||"")}${old.by?` ע"י ${esc(old.by)}`:""}).<br>המיקום החדש רחוק <b>${distTxt(d)}</b> מהשמור.</p>`:""}
+        <p><a target="_blank" rel="noopener" href="${esc(gmaps(p))}">לבדיקה במפה ↗</a></p>`});
+  },err=>showToast(err.code===1?"לא ניתן אישור למיקום – אשר מיקום לאתר בהגדרות הטלפון":"לא הצלחתי לאתר מיקום – נסה שוב"),{enableHighAccuracy:true,timeout:20000,maximumAge:0});
+}
+function locNoteStart(l){ const old=locOf(l.name); if(!old) return;
+  locDialog({title:`הערה ל${l.name}`, ok:"שמור הערה", done:"ההערה נשמרה ✓", note:old.note, payload:{branch:l.branch||"",place:l.name,noteOnly:true},
+    body:`<p>המיקום לא משתנה – רק ההערה.</p>`}); }
 
 // full Arbox lists (access code) for the birthdays report
 async function bdLoadFull(){
