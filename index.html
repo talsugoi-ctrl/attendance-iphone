@@ -343,7 +343,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 05/11/2026 · מנוי מ-Arbox</div>
+  <div class="ver">גרסה 05/11/2026 · תאריך מתעדכן להיום</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -676,11 +676,28 @@ const $ = id => document.getElementById(id);
 
 // ---------- date ----------
 function todayISO(){const d=new Date(),p=n=>String(n).padStart(2,"0");return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}`;}
+// the training date is filled automatically with the day the main screen is filled in. A phone keeps the app open in the
+// background for days, so a date that was filled automatically on an earlier day moves to today when the app comes back,
+// once a minute while it's open, and right before sending. A date the coach picked by hand (a late report) is kept.
+let dateAuto=null;                                    // the day that was filled automatically (null = picked by hand)
 function trainingDate(){ // never empty: falls back to today
-  const el=$("date"); if(!/^\d{4}-\d{2}-\d{2}$/.test(el.value)) el.value=todayISO();
+  const el=$("date"); if(!/^\d{4}-\d{2}-\d{2}$/.test(el.value)){ el.value=todayISO(); dateAuto=el.value; }
   return el.value;
 }
 trainingDate();
+if($("date").value===todayISO()) dateAuto=$("date").value;   // pre-filled with today by the small script next to the field
+function refreshAutoDate(){
+  const el=$("date"), t=todayISO();
+  if(!dateAuto||el.value!==dateAuto||dateAuto===t) return false;
+  el.value=t; dateAuto=t; showDateText();
+  try{ renderRoster(); showDoneNote(); syncResult(); }catch(e){}
+  showToast("📅 התאריך עודכן להיום – "+fmtDate(t));
+  return true;
+}
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible") refreshAutoDate(); });
+window.addEventListener("pageshow",refreshAutoDate);
+window.addEventListener("focus",refreshAutoDate);
+setInterval(refreshAutoDate,60*1000);
 function showDateText(){ $("dateText").textContent=fmtDate(trainingDate()); }
 $("date").addEventListener("change",showDateText);
 $("date").addEventListener("blur",showDateText);
@@ -1017,7 +1034,7 @@ function showToast(t,ok){
   clearTimeout(toastT); toastT=setTimeout(()=>{el.hidden=true;},4500);
 }
 $("toast").onclick=()=>{$("toast").hidden=true;};
-$("date").addEventListener("change",()=>{ renderRoster(); showDoneNote(); });
+$("date").addEventListener("change",()=>{ dateAuto=$("date").value===todayISO()?$("date").value:null; renderRoster(); showDoneNote(); });
 
 // ---------- roster ----------
 function allPeople(){return people.concat(trials.map(n=>({name:n,sub:"",trial:true})));}
@@ -1187,6 +1204,10 @@ $("askYes").addEventListener("click",()=>answerAsk(true));
 $("askNo").addEventListener("click",()=>answerAsk(false));
 $("askCancel").onclick=closeAsk;
 $("askBox").addEventListener("click",e=>{ if(e.target===$("askBox")) closeAsk(); });
+// last check before sending: the app was left open since an earlier day → move to today and let the coach look again
+["waBtn","waBtn2","shareBtn","copyBtn"].forEach(id=>$(id)&&$(id).addEventListener("click",e=>{
+  if(refreshAutoDate()){ e.preventDefault(); e.stopImmediatePropagation(); showToast("📅 התאריך היה של יום קודם ועודכן להיום. בדוק את הדוח ולחץ שוב."); }
+},true));
 ["waBtn","waBtn2"].forEach(id=>$(id).addEventListener("click",e=>{
   if(answer!==null||!scriptUrl()) return;
   e.preventDefault(); openAsk($(id).href);
