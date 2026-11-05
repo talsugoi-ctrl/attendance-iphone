@@ -212,6 +212,8 @@ body.rep-open{overflow:hidden}
 .done-note{margin:6px 0 0;padding:8px 10px;border-radius:10px;background:var(--chip)}
 .done-note a{font-weight:700;cursor:pointer}
 .sch-item.cancel{opacity:.55}
+.mg-item small.arb-sub{color:var(--accent)}
+.mg-item small.arb-sub.warn{color:#b45309}
 .tsel{width:100%;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:var(--fg)}
 .tsel.missing{border-color:var(--danger);box-shadow:0 0 0 2px color-mix(in srgb,var(--danger) 25%,transparent)}
 .dur{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
@@ -341,7 +343,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 04/11/2026 · סניף יקנעם</div>
+  <div class="ver">גרסה 05/11/2026 · מנוי מ-Arbox</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -743,7 +745,8 @@ function extractPeople(rows, filter){
       if(h<0 && (c==="שם" || /(^|\s)שם$/.test(c) || (/^שם[\s:]/.test(c) && !/משפחה/.test(c)))){h=r;nameCol=ci;}
     });
   }
-  if(h>=0) subCol=rows[h].findIndex(c=>c.includes("מנוי"));
+  let phCol=-1, ntCol=-1;
+  if(h>=0){ subCol=rows[h].findIndex(c=>c.includes("מנוי")); phCol=rows[h].findIndex(c=>c.includes("טלפון")); ntCol=rows[h].findIndex(c=>c.includes("הערות")); }
   const out=[], seen=new Set();
   for(let r=h+1;r<rows.length;r++){
     const n=(rows[r][nameCol]||"").trim();
@@ -755,7 +758,10 @@ function extractPeople(rows, filter){
       if(!words.every(w=>hay.includes(w))) continue;
     }
     if(seen.has(n)) continue; seen.add(n);
-    out.push({name:n, sub});
+    const o={name:n, sub};
+    if(phCol>=0&&rows[r][phCol]) o.phone=rows[r][phCol];
+    if(ntCol>=0&&rows[r][ntCol]) o.notes=rows[r][ntCol];
+    out.push(o);
   }
   return out;
 }
@@ -800,6 +806,31 @@ function arbSplit(name){
   if(k<0) return [normName(name)];
   const last=t.slice(k+1).join(" ");
   return t.slice(0,k).concat(t[k].slice(1)).map(f=>f+" "+last);
+}
+// athletes kept in a sheet tab who also exist in Arbox: their membership (מנוי) comes live from Arbox.
+// match: "Arbox <id>" in the הערות column → else one active Arbox athlete with exactly this name (a shared family
+// account counts) → if several have the name, the phone decides. A phone alone never matches (siblings share a parent's phone).
+const arbSubOf=u=>arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + ");
+function arbFind(p){
+  if(!ARB.lite) return null;
+  const id=(String(p.notes||"").match(/Arbox\s*(\d+)/i)||[])[1];
+  if(id){ const u=ARB.lite.find(u=>String(u.id)===id&&u.active); return u?{u,how:"id"}:{miss:"id"}; }
+  const n=normName(p.name), byN=ARB.lite.filter(u=>u.active&&(normName(u.name)===n||arbSplit(u.name).includes(n)));
+  if(byN.length===1) return {u:byN[0],how:"name"};
+  if(byN.length>1){
+    const d=x=>String(x||"").replace(/\D/g,"").slice(-9), ph=d(p.phone), t=ph.length===9?byN.filter(u=>d(u.phone)===ph):[];
+    return t.length===1?{u:t[0],how:"phone"}:{miss:"many"};
+  }
+  return null;
+}
+async function arbAttach(list){
+  if((cfg.rosterSource||"arbox")!=="arbox") return -1;
+  try{ await arbEnsure(); }catch(e){ return -1; }
+  let n=0;
+  list.forEach(p=>{ const m=arbFind(p); if(!m) return;
+    if(m.u){ const s=arbSubOf(m.u); p.arbox=m.u.id; if(s){ p.sheetSub=p.sub; p.sub=s; n++; } else p.arbNo=true; }
+    else if(m.miss==="id") p.arbNo=true; });
+  return n;
 }
 // a place whose list comes from Arbox on this phone
 function isArbLoc(l){ return (cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(l.name); }
@@ -865,11 +896,12 @@ async function loadPeople(){
       list=extractPeople(rows, loc.filter||loc.name);
       if(!list.length) why=`לא נמצאה בגיליון לשונית בשם "${tabName}". בדוק את השם בהגדרות (⚙ ← ⋯ ליד המקום).`;
     }
+    const nArb=list.length?await arbAttach(list):-1;
     people=list;
     store.set(cacheKey, people);
     loadWeekLog();
     setStatus(people.length
-      ? `${arbNote?arbNote+"מהגיליון: ":""}${SHEET_ONLY.test(loc.name)?"מהגיליון: ":""}${people.length} נרשמים · ${loc.name}${viaTab?"":" (לפי עמודת מנוי)"}`
+      ? `${arbNote?arbNote+"מהגיליון: ":""}${SHEET_ONLY.test(loc.name)?"מהגיליון: ":""}${people.length} נרשמים · ${loc.name}${viaTab?"":" (לפי עמודת מנוי)"}${nArb>0?` · מנוי מ-Arbox ל-${nArb}`:""}`
       : (why||`לא נמצאו נרשמים ל"${loc.name}".`), !people.length);
   }catch(e){
     people=store.get(cacheKey, []);
@@ -1004,7 +1036,7 @@ function renderRoster(){
     };
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=p.name;
     if(p.trial){const t=document.createElement("span");t.className="tag";t.textContent="ניסיון";nm.appendChild(t);}
-    if(p.sub){const s=document.createElement("div");s.className="sub";s.textContent=p.sub;nm.appendChild(s);}
+    if(p.sub||p.arbNo){const s=document.createElement("div");s.className="sub";s.textContent=(p.sub||"")+(p.arbNo?(p.sub?" · ":"")+"⚠ אין מנוי פעיל ב-Arbox":"");nm.appendChild(s);}
     lab.append(cb,nm);
     if(p.trial){const x=document.createElement("button");x.type="button";x.className="rm";x.textContent="✕";x.setAttribute("aria-label","הסר "+p.name);
       x.onclick=e=>{e.preventDefault();trials=trials.filter(n=>n!==p.name);selected.delete(p.name);renderRoster();};lab.appendChild(x);}
@@ -1963,13 +1995,16 @@ async function renderMgrList(){
       box.appendChild(b); });
     return;
   }
+  if(!ARB.lite&&(cfg.rosterSource||"arbox")==="arbox"){ try{ await arbEnsure(); }catch(e){} }
   const list=d.athletes.filter(a=>inLoc(a,l)).filter(a=>!q||a.name.includes(q)||String(a.phone).replace(/\D/g,"").includes(q.replace(/\D/g,"")||"~"));
   list.sort((a,b)=>(activeSub(b.sub)-activeSub(a.sub))||a.name.localeCompare(b.name,"he"));
   const act=d.athletes.filter(a=>inLoc(a,l)&&activeSub(a.sub)).length;
   mgStatus(`${l.name}: ${act} פעילים${d.athletes.filter(a=>inLoc(a,l)).length-act?` · ${d.athletes.filter(a=>inLoc(a,l)).length-act} לא פעילים`:""} · לחץ על ספורטאי לעריכה או להעברה לארכיון`);
   box.innerHTML=list.length?"":`<div class="rep-empty">אין ספורטאים${q?" שמתאימים לחיפוש":" במקום הזה"}.</div>`;
   list.forEach(a=>{ const b=document.createElement("button"); b.type="button"; b.className="mg-item"+(activeSub(a.sub)?"":" off");
-    b.innerHTML=`<span class="tx"><b>${esc(a.name)}</b><small>${esc(a.sub||"ללא מנוי")}</small></span><span class="ph" dir="ltr">${esc(a.phone||"")}</span><span class="ri-go">‹</span>`;
+    const m=(cfg.rosterSource||"arbox")==="arbox"?arbFind(a):null, as=m&&m.u?arbSubOf(m.u):"";
+    const arbLine=m?(as?`<small class="arb-sub">Arbox: ${esc(as)}</small>`:`<small class="arb-sub warn">${m.miss==="many"?"⚠ כמה ספורטאים בשם הזה ב-Arbox":"⚠ אין מנוי פעיל ב-Arbox"}</small>`):"";
+    b.innerHTML=`<span class="tx"><b>${esc(a.name)}</b><small>${esc(a.sub||"ללא מנוי")}</small>${arbLine}</span><span class="ph" dir="ltr">${esc(a.phone||"")}</span><span class="ri-go">‹</span>`;
     b.onclick=()=>{ MG.edit=a; setMode("edit"); openForm(a); }; box.appendChild(b); });
 }
 $("mgrSearch").addEventListener("input",()=>renderMgrList());
