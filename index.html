@@ -139,6 +139,8 @@ body.rep-open{overflow:hidden}
 .rc-list .d{font-variant-numeric:tabular-nums;font-weight:700}
 .rc-list.miss li{display:flex;justify-content:space-between;gap:10px;background:var(--surface);padding:8px 12px;border:1px solid var(--line);border-radius:10px}
 .rc-list.miss a{color:var(--accent);text-decoration:none}
+.rc-list.miss .mr{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.rc-list.miss a.wa-mini{background:#1fa855;color:#fff;border-radius:999px;padding:4px 11px;font-size:.82rem;font-weight:700;white-space:nowrap}
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tag.over{color:var(--danger);border-color:var(--danger)}
 .tag.unpaid{color:#9a6a00;border-color:#d9a400}
@@ -348,7 +350,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 05/11/2026 · עדכון גרסה אוטומטי</div>
+  <div class="ver">גרסה 05/11/2026 · וואטסאפ למי שלא הגיע</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1136,7 +1138,7 @@ $("dur").addEventListener("blur",()=>{ $("dur").value=durHours(); showDur(); });
 function coachName(){ return $("coach").value.trim()||DEFAULT_COACH; }
 $("coach").value=store.get("coach","");
 $("coach").addEventListener("change",()=>store.set("coach",$("coach").value.trim()));
-function waDigits(n){ let d=String(n||"").replace(/\D/g,""); if(d.startsWith("0")) d="972"+d.slice(1); return d; }
+function waDigits(n){ let d=String(n||"").replace(/\D/g,""); if(d.startsWith("0")) d="972"+d.slice(1); else if(/^5\d{8}$/.test(d)) d="972"+d; return d; }
 function waHref(text,phone){ return `https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(text)}`; }
 function fmtPhone(n){ const d=waDigits(n); return d.startsWith("972")?"0"+d.slice(3).replace(/^(\d{2})(\d{7})$/,"$1-$2"):"+"+d; }
 function setWaButtons(text){
@@ -1785,8 +1787,15 @@ function repSession(){
     <h2 class="rep-h2">נכחו (${rs.length})</h2>
     <ul class="rc-list">${att.map(a=>`<li>${esc(a.r.name)} <span>${a.phone?telLink(a.phone):""}</span>${a.tags.length?`<div class="tags">${a.tags.map(t=>`<span class="tag ${t.k}">${esc(t.t)}</span>`).join("")}</div>`:""}</li>`).join("")}</ul>
     <h2 class="rep-h2">לא הגיעו (${miss.length})</h2>
-    ${miss.length?`<ul class="rc-list miss">${miss.map(p=>`<li>${esc(p.name)} <span>${telLink(p.phone)}</span></li>`).join("")}</ul>`:`<p class="hint">כל הרשומים למקום הגיעו ✓</p>`}
+    ${miss.length?`<ul class="rc-list miss">${miss.map(p=>{ const wa=p.phone&&waDigits(p.phone).length>=11?`<a class="wa-mini" href="${esc(waHref(missMsg(p.name,r0,L,dmy),p.phone))}" target="_blank" rel="noopener" aria-label="הודעת וואטסאפ ל${esc(p.name)}">💬 וואטסאפ</a>`:"";
+      return `<li>${esc(p.name)} <span class="mr">${telLink(p.phone)}${wa}</span></li>`; }).join("")}</ul>
+      <p class="hint">💬 פותח וואטסאפ עם הודעה מוכנה – אפשר לשנות אותה לפני השליחה.</p>`:`<p class="hint">כל הרשומים למקום הגיעו ✓</p>`}
     <p class="hint">"לא הגיעו" = רשומים פעילים למקום (מ-Arbox; בכוכב יאיר – מהגיליון) שלא סומנו באימון הזה.</p>`;
+}
+// ready message to an athlete who missed the training (opens WhatsApp; the coach can still edit it before sending)
+function missMsg(name,r0,L,dmy){
+  const first=normName(name).split(" ")[0], when=dmy===dmyOf(todayISO())?"היום":`ב${dayName(dmy)} (${dmy})`;
+  return `היי ${first} 👋\nלא ראינו אותך ${when} באימון ${r0.type?r0.type+" ":""}ב${L}. הכל בסדר?\nמחכים לך באימון הבא 💪${r0.coach?"\n"+r0.coach:""}`;
 }
 function openSesReport(loc,iso,id){ REP.sesPreset={loc,iso,id}; closeSched&&closeSched(); openReports(); openReport("ses"); }
 
