@@ -40,6 +40,11 @@ header{display:flex;align-items:center;justify-content:space-between;gap:12px}
 .brand{display:flex;align-items:center;gap:12px;min-width:0}
 .brand img{width:48px;height:48px;flex:none}
 .ver{font-size:.75rem;color:var(--muted);text-align:center}
+.upd{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(84px + env(safe-area-inset-bottom,0px));z-index:59;width:min(520px,calc(100% - 32px));display:flex;align-items:center;gap:8px;background:var(--accent);color:#fff;padding:10px 12px;border-radius:12px;box-shadow:0 6px 20px rgba(0,0,0,.25);font-weight:700}
+.upd span{flex:1;font-size:.95rem}
+.upd button{border:0;border-radius:9px;font:inherit;cursor:pointer}
+#updGo{background:#fff;color:var(--accent);padding:8px 12px}
+#updLater{background:transparent;color:#fff;padding:6px 8px;font-size:1.1rem}
 .branches{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .branch{display:flex;flex-direction:column;gap:10px;padding:12px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg)}
 .branch.active{border-color:var(--accent)}
@@ -343,7 +348,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 05/11/2026 · רמת גן</div>
+  <div class="ver">גרסה 05/11/2026 · עדכון גרסה אוטומטי</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -538,6 +543,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </section>
 
 <div class="toast" id="toast" role="alert" hidden></div>
+<div class="upd" id="updBar" role="status" hidden><span id="updTxt">🔄 יש גרסה חדשה של האפליקציה</span><button type="button" id="updGo">עדכן עכשיו</button><button type="button" id="updLater" aria-label="אחר כך">✕</button></div>
 
 <div class="ask" id="askBox" hidden role="dialog" aria-modal="true" aria-labelledby="askTitle">
   <div class="ask-card">
@@ -566,6 +572,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button type="button" class="btn primary mgr-open-btn" id="mgrBtn"><span aria-hidden="true">👥</span> ניהול ספורטאים – הוספה, עריכה, ארכיון ונוכחות שנשכחה</button>
     <button type="button" class="btn mgr-open-btn arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span> Arbox – ספורטאים מהמערכת</button>
     <button type="button" class="btn mgr-open-btn" id="sheetBtn"><span aria-hidden="true">📊</span> פתיחת גיליון הנוכחות בדפדפן</button>
+    <button type="button" class="btn mgr-open-btn" id="updBtn"><span aria-hidden="true">🔄</span> בדיקת עדכון גרסה</button>
     <div class="card" id="sheetPwBox" hidden style="margin:0">
       <label class="lbl" for="sheetPw">סיסמה לגיליון הנוכחות</label>
       <input type="password" id="sheetPw" autocomplete="off" autocapitalize="characters" enterkeyhint="go">
@@ -1339,6 +1346,46 @@ showDateText();
 if("serviceWorker" in navigator && location.protocol==="https:"){
   navigator.serviceWorker.register("sw.js").catch(()=>{});
 }
+// ---------- new version ----------
+// Phones keep the app open in the background for days, so a release never reaches them by itself.
+// The app compares its own version line with the one on the site: when it comes back after 30+ minutes away and nothing
+// is in progress (no one marked, no report, no screen open) it reloads by itself; otherwise a bar offers "עדכן עכשיו".
+// It also checks every hour while open, and on demand from Settings (🔄 בדיקת עדכון גרסה).
+const APP_VER=((document.querySelector(".ver")||{}).textContent||"").trim();
+let verAt=0, hiddenAt=0, updLater=0;
+const verShort=v=>v.replace(/^גרסה\s*/,"");
+function appIdle(){ return !selected.size&&$("resultCard").hidden&&!$("setup").open&&!document.body.classList.contains("rep-open"); }
+async function siteVersion(){
+  const r=await fetch("index.html?ver="+Date.now(),{cache:"no-store"}); if(!r.ok) throw new Error("HTTP "+r.status);
+  const m=(await r.text()).match(/<div class="ver">([^<]*)<\/div>/); if(!m) throw new Error("no version");
+  return m[1].trim();
+}
+function doUpdate(){
+  $("updGo").disabled=true; $("updTxt").textContent="🔄 מעדכן…";
+  const go=()=>location.reload();
+  try{ navigator.serviceWorker&&navigator.serviceWorker.getRegistration?navigator.serviceWorker.getRegistration().then(g=>g&&g.update()).catch(()=>{}).finally(go):go(); }catch(e){ go(); }
+}
+async function checkVersion(mode){            // mode: "manual" | "resume" | "timer"
+  if(!APP_VER||location.protocol!=="https:"){ if(mode==="manual") showToast("בדיקת עדכון עובדת רק באפליקציה המותקנת"); return; }
+  let v; try{ v=await siteVersion(); verAt=Date.now(); }
+  catch(e){ if(mode==="manual") showToast("לא הצלחתי לבדוק עדכון – אין חיבור לאינטרנט?"); return; }
+  if(v===APP_VER){ if(mode==="manual") showToast("✓ יש לך את הגרסה האחרונה – "+verShort(APP_VER),true); return; }
+  if(mode==="resume"&&appIdle()){ doUpdate(); return; }
+  if(mode==="manual"&&appIdle()){ $("setup").close(); doUpdate(); return; }
+  if(mode!=="manual"&&Date.now()-updLater<3*3600*1000) return;   // "later" was pressed – ask again in a few hours
+  $("updTxt").textContent="🔄 יש גרסה חדשה: "+verShort(v); $("updGo").disabled=false; $("updBar").hidden=false;
+  if(mode==="manual"){ $("setup").close(); showToast("יש גרסה חדשה – לחץ \"עדכן עכשיו\" אחרי שתסיים את הדיווח",true); }
+}
+$("updGo").onclick=doUpdate;
+$("updLater").onclick=()=>{ $("updBar").hidden=true; updLater=Date.now(); };
+$("updBtn").onclick=()=>checkVersion("manual");
+document.addEventListener("visibilitychange",()=>{
+  if(document.visibilityState==="hidden"){ hiddenAt=Date.now(); return; }
+  if(hiddenAt&&Date.now()-hiddenAt>=30*60*1000) checkVersion("resume");
+  else if(Date.now()-verAt>=15*60*1000) checkVersion("timer");
+});
+setInterval(()=>{ if(document.visibilityState==="visible"&&Date.now()-verAt>=60*60*1000) checkVersion("timer"); },5*60*1000);
+setTimeout(()=>checkVersion("timer"),20*1000);
 // ================= reports =================
 const REP={log:[],roster:[],loaded:false,loading:null,cur:null};
 const DAYS_SHORT=["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
