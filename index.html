@@ -187,6 +187,12 @@ body.rep-open{overflow:hidden}
 .ab-top b{font:700 1.02rem var(--display)}
 .ab-ph{display:flex;gap:10px;flex-wrap:wrap;font-variant-numeric:tabular-nums}
 .ab-ph a{color:var(--accent);text-decoration:none}
+.ab-area{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.ab-area label{font-weight:700;font-size:.9rem;white-space:nowrap}
+.ab-area .tsel{flex:1;min-width:150px;padding:8px 10px}
+.ab-area-st{font-size:.85rem;color:var(--muted);width:100%}
+.ab-area-st.ok{color:#1f8a4c;font-weight:700}
+.ab-area-st.err{color:var(--danger);font-weight:700}
 .ab-note{background:color-mix(in srgb,#e0a100 14%,var(--surface));border-radius:8px;padding:6px 10px;font-size:.9rem}
 .ab-card details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 .ab-card details table{width:100%;font-size:.82rem;border-collapse:collapse;margin-top:6px}
@@ -350,7 +356,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 05/11/2026 · וואטסאפ למי שלא הגיע</div>
+  <div class="ver">גרסה 08/11/2026 · איזור אימון ב-Arbox</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2238,18 +2244,40 @@ function arbRender(){
   const lsel=$("arbLoc"), lv=lsel.value, locs=[...new Set(all.map(arbBranch).filter(Boolean))].sort();
   if(lsel.options.length!==locs.length+1){ lsel.innerHTML=`<option value="">כל הסניפים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); lsel.value=lv; }
   let list=all.filter(u=>(f==="all"||(f==="1")===u.active)&&(!lsel.value||arbBranch(u)===lsel.value));
-  if(q) list=list.filter(u=>u.name.includes(q)||(qd&&(u.phone+u.phone2).replace(/\D/g,"").includes(qd))||u.memberships.some(m=>m.name.includes(q))||(u.notes||"").includes(q));
+  if(q) list=list.filter(u=>u.name.includes(q)||(qd&&(u.phone+u.phone2).replace(/\D/g,"").includes(qd))||u.memberships.some(m=>m.name.includes(q))||(u.notes||"").includes(q)||(u.area||"").includes(q));
   list.sort((a,b)=>a.name.localeCompare(b.name,"he"));
-  $("arbChips").innerHTML=`<span class="chip">${list.length} מוצגים</span><span class="chip blue">${list.filter(u=>u.memberships.length).length} עם מנוי פעיל</span><span class="chip amber">${list.filter(u=>u.notes).length} עם הערות</span>`;
+  $("arbChips").innerHTML=`<span class="chip">${list.length} מוצגים</span><span class="chip blue">${list.filter(u=>u.memberships.length).length} עם מנוי פעיל</span><span class="chip amber">${list.filter(u=>u.notes).length} עם הערות</span><span class="chip">📍 ${list.filter(u=>u.area).length} עם איזור אימון</span>`;
   const tel=p=>p?`<a href="tel:${esc(String(p).replace(/[^\d+]/g,""))}" dir="ltr">📞 ${esc(p)}</a><a href="https://wa.me/${waDigits(p)}" target="_blank" rel="noopener">💬</a>`:"";
   $("arbList").innerHTML=list.map(u=>`<section class="ab-card${u.active?"":" off"}">
     <div class="ab-top"><b>${esc(u.name)}</b><span>${arbBranch(u)?`<span class="tag">${esc(arbBranch(u))}</span>`:""}${u.active?"":` <span class="tag over">לא פעיל</span>`}${+u.debt>0?` <span class="tag over">חוב ₪${esc(u.debt)}</span>`:""}</span></div>
     <div class="ab-ph">${tel(u.phone)}${u.phone2?tel(u.phone2):""}${u.email?`<a href="mailto:${esc(u.email)}" dir="ltr">✉️ ${esc(u.email)}</a>`:""}</div>
+    <div class="ab-area"><label for="ar-${esc(u.id)}">📍 איזור אימון</label><select class="tsel arb-area" id="ar-${esc(u.id)}" data-id="${esc(u.id)}">${areaOptions(u.area)}</select><span class="ab-area-st"></span></div>
     ${u.memberships.length?`<div class="chips">${u.memberships.map(m=>`<span class="chip blue">${esc(m.name||"מנוי")}${m.end?` · עד ${esc(fmtIso(m.end))}`:""}${m.left!==""?` · נותרו ${esc(m.left)}`:""}</span>`).join("")}</div>`:`<div class="hint">אין מנוי פעיל ב-Arbox</div>`}
     ${u.notes?`<div class="ab-note">📝 ${esc(u.notes)}</div>`:""}
     <details><summary>כל הפרטים ב-Arbox</summary><table>${Object.entries(u.all||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></details>
   </section>`).join("")||`<div class="rep-empty">אין ספורטאים שמתאימים לחיפוש.</div>`;
 }
+// "איזור אימון" (Arbox custom field): pick a training place → saved straight to Arbox (Arbox access code needed)
+function areaOptions(cur){
+  cur=String(cur||"").trim();
+  const names=cfg.locations.map(l=>l.name), brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
+  const other=cur&&!names.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)} (כפי שכתוב ב-Arbox)</option>`:"";
+  return `<option value=""${cur?"":" selected"}>— לא הוגדר —</option>${other}`+brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option value="${esc(l.name)}"${l.name===cur?" selected":""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("");
+}
+$("arbList").addEventListener("change",async e=>{
+  const s=e.target.closest("select.arb-area"); if(!s) return;
+  const u=(ARB.users||[]).find(x=>String(x.id)===s.dataset.id); if(!u) return;
+  const v=s.value, prev=String(u.area||""), st=s.parentElement.querySelector(".ab-area-st");
+  s.disabled=true; st.className="ab-area-st"; st.textContent="שומר ב-Arbox…";
+  try{
+    const r=await scriptCall({action:"arboxSetArea",pin:arbPin(),boxId:u.boxId||"",userId:u.id,name:u.name,value:v});
+    u.area=r.value; st.className="ab-area-st ok"; st.textContent=`✓ נשמר ב-Arbox${r.value?": "+r.value:" (נמחק)"}`;
+    $("arbChips").querySelector(".chip:last-child").textContent=`📍 ${(ARB.users||[]).filter(x=>x.area).length} עם איזור אימון`;
+  }catch(err){
+    s.innerHTML=areaOptions(prev); st.className="ab-area-st err";
+    st.textContent=(err.resp&&err.resp.pin)?"קוד הגישה ל-Arbox שגוי – לא נשמר":"לא נשמר: "+err.message;
+  }finally{ s.disabled=false; }
+});
 $("arbPinBox").onsubmit=ev=>{ ev.preventDefault(); const v=$("arbPin").value.trim(); if(!v) return; store.set("arbox-pin",v); $("arbPin").value=""; ARB.users=null; arbShow(); };
 $("arbSearch").addEventListener("input",arbRender); $("arbFilter").onchange=arbRender; $("arbLoc").onchange=arbRender;
 $("arbForget").onclick=()=>{ store.set("arbox-pin",""); ARB.users=null; arbShow(); };
