@@ -357,7 +357,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · רכיבת שבת C3US</div>
+  <div class="ver">גרסה 08/11/2026 · רכיבת שבת C3US (2)</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -879,7 +879,8 @@ async function arboxRoster(loc){
     const inLoc=arbInLoc(u,loc), sub=arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + ");
     arbSplit(u.name).forEach(n=>{
       const pin=ARB_PIN_LOC[n];
-      if(((pin?pin===loc.name:inLoc)||(ARB_EXTRA_LOC[loc.name]||[]).includes(n))&&!seen.has(n)){ seen.add(n); out.push({name:n,sub,phone:u.phone,arbox:u.id}); }
+      const inArea=String(u.area||"").split(",").map(x=>x.trim()).includes(loc.name);   // the Arbox field wins over a hand pin
+      if(((pin?pin===loc.name:inLoc)||inArea||(ARB_EXTRA_LOC[loc.name]||[]).includes(n))&&!seen.has(n)){ seen.add(n); out.push({name:n,sub,phone:u.phone,arbox:u.id}); }
     });
   });
   return out.sort((a,b)=>a.name.localeCompare(b.name,"he"));
