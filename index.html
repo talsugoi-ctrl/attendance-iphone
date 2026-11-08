@@ -369,7 +369,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · הוספת ספורטאי מ-Arbox</div>
+  <div class="ver">גרסה 08/11/2026 · בלי שמשית ילדים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -648,7 +648,6 @@ const DEFAULTS = {
   scriptUrl: "https://script.google.com/macros/s/AKfycby1ZB37OEsLwvRUVMmb5FX1lsGX6zjSVaDlbQuwsABdlSGRcomS-EfQZ6A-jSX0mFZbUQ/exec",   // Moran's system – the sheet's web-app address (…/exec)
   locations: [
     {branch:"עמק יזרעאל", name:"נופית", tab:"נופית", filter:""},
-    {branch:"עמק יזרעאל", name:"שמשית ילדים", tab:"שמשית", filter:"ילדים"},
     {branch:"עמק יזרעאל", name:"שמשית מאסטרס", tab:"שמשית", filter:"מאסטרס"},
     {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
     {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
@@ -697,6 +696,9 @@ cfg.locations.forEach(l=>{
   if(l.tab==="שמשית ילדים"&&!l.filter){l.tab="שמשית";l.filter="ילדים";}
   if(l.tab==="שמשית מאסטרס"&&!l.filter){l.tab="שמשית";l.filter="מאסטרס";}
 });
+// places that are not active right now – hidden on every phone. To bring one back: delete it from here and add it to DEFAULTS again (under seen-locs it already counts as seen, so also give it a new name or clear that mark)
+const HIDDEN_LOCS=["שמשית ילדים"];          // no Shimshit kids group at the moment (08/11/2026)
+cfg.locations=cfg.locations.filter(l=>!HIDDEN_LOCS.includes(l.name));
 let current = null;        // selected location index
 let people = [];           // [{name, sub}]
 let trials = [];
