@@ -145,6 +145,7 @@ body.rep-open{overflow:hidden}
 .tag.over{color:var(--danger);border-color:var(--danger)}
 .tag.unpaid{color:#9a6a00;border-color:#d9a400}
 .tag.trial{color:var(--accent);border-color:var(--accent)}
+.tag.arb{color:#fff;background:#2f6fdb;border-color:#2f6fdb;font-size:.66rem;padding:0 7px;letter-spacing:.02em}
 .rep-h2{font:700 1.05rem var(--display);margin:8px 0 0;color:var(--accent)}
 .rep-h3{font:700 .95rem var(--display);margin:4px 0 0}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
@@ -356,7 +357,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · איזור אימון ב-Arbox</div>
+  <div class="ver">גרסה 08/11/2026 · סימון Arbox ברישום</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1070,6 +1071,7 @@ function renderRoster(){
     };
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=p.name;
     if(p.trial){const t=document.createElement("span");t.className="tag";t.textContent="ניסיון";nm.appendChild(t);}
+    if(p.arbox){const t=document.createElement("span");t.className="tag arb";t.textContent="Arbox";t.title="הפרטים נלקחו מ-Arbox";t.setAttribute("aria-label","מ-Arbox");nm.appendChild(t);}
     if(p.sub||p.arbNo){const s=document.createElement("div");s.className="sub";s.textContent=(p.sub||"")+(p.arbNo?(p.sub?" · ":"")+"⚠ אין מנוי פעיל ב-Arbox":"");nm.appendChild(s);}
     lab.append(cb,nm);
     if(p.trial){const x=document.createElement("button");x.type="button";x.className="rm";x.textContent="✕";x.setAttribute("aria-label","הסר "+p.name);
