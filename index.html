@@ -369,7 +369,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · נגה ואן אלק</div>
+  <div class="ver">גרסה 08/11/2026 · קריטריום קיסריה לפי איזור אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -830,6 +830,7 @@ function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
   // "איזור אימון" in Arbox (custom field, comma-separated) adds the athlete to every place named there
   if(String(u.area||"").split(",").map(x=>x.trim()).includes(n)) return true;
+  if(loc.branch==="C3US") return false;   // C3US places: only athletes whose "איזור אימון" names the place (not the Emek Yizrael קריטריום group)
   if(isOffLoc(loc)){ const off=ps.filter(p=>/שטח/.test(p)), k=(loc.filter||n.replace(/^שטח\s*/,"")).trim();
     return k&&k!=="כללי"?off.some(p=>p.includes(k)):off.some(p=>!OFF_KEYS.some(w=>p.includes(w))); }
   const fw=(loc.filter||"").split(/\s+/).filter(Boolean);
