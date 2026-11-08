@@ -357,7 +357,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · סימון Arbox ברישום</div>
+  <div class="ver">גרסה 08/11/2026 · רכיבת שבת C3US</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -640,6 +640,7 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"שמשית מאסטרס", tab:"שמשית", filter:"מאסטרס"},
     {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
     {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
+    {branch:"עמק יזרעאל", name:"רכיבת שבת C3US", tab:"", filter:""},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
     {branch:"מרכז", name:"רמת גן", tab:"רמת גן", filter:""},
@@ -806,6 +807,8 @@ const OFF_KEYS=["תל מונד","תל אביב","ירושלים","שוהם","ה�
 const isOffLoc=l=>/^שטח/.test(l.name||"");
 function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
+  // "איזור אימון" in Arbox (custom field, comma-separated) adds the athlete to every place named there
+  if(String(u.area||"").split(",").map(x=>x.trim()).includes(n)) return true;
   if(isOffLoc(loc)){ const off=ps.filter(p=>/שטח/.test(p)), k=(loc.filter||n.replace(/^שטח\s*/,"")).trim();
     return k&&k!=="כללי"?off.some(p=>p.includes(k)):off.some(p=>!OFF_KEYS.some(w=>p.includes(w))); }
   const fw=(loc.filter||"").split(/\s+/).filter(Boolean);
