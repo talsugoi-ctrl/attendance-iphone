@@ -102,6 +102,13 @@ ul.roster .overmsg{margin-top:4px;font-size:.85rem;font-weight:700;color:var(--d
 .count small{font:400 .85rem var(--body);color:var(--muted)}
 .bar .btn{margin-inline-start:auto;padding:12px 22px;font-size:1.05rem}
 .trial{border-top:1px solid var(--line);padding-top:12px}
+.arb-add{margin-top:10px}
+.arb-add .lbl{display:block;margin-bottom:6px}
+.arb-add-list{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.arb-add-list button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:right;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;color:var(--fg)}
+.arb-add-list button small{color:var(--muted);display:block;font-size:.8rem}
+.arb-add-list button .go{color:#2f6fdb;font-weight:700;white-space:nowrap}
+.tag.guest{color:#2f6fdb;border-color:#2f6fdb}
 .tag{font:700 .72rem var(--body);color:var(--accent-2);border:1px solid var(--accent-2);border-radius:999px;padding:1px 8px;margin-inline-start:6px;vertical-align:middle}
 .rm{border:0;background:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px}
 .hdr-btns{display:flex;gap:8px}
@@ -339,6 +346,11 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <input type="text" id="trialName" placeholder="שם ספורטאי חדש שהגיע לניסיון" aria-label="שם ספורטאי לניסיון">
       <button class="btn" type="submit">+ הוסף</button>
     </form>
+    <div class="arb-add trial" id="arbAddBox">
+      <label class="lbl" for="arbAddQ">הוספת ספורטאי מ-Arbox לאימון הזה</label>
+      <input type="search" id="arbAddQ" placeholder="חיפוש שם ב-Arbox…" autocomplete="off" enterkeyhint="search">
+      <div class="arb-add-list" id="arbAddList"></div>
+    </div>
   </section>
 
   <section class="card" id="resultCard" hidden>
@@ -357,7 +369,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · רכיבת שבת C3US (2)</div>
+  <div class="ver">גרסה 08/11/2026 · הוספת ספורטאי מ-Arbox</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -688,6 +700,7 @@ cfg.locations.forEach(l=>{
 let current = null;        // selected location index
 let people = [];           // [{name, sub}]
 let trials = [];
+let guests = [];           // athletes from Arbox added to this training although they belong to another place
            // names added manually for this session
 const selected = new Set();
 const $ = id => document.getElementById(id);
@@ -744,7 +757,7 @@ function renderLocs(){
       const b=document.createElement("button");
       b.type="button"; b.className="loc"; b.textContent=l.name;
       b.setAttribute("aria-pressed", String(i===current));
-      b.onclick=()=>{if(current!==i){trials=[];} current=i;
+      b.onclick=()=>{if(current!==i){trials=[];guests=[];} current=i;
         if(isOffLoc(l)&&!$("ttype").value){ $("ttype").value="רכיבת שטח"; $("ttype").classList.remove("missing"); }   // off-road places: default type
         renderLocs(); loadPeople();};
       row.appendChild(b);
@@ -1059,7 +1072,7 @@ $("toast").onclick=()=>{$("toast").hidden=true;};
 $("date").addEventListener("change",()=>{ dateAuto=$("date").value===todayISO()?$("date").value:null; renderRoster(); showDoneNote(); });
 
 // ---------- roster ----------
-function allPeople(){return people.concat(trials.map(n=>({name:n,sub:"",trial:true})));}
+function allPeople(){return people.concat(guests.filter(g=>!people.some(p=>p.name===g.name)),trials.map(n=>({name:n,sub:"",trial:true})));}
 function renderRoster(){
   const q=$("q").value.trim();
   const ul=$("roster"); ul.innerHTML="";
@@ -1075,11 +1088,12 @@ function renderRoster(){
     };
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=p.name;
     if(p.trial){const t=document.createElement("span");t.className="tag";t.textContent="ניסיון";nm.appendChild(t);}
+    if(p.guest){const t=document.createElement("span");t.className="tag guest";t.textContent="נוסף לאימון";nm.appendChild(t);}
     if(p.arbox){const t=document.createElement("span");t.className="tag arb";t.textContent="Arbox";t.title="הפרטים נלקחו מ-Arbox";t.setAttribute("aria-label","מ-Arbox");nm.appendChild(t);}
     if(p.sub||p.arbNo){const s=document.createElement("div");s.className="sub";s.textContent=(p.sub||"")+(p.arbNo?(p.sub?" · ":"")+"⚠ אין מנוי פעיל ב-Arbox":"");nm.appendChild(s);}
     lab.append(cb,nm);
-    if(p.trial){const x=document.createElement("button");x.type="button";x.className="rm";x.textContent="✕";x.setAttribute("aria-label","הסר "+p.name);
-      x.onclick=e=>{e.preventDefault();trials=trials.filter(n=>n!==p.name);selected.delete(p.name);renderRoster();};lab.appendChild(x);}
+    if(p.trial||p.guest){const x=document.createElement("button");x.type="button";x.className="rm";x.textContent="✕";x.setAttribute("aria-label","הסר "+p.name);
+      x.onclick=e=>{e.preventDefault();trials=trials.filter(n=>n!==p.name);guests=guests.filter(g=>g.name!==p.name);selected.delete(p.name);renderRoster();};lab.appendChild(x);}
     li.appendChild(lab); ul.appendChild(li);
     paintOver(li,p);
   });
@@ -1104,6 +1118,19 @@ $("trialForm").onsubmit=e=>{
   $("trialName").value=""; $("q").value="";
   renderRoster();
 };
+// ---------- add an athlete from Arbox to this training (e.g. someone from another group who came today) ----------
+function arbAddRender(){
+  const box=$("arbAddList"), q=normName($("arbAddQ").value);
+  if(q.length<2||!ARB.lite){ box.innerHTML=q.length>=2?`<p class="hint">טוען מ-Arbox…</p>`:""; return; }
+  const have=new Set(allPeople().map(p=>p.name)), out=[];
+  ARB.lite.filter(u=>u.active).forEach(u=>arbSplit(u.name).forEach(n=>{ if(n.includes(q)&&!have.has(n)&&out.length<8) out.push({n,u}); }));
+  box.innerHTML=out.length?out.map((o,i)=>`<button type="button" data-i="${i}"><span><b>${esc(o.n)}</b><small>${esc(arbSubOf(o.u)||"אין מנוי פעיל")}${o.u.area?" · 📍 "+esc(o.u.area):""}</small></span><span class="go">+ הוסף</span></button>`).join(""):`<p class="hint">לא נמצא ספורטאי פעיל בשם הזה ב-Arbox (או שהוא כבר ברשימה).</p>`;
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const o=out[+b.dataset.i];
+    guests.push({name:o.n,sub:arbSubOf(o.u),phone:o.u.phone,arbox:o.u.id,guest:true}); selected.add(o.n);
+    $("arbAddQ").value=""; box.innerHTML=""; renderRoster(); toastOk(`${o.n} נוסף/ה לאימון ✓`); });
+}
+$("arbAddQ").addEventListener("focus",()=>{ if(!ARB.lite) arbEnsure().then(arbAddRender).catch(e=>{ $("arbAddList").innerHTML=`<p class="hint">Arbox לא זמין: ${esc(e.message)}</p>`; }); });
+$("arbAddQ").addEventListener("input",arbAddRender);
 function updateCount(){
   $("cnt").textContent=selected.size;
   $("confirmBtn").disabled=!(selected.size||$("trialName").value.trim())||current==null;
@@ -1350,7 +1377,7 @@ $("saveSetup").onclick=()=>{
   // keep the chosen location if it still exists and its branch is still shown
   current=null;
   if(prevLoc){ const k=cfg.locations.findIndex(l=>l.name===prevLoc.name&&l.branch===prevLoc.branch); if(k>=0&&!cfg.hiddenBranches.includes(cfg.locations[k].branch||"")) current=k; }
-  if(current==null){ trials=[]; selected.clear(); people=[]; $("roster").innerHTML=""; $("resultCard").hidden=true; setStatus("בחר מקום אימון כדי לטעון את רשימת הנרשמים."); updateCount(); }
+  if(current==null){ trials=[]; guests=[]; selected.clear(); people=[]; $("roster").innerHTML=""; $("resultCard").hidden=true; setStatus("בחר מקום אימון כדי לטעון את רשימת הנרשמים."); updateCount(); }
   renderLocs(); if(current!=null) loadPeople();
 };
 
@@ -2005,7 +2032,7 @@ function schUse(x){
   if(x.coach){ $("coach").value=x.coach; store.set("coach",x.coach); }
   const d=hmDur(x.start,x.end); if(d){ $("dur").value=d; showDur(); }
   closeSched();
-  if(i>=0){ if(current!==i) trials=[]; current=i; renderLocs(); loadPeople(); setTimeout(()=>$("rosterCard").scrollIntoView({behavior:"smooth"}),150); }
+  if(i>=0){ if(current!==i){ trials=[]; guests=[]; } current=i; renderLocs(); loadPeople(); setTimeout(()=>$("rosterCard").scrollIntoView({behavior:"smooth"}),150); }
   else showToast(`לא מצאתי מקום אימון "${want}" – בחר מקום ידנית`);
   syncResult&&syncResult();
 }
