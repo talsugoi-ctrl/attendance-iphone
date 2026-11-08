@@ -369,7 +369,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · בלי שמשית ילדים</div>
+  <div class="ver">גרסה 08/11/2026 · סניף C3US</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -651,11 +651,14 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"שמשית מאסטרס", tab:"שמשית", filter:"מאסטרס"},
     {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
     {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
-    {branch:"עמק יזרעאל", name:"רכיבת שבת C3US", tab:"", filter:""},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
     {branch:"מרכז", name:"רמת גן", tab:"רמת גן", filter:""},
     {branch:"יקנעם", name:"טריאתלון נוער יקנעם", tab:"יקנעם", filter:""},
+    {branch:"C3US", name:"שחייה חדרה", tab:"", filter:""},
+    {branch:"C3US", name:"קריטריום קיסריה", tab:"", filter:""},
+    {branch:"C3US", name:"ריצה שחייה שישי", tab:"", filter:""},
+    {branch:"C3US", name:"רכיבת שבת C3US", tab:"", filter:""},
     {branch:"שטח", name:"שטח תל מונד", tab:"", filter:"תל מונד"},
     {branch:"שטח", name:"שטח תל אביב", tab:"", filter:"תל אביב"},
     {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
@@ -697,6 +700,9 @@ cfg.locations.forEach(l=>{
   if(l.tab==="שמשית מאסטרס"&&!l.filter){l.tab="שמשית";l.filter="מאסטרס";}
 });
 // places that are not active right now – hidden on every phone. To bring one back: delete it from here and add it to DEFAULTS again (under seen-locs it already counts as seen, so also give it a new name or clear that mark)
+// "רכיבת שבת C3US" opened under עמק יזרעאל and moved to its own branch C3US (08/11/2026)
+(function(){ const i=cfg.locations.findIndex(l=>l.name==="רכיבת שבת C3US"&&l.branch!=="C3US");
+  if(i>=0){ const l=cfg.locations.splice(i,1)[0]; l.branch="C3US"; cfg.locations.push(l); } })();
 const HIDDEN_LOCS=["שמשית ילדים"];          // no Shimshit kids group at the moment (08/11/2026)
 cfg.locations=cfg.locations.filter(l=>!HIDDEN_LOCS.includes(l.name));
 let current = null;        // selected location index
@@ -919,6 +925,8 @@ async function loadPeople(){
     }catch(e){ arbNote=`Arbox לא זמין (${e.message}) – `; }
   }
   if(isOffLoc(loc)){ people=[]; setStatus(arbNote+"רשימת רוכבי השטח קיימת רק ב-Arbox.",true); renderRoster(); return; }
+  if(!String(loc.tab||"").trim()&&(cfg.rosterSource||"arbox")==="arbox"){   // a place that lives only in Arbox (no sheet tab)
+    people=[]; setStatus((/לא זמין|קוד גישה/.test(arbNote)?arbNote:"")+`אין עדיין ספורטאים ב"${loc.name}". משייכים ספורטאי דרך "איזור אימון" במסך Arbox (⚙ ← 🔗 Arbox), או מוסיפים לאימון מ-Arbox למטה.`,true); renderRoster(); return; }
   const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
   const gidM=String(cfg.sheetUrl).match(/gid=(\d+)/); const gid=gidM?gidM[1]:"0";
   async function get(u){
