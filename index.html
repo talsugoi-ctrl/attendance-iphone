@@ -369,7 +369,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · סניף C3US</div>
+  <div class="ver">גרסה 08/11/2026 · נגה ואן אלק</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -861,7 +861,8 @@ const ARB_PIN_LOC={"דנה תשובה":"נופית","קדם קרני":"ציפו�
 const ARB_EXTRA_LOC={"קריטריום":["דנה תשובה","יהודה בקל"]};
 // family accounts: "אמנה זכריה ואגדה אבו ראס" → אמנה אבו ראס, זכריה אבו ראס, אגדה אבו ראס
 function arbSplit(name){
-  const t=normName(name).split(" "), k=t.findIndex((w,i)=>i>0&&i<t.length-1&&/^ו[\u0590-\u05FF]{2,}/.test(w));
+  // "ואן"/"וון" (van/von) belong to a surname – "נגה ואן אלק" is one athlete, not "נגה" and "אן"
+  const t=normName(name).split(" "), k=t.findIndex((w,i)=>i>0&&i<t.length-1&&/^ו[\u0590-\u05FF]{2,}/.test(w)&&!/^(ואן|וון)$/.test(w));
   if(k<0) return [normName(name)];
   const last=t.slice(k+1).join(" ");
   return t.slice(0,k).concat(t[k].slice(1)).map(f=>f+" "+last);
