@@ -380,7 +380,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · מחיקת איזור אימון</div>
+  <div class="ver">גרסה 09/11/2026 · הושעיה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -662,6 +662,7 @@ const DEFAULTS = {
     {branch:"עמק יזרעאל", name:"שמשית מאסטרס", tab:"שמשית", filter:"מאסטרס"},
     {branch:"עמק יזרעאל", name:"ציפורי", tab:"ציפורי", filter:""},
     {branch:"עמק יזרעאל", name:"קריטריום", tab:"נופית", filter:"קריטריום"},
+    {branch:"עמק יזרעאל", name:"הושעיה", tab:"", filter:""},
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
     {branch:"מרכז", name:"רמת גן", tab:"רמת גן", filter:""},
@@ -849,6 +850,7 @@ function arbInLoc(u,loc){
   if(/נופית/.test(n)) return has(/נופית/);
   if(/שמשית/.test(n)) return ps.some(p=>/שמשית/.test(p)&&fw.every(w=>p.includes(w)));
   if(/ציפורי/.test(n)) return has(/ציפורי/);
+  if(/הושעיה/.test(n)) return has(/הושעיה/);       // "אימון אופניים הושעיה - פעם בשבוע"
   if(arbBranch(u)==="עמק יזרעאל") return false;
   if(!ps.some(p=>!/שטח|הקמת לקוח|ייעוץ|חסות/.test(p))) return false;      // off-road riders / admin entries are not training groups here
   if(/תל אביב/.test(n)) return u.location==="תל אביב"||has(/טריאתלון תל אביב/);
@@ -868,7 +870,7 @@ async function arbEnsure(){
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
 const SHEET_ONLY=/כוכב יאיר|יקנעם/;           // יקנעם: a hand-picked youth group (incl. a kid not yet in Arbox) – managed in its sheet tab
 // athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
-const ARB_PIN_LOC={"דנה תשובה":"נופית","קדם קרני":"ציפורי"};
+const ARB_PIN_LOC={"דנה תשובה":"נופית"};   // קדם קרני: now in הושעיה (Arbox program + איזור אימון)
 // athletes who also train in another place, while their Arbox program doesn't say so
 const ARB_EXTRA_LOC={"קריטריום":["דנה תשובה","יהודה בקל"]};
 // family accounts: "אמנה זכריה ואגדה אבו ראס" → אמנה אבו ראס, זכריה אבו ראס, אגדה אבו ראס
@@ -2289,7 +2291,7 @@ async function arbLoad(){
 }
 // Arbox has no עמק יזרעאל location – those athletes sit under "נתניה והשרון הצפוני".
 // The app derives the branch from the program name.
-const ARB_EMEK=/ציפורי|נופית|שמשית|קריטריום/;
+const ARB_EMEK=/ציפורי|נופית|שמשית|קריטריום|הושעיה/;
 function arbProgs(u){ return u.memberships.flatMap(m=>String(m.name||"").split(/,\s+/)).map(x=>x.replace(/\s+/g," ").trim()).filter(Boolean); }
 function arbBranch(u){ return arbProgs(u).some(p=>ARB_EMEK.test(p))?"עמק יזרעאל":(u.location||""); }
 function fmtIso(d){ const m=String(d||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(d||""); }
