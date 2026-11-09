@@ -153,6 +153,7 @@ body.rep-open{overflow:hidden}
 .tag.unpaid{color:#9a6a00;border-color:#d9a400}
 .tag.trial{color:var(--accent);border-color:var(--accent)}
 .tag.arb{color:#fff;background:#2f6fdb;border-color:#2f6fdb;font-size:.66rem;padding:0 7px;letter-spacing:.02em}
+.tag.sh{color:#7a5200;background:color-mix(in srgb,#e0a100 22%,var(--surface));border-color:#e0a100;font-size:.66rem;padding:0 7px}
 .rep-h2{font:700 1.05rem var(--display);margin:8px 0 0;color:var(--accent)}
 .rep-h3{font:700 .95rem var(--display);margin:4px 0 0}
 .tw{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--surface)}
@@ -380,7 +381,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · הושעיה</div>
+  <div class="ver">גרסה 09/11/2026 · C3US גם מהגיליון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -868,6 +869,17 @@ async function arbEnsure(){
   ARB.lite=r.users; ARB.liteStaff=r.staff||[]; ARB.liteAt=Date.now(); return true;
 }
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
+// branch → sheet tab for athletes who are not (yet) in Arbox. The tab has columns "שם" and "מקומות אימון"
+// (comma-separated place names); they are added to the Arbox list of every place named in their row.
+const SHEET_EXTRA_TAB={"C3US":"C3US"};
+async function sheetExtra(loc){
+  const tab=SHEET_EXTRA_TAB[loc.branch||""]; if(!tab||!cfg.sheetUrl) return [];
+  let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return []; }
+  const h=rows.findIndex(r=>r.some(c=>c==="מקומות אימון")); if(h<0) return [];        // a missing tab comes back as the first tab – ignore it
+  const nc=rows[h].findIndex(c=>c==="שם"), pc=rows[h].indexOf("מקומות אימון"), tc=rows[h].findIndex(c=>/טלפון/.test(c)); if(nc<0) return [];
+  return rows.slice(h+1).filter(r=>normName(r[nc])&&String(r[pc]||"").split(",").map(x=>x.trim()).includes(loc.name))
+    .map(r=>({name:normName(r[nc]),sub:"",phone:tc>=0?(r[tc]||"").trim():"",sheet:true}));
+}
 const SHEET_ONLY=/כוכב יאיר|יקנעם/;           // יקנעם: a hand-picked youth group (incl. a kid not yet in Arbox) – managed in its sheet tab
 // athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
 const ARB_PIN_LOC={"דנה תשובה":"נופית"};   // קדם קרני: now in הושעיה (Arbox program + איזור אימון)
@@ -932,10 +944,12 @@ async function loadPeople(){
   if((cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(loc.name)){
     try{
       const list=await arboxRoster(loc);
+      let nSh=0; if(list) (await sheetExtra(loc)).forEach(p=>{ if(!list.some(q=>q.name===p.name)){ list.push(p); nSh++; } });
+      if(nSh) list.sort((a,b)=>a.name.localeCompare(b.name,"he"));
       if(list===null) arbNote="אין קוד גישה ל-Arbox בטלפון הזה (⚙ ← 🔗 Arbox) – ";
       else if(list.length){
         people=list; store.set(cacheKey,people); loadWeekLog();
-        setStatus(`${people.length} נרשמים · ${loc.name} · מ-Arbox`); renderRoster(); return;
+        setStatus(`${people.length} נרשמים · ${loc.name} · מ-Arbox${nSh?` + ${nSh} מהגיליון`:""}`); renderRoster(); return;
       } else arbNote=`אין ב-Arbox ספורטאים ל"${loc.name}" – `;
     }catch(e){ arbNote=`Arbox לא זמין (${e.message}) – `; }
   }
@@ -1114,6 +1128,7 @@ function renderRoster(){
     const nm=document.createElement("span"); nm.className="nm"; nm.textContent=p.name;
     if(p.trial){const t=document.createElement("span");t.className="tag";t.textContent="ניסיון";nm.appendChild(t);}
     if(p.guest){const t=document.createElement("span");t.className="tag guest";t.textContent="נוסף לאימון";nm.appendChild(t);}
+    if(p.sheet){const t=document.createElement("span");t.className="tag sh";t.textContent="גיליון";t.title="עדיין לא ב-Arbox – רשום/ה בלשונית C3US בגיליון";nm.appendChild(t);}
     if(p.arbox){const t=document.createElement("span");t.className="tag arb";t.textContent="Arbox";t.title="הפרטים נלקחו מ-Arbox";t.setAttribute("aria-label","מ-Arbox");nm.appendChild(t);}
     if(p.sub||p.arbNo){const s=document.createElement("div");s.className="sub";s.textContent=(p.sub||"")+(p.arbNo?(p.sub?" · ":"")+"⚠ אין מנוי פעיל ב-Arbox":"");nm.appendChild(s);}
     lab.append(cb,nm);
@@ -1519,8 +1534,9 @@ async function repLoad(force){
       for(const loc of cfg.locations){
         if(!isArbLoc(loc)) continue;
         try{ const list=await arboxRoster(loc);
+          if(list) (await sheetExtra(loc)).forEach(p=>{ if(!list.some(q=>q.name===p.name)) list.push(p); });
           if(list&&list.length){ arbN++; for(let i=roster.length-1;i>=0;i--) if(roster[i].loc===loc.name) roster.splice(i,1);
-            list.forEach(p=>roster.push({loc:loc.name,branch:loc.branch||"",name:p.name,sub:p.sub,phone:p.phone,arbox:true})); } }
+            list.forEach(p=>roster.push({loc:loc.name,branch:loc.branch||"",name:p.name,sub:p.sub,phone:p.phone,arbox:!p.sheet})); } }
         catch(e){ arbErr=e.message; break; }
       }
       REP.roster=roster; REP.loaded=true; REP.arbN=arbN;
