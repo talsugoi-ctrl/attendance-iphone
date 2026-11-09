@@ -387,7 +387,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · מפת מיקומי אימון</div>
+  <div class="ver">גרסה 09/11/2026 · מפת ישראל</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1629,7 +1629,7 @@ function openReport(id){
     ex.innerHTML=`<label class="lbl" for="repCoach">מאמן</label><select id="repCoach" class="tsel"></select>`;
   } else if(r.extra==="locs"){
     const brs=[...new Set(cfg.locations.map(l=>l.branch||""))].filter(Boolean), myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
-    ex.innerHTML=`<label class="lbl" for="locBr">סניף</label><select id="locBr" class="tsel"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===myBr?" selected":""}>${esc(b)}</option>`).join("")}</select>`;
+    ex.innerHTML=`<label class="lbl" for="locBr">סניף</label><select id="locBr" class="tsel"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===myBr&&r.id!=="map"?" selected":""}>${esc(b)}</option>`).join("")}</select>`;   // the map opens on all of Israel
   } else if(r.extra==="ses"){
     const pre=REP.sesPreset||{}; REP.sesPreset=null; REP.sesId=pre.id||null;
     const curL=(cfg.locations[current!=null?current:0]||{}).name||"", L0=pre.loc||curL;
