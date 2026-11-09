@@ -210,6 +210,11 @@ body.rep-open{overflow:hidden}
 .map-li small{color:var(--muted);margin-inline-start:auto;font-size:.82rem}
 .map-tip{font:600 .8rem var(--body);direction:rtl}
 .map-add{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.map-search{display:flex;gap:8px;margin-top:10px}
+.map-search input{flex:1;min-width:0;font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.map-res{display:flex;flex-direction:column;gap:6px;margin-top:6px}
+.map-res .map-li small{margin-inline-start:0;display:block;white-space:normal}
+.map-res .map-li{flex-wrap:wrap}
 .map-add-hint{font-size:.88rem;color:var(--accent);font-weight:700}
 .loc-map.adding,.loc-map.adding .leaflet-interactive{cursor:crosshair}
 .loc-map.adding{outline:3px solid var(--accent);outline-offset:-3px}
@@ -391,7 +396,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · סניף חיפה</div>
+  <div class="ver">גרסה 09/11/2026 · חיפוש מקום במפה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1959,8 +1964,10 @@ function repMap(){
   REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
   const pts=locs.map(l=>({l,p:locOf(l.name)})).filter(x=>x.p), miss=locs.filter(l=>!locOf(l.name));
   RT.push(...pts.map(x=>locMsg(x.l,x.p)+"\n"));
-  setTimeout(()=>{ mapDraw(pts,!!br); const b=$("mapAddBtn"); if(b) b.onclick=()=>{ REP.mapAdd=!REP.mapAdd; REP.mapView=LMAP?{c:LMAP.getCenter(),z:LMAP.getZoom()}:null; runReport(); }; },0);
+  setTimeout(()=>{ mapDraw(pts,!!br); $("mapSearch").onsubmit=ev=>{ ev.preventDefault(); mapSearch($("mapQ").value); }; const b=$("mapAddBtn"); if(b) b.onclick=()=>{ REP.mapAdd=!REP.mapAdd; REP.mapView=LMAP?{c:LMAP.getCenter(),z:LMAP.getZoom()}:null; runReport(); }; },0);
   return `<div class="chips"><span class="chip"><span class="map-dot" aria-hidden="true"></span> ${pts.length} מקומות על המפה</span>${miss.length?`<span class="chip amber">${miss.length} בלי מיקום שמור</span>`:""}</div>
+    <form class="map-search" id="mapSearch" role="search"><input type="search" id="mapQ" value="${esc(REP.mapQ||"")}" placeholder="חיפוש מקום אמיתי – למשל ספורטן חיפה" autocomplete="off" enterkeyhint="search" aria-label="חיפוש מקום על המפה"><button type="submit" class="btn primary">🔎 חפש</button></form>
+    <div class="map-res" id="mapRes"></div>
     <div class="map-add"><button type="button" class="btn${REP.mapAdd?" primary":""}" id="mapAddBtn">${REP.mapAdd?"✕ ביטול הוספה":"📍 הוספת מיקום על המפה"}</button>
       ${REP.mapAdd?`<span class="map-add-hint">הקש על המפה בנקודה של מקום האימון (אפשר להגדיל קודם עם +)</span>`:""}</div>
     <div id="locMap" class="loc-map${REP.mapAdd?" adding":""}" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
@@ -1984,8 +1991,38 @@ async function mapDraw(pts,zoomIn){
   else if(zoomIn&&pts.length) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])).pad(0.3),{maxZoom:13});
   else m.fitBounds(ISRAEL);
   if(REP.mapAdd) m.on("click",e=>mapAddAt(m,e.latlng));
-  document.querySelectorAll("#repOut .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
+  document.querySelectorAll("#repOut .map-list .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
   setTimeout(()=>m.invalidateSize(),200);
+}
+// search a real place (OpenStreetMap Nominatim, Photon as a fallback) → centre the map on it → "קבע כאן מקום אימון"
+let MAPFOUND=null;
+async function geoSearch(q){
+  const out=[];
+  try{ const r=await fetch(`https://nominatim.openstreetmap.org/search?format=jsonv2&countrycodes=il&accept-language=he&limit=6&q=${encodeURIComponent(q)}`);
+    (await r.json()).forEach(x=>out.push({name:x.name||x.display_name.split(",")[0],full:x.display_name,lat:+x.lat,lng:+x.lon})); }catch(e){}
+  if(!out.length){ try{ const r=await fetch(`https://photon.komoot.io/api/?limit=6&bbox=34.2,29.4,35.95,33.4&q=${encodeURIComponent(q)}`);
+    (await r.json()).features.forEach(f=>{ const p=f.properties||{}; out.push({name:p.name||q,full:[p.name,p.street,p.city||p.county].filter(Boolean).join(", "),lat:f.geometry.coordinates[1],lng:f.geometry.coordinates[0]}); }); }catch(e){} }
+  return out.filter(x=>x.lat>29&&x.lat<34&&x.lng>34&&x.lng<36.5);
+}
+async function mapSearch(q){
+  q=String(q||"").trim(); REP.mapQ=q; const box=$("mapRes"); if(!q){ box.innerHTML=""; return; }
+  box.innerHTML=`<p class="hint">מחפש "${esc(q)}"…</p>`;
+  const res=await geoSearch(q); if(!$("mapRes")) return;
+  if(!res.length){ box.innerHTML=`<p class="hint">לא נמצא "${esc(q)}". נסה שם אחר (למשל שם הבריכה, הרחוב או העיר), או הגדל את המפה ידנית.</p>`; return; }
+  box.innerHTML=res.map((x,i)=>`<button type="button" class="map-li" data-i="${i}"><span aria-hidden="true">🔎</span><b>${esc(x.name)}</b><small>${esc(x.full)}</small></button>`).join("");
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>mapGoTo(res[+b.dataset.i]));
+  if(res.length===1) mapGoTo(res[0]);
+}
+function mapGoTo(x){
+  const m=LMAP; if(!m) return;
+  if(MAPFOUND){ try{ MAPFOUND.remove(); }catch(_){} }
+  m.setView([x.lat,x.lng],17);
+  MAPFOUND=L.circleMarker([x.lat,x.lng],{radius:11,color:"#ffffff",weight:3,fillColor:"#f08c00",fillOpacity:1}).addTo(m);
+  const el=document.createElement("div"); el.dir="rtl"; el.style.textAlign="right";
+  el.innerHTML=`<b>${esc(x.name)}</b><br><small>${esc(x.full)}</small><br><button type="button" class="btn primary" style="margin-top:6px">📍 קבע כאן מקום אימון</button><br><small>לדיוק: "הוספת מיקום על המפה" והקשה על הנקודה המדויקת</small>`;
+  el.querySelector("button").onclick=()=>{ m.closePopup(); mapAddAt(m,{lat:x.lat,lng:x.lng}); };
+  MAPFOUND.bindPopup(el).openPopup();
+  $("locMap").scrollIntoView({behavior:"smooth",block:"center"});
 }
 // add a training location by tapping the map, and link it to one of the training places
 let MAPTMP=null;
