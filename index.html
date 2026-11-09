@@ -203,6 +203,12 @@ body.rep-open{overflow:hidden}
 .ab-area-st.ok{color:#1f8a4c;font-weight:700}
 .ab-area-st.err{color:var(--danger);font-weight:700}
 .ab-area-lbl{font-weight:700;font-size:.9rem;white-space:nowrap}
+.loc-map{height:min(72vh,620px);border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface);margin:8px 0;z-index:0}
+.map-dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:#e11d2e;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25);vertical-align:-1px;flex:none}
+.map-list{display:flex;flex-direction:column;gap:6px}
+.map-li{display:flex;align-items:center;gap:8px;text-align:right;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;color:var(--fg)}
+.map-li small{color:var(--muted);margin-inline-start:auto;font-size:.82rem}
+.map-tip{font:600 .8rem var(--body);direction:rtl}
 .ab-area-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ab-ar{display:inline-flex;align-items:center;gap:4px}
 .ab-ar{padding-inline-end:4px}
@@ -381,7 +387,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · C3US גם מהגיליון</div>
+  <div class="ver">גרסה 09/11/2026 · מפת מיקומי אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1587,6 +1593,7 @@ const REPORTS=[
   {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"},
   {id:"ses",icon:"📋",title:"דוח אימון",desc:"אימון אחד לפי תאריך ומקום – מאמן, מי נכח, מי לא הגיע וחריגים",period:null,extra:"ses"},
   {id:"locs",icon:"📍",title:"מיקומי אימון",desc:"מיקום כל מקום אימון לפי סניף – שמירה מה-GPS, ניווט ושליחה בוואטסאפ",period:null,extra:"locs"},
+  {id:"map",icon:"🗺️",title:"מפת מיקומי אימון",desc:"מפת ישראל עם נקודה אדומה בכל מקום אימון שנשמר לו מיקום",period:null,extra:"locs"},
   {id:"bday",icon:"🎂",title:"ימי הולדת",desc:"ימי הולדת החודש – לפי סניף או כל המועדון, וחיפוש ספורטאי",period:null,extra:"bday"}
 ];
 
@@ -1665,8 +1672,8 @@ function runReport(){
   if(!REP.loaded){ out.innerHTML=`<p class="hint">${REP.loading?"טוען…":"אין נתונים. לחץ ↻ לטעינה."}</p>`; return; }
   fillExtra();
   RT=[];
-  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,ses:repSession,locs:repLocs,bday:repBday}[REP.cur.id]();
-  const isBd=!REP.cur.period, lab=isBd?(({ses:REP.sesLabel,bday:REP.bdLabel,locs:REP.locLabel})[REP.cur.id]||""):periodLabel(), labT=isBd?"":"תקופה: ";
+  const html={exc:repExceptions,pie:repPie,ath:repAthlete,coach:repCoach,ses:repSession,locs:repLocs,map:repMap,bday:repBday}[REP.cur.id]();
+  const isBd=!REP.cur.period, lab=isBd?(({ses:REP.sesLabel,bday:REP.bdLabel,locs:REP.locLabel,map:REP.locLabel})[REP.cur.id]||""):periodLabel(), labT=isBd?"":"תקופה: ";
   out.innerHTML=(lab?`<p class="rep-period">${labT}<b>${esc(lab)}</b></p>`:"")+html;
   REP.text=RT.length?`${REP.cur.icon} *${REP.cur.title}*\n${labT}${lab}\n\n`+RT.join("\n").trim()+`\n\n— נוכחות אימונים · The Buttons`:"";
   setRepSend();
@@ -1892,9 +1899,12 @@ async function locsLoad(force){
   LOCS.loading=(async()=>{
     try{
       const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
-      const rows=await sheetGet(base+"&sheet="+encodeURIComponent(LOC_TAB)), h=rows.findIndex(r=>r.includes("מקום")&&r.includes("קו רוחב"));
+      // Google's CSV drops the header text of number/date columns ("קו רוחב", "קו אורך", "דיוק", "עודכן") –
+      // find the header by "סניף"+"מקום" and fall back to the tab's fixed column order for the blank ones
+      const LOC_COLS=["סניף","מקום","קו רוחב","קו אורך","דיוק (מ')","הערה","עודכן","עודכן ע\"י"];
+      const rows=await sheetGet(base+"&sheet="+encodeURIComponent(LOC_TAB)), h=rows.findIndex(r=>r.includes("מקום")&&r.includes("סניף"));
       if(h<0){ LOCS.rows=[]; return; }                // tab not created yet (first save creates it)
-      const H=rows[h], g=(r,t)=>{ const i=H.indexOf(t); return i<0?"":String(r[i]||"").trim(); };
+      const H=rows[h], g=(r,t)=>{ let i=H.indexOf(t); const k=LOC_COLS.indexOf(t); if(i<0&&k>=0&&!String(H[k]||"").trim()) i=k; return i<0?"":String(r[i]||"").trim(); };
       LOCS.rows=rows.slice(h+1).filter(r=>g(r,"מקום")).map(r=>({branch:g(r,"סניף"),place:g(r,"מקום"),lat:parseFloat(g(r,"קו רוחב")),lng:parseFloat(g(r,"קו אורך")),
         acc:parseFloat(g(r,"דיוק (מ')"))||0,note:g(r,"הערה"),at:g(r,"עודכן"),by:g(r,"עודכן ע\"י")}));
     }catch(e){ LOCS.rows=LOCS.rows||[]; LOCS.err=e.message; }
@@ -1924,6 +1934,49 @@ function repLocs(){
   setTimeout(()=>{ document.querySelectorAll("#repOut [data-save]").forEach(b=>b.onclick=()=>locSaveStart(cfg.locations[+b.dataset.save]));
     document.querySelectorAll("#repOut [data-note]").forEach(b=>b.onclick=()=>locNoteStart(cfg.locations[+b.dataset.note])); },0);
   return html+`<p class="hint">"שמור מיקום כאן" לוקח את המיקום הנוכחי של הטלפון (GPS) – עומדים במקום האימון. לפני כל שמירה או החלפה מופיע מסך אישור. "שלח את הדוח בוואטסאפ" שולח את כל המקומות השמורים בסניף.</p>`;
+}
+// 7b) map of the saved training locations (Leaflet + OpenStreetMap, loaded only when the report opens)
+let LEAF=null, LMAP=null;
+function leafletLoad(){
+  if(window.L&&window.L.map) return Promise.resolve();
+  if(LEAF) return LEAF;
+  LEAF=new Promise((ok,bad)=>{
+    const c=document.createElement("link"); c.rel="stylesheet"; c.href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css"; document.head.appendChild(c);
+    const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js";
+    s.onload=()=>ok(); s.onerror=()=>{ LEAF=null; bad(new Error("אין חיבור לשרת המפות")); }; document.head.appendChild(s);
+  });
+  return LEAF;
+}
+const ISRAEL=[[29.45,34.25],[33.35,35.9]];
+function repMap(){
+  if(!LOCS.rows){ locsLoad(false).then(()=>{ if(REP.cur&&REP.cur.id==="map") runReport(); }); REP.locLabel=""; return `<p class="hint">טוען מיקומים…</p>`; }
+  const br=$("locBr").value, locs=cfg.locations.filter(l=>!br||(l.branch||"")===br);
+  REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
+  const pts=locs.map(l=>({l,p:locOf(l.name)})).filter(x=>x.p), miss=locs.filter(l=>!locOf(l.name));
+  RT.push(...pts.map(x=>locMsg(x.l,x.p)+"\n"));
+  setTimeout(()=>mapDraw(pts,!!br),0);
+  return `<div class="chips"><span class="chip"><span class="map-dot" aria-hidden="true"></span> ${pts.length} מקומות על המפה</span>${miss.length?`<span class="chip amber">${miss.length} בלי מיקום שמור</span>`:""}</div>
+    <div id="locMap" class="loc-map" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
+    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<button type="button" class="map-li" data-i="${i}"><span class="map-dot" aria-hidden="true"></span><b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
+    ${miss.length?`<p class="hint">בלי מיקום: ${miss.map(l=>esc(l.name)).join(", ")}. שומרים מיקום בדוח "📍 מיקומי אימון" ← "שמור מיקום כאן" (עומדים במקום האימון).</p>`:""}`;
+}
+async function mapDraw(pts,zoomIn){
+  const box=$("locMap"); if(!box) return;
+  try{ await leafletLoad(); }catch(e){ box.innerHTML=`<p class="hint" style="padding:12px">לא הצלחתי לטעון את המפה (${esc(e.message)}).</p>`; return; }
+  if(!document.body.contains(box)) return;
+  if(LMAP){ try{ LMAP.remove(); }catch(_){} LMAP=null; }
+  box.innerHTML="";
+  const m=L.map(box,{zoomControl:true,attributionControl:true,scrollWheelZoom:false}); LMAP=m;
+  L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(m);
+  const marks=pts.map(x=>{
+    const mk=L.circleMarker([x.p.lat,x.p.lng],{radius:9,color:"#ffffff",weight:2,fillColor:"#e11d2e",fillOpacity:1}).addTo(m);
+    mk.bindTooltip(x.l.name,{direction:"top",offset:[0,-8],className:"map-tip"});
+    mk.bindPopup(`<div dir="rtl" style="text-align:right"><b>${esc(x.l.name)}</b>${x.l.branch?`<br>סניף ${esc(x.l.branch)}`:""}${x.p.note?`<br>📝 ${esc(x.p.note)}`:""}<br><a href="${esc(gmaps(x.p))}" target="_blank" rel="noopener">Google Maps</a> · <a href="${esc(waze(x.p))}" target="_blank" rel="noopener">Waze</a></div>`);
+    return mk; });
+  if(zoomIn&&pts.length) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])).pad(0.3),{maxZoom:13});
+  else m.fitBounds(ISRAEL);
+  document.querySelectorAll("#repOut .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
+  setTimeout(()=>m.invalidateSize(),200);
 }
 // confirm dialog → save through the sheet script
 let LOCDLG=null;
