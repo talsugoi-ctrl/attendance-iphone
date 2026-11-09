@@ -391,7 +391,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · הוספת מיקום מהמפה</div>
+  <div class="ver">גרסה 09/11/2026 · סניף חיפה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -682,6 +682,7 @@ const DEFAULTS = {
     {branch:"C3US", name:"קריטריום קיסריה", tab:"", filter:""},
     {branch:"C3US", name:"ריצה שחייה שישי", tab:"", filter:""},
     {branch:"C3US", name:"רכיבת שבת C3US", tab:"", filter:""},
+    {branch:"חיפה", name:"ספורטן שחייה", tab:"", filter:""},
     {branch:"שטח", name:"שטח תל מונד", tab:"", filter:"תל מונד"},
     {branch:"שטח", name:"שטח תל אביב", tab:"", filter:"תל אביב"},
     {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
@@ -881,7 +882,7 @@ async function arbEnsure(){
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
 // branch → sheet tab for athletes who are not (yet) in Arbox. The tab has columns "שם" and "מקומות אימון"
 // (comma-separated place names); they are added to the Arbox list of every place named in their row.
-const SHEET_EXTRA_TAB={"C3US":"C3US"};
+const SHEET_EXTRA_TAB={"C3US":"C3US","חיפה":"חיפה"};
 async function sheetExtra(loc){
   const tab=SHEET_EXTRA_TAB[loc.branch||""]; if(!tab||!cfg.sheetUrl) return [];
   let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return []; }
