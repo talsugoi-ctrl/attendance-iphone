@@ -204,8 +204,11 @@ body.rep-open{overflow:hidden}
 .ab-area-lbl{font-weight:700;font-size:.9rem;white-space:nowrap}
 .ab-area-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ab-ar{display:inline-flex;align-items:center;gap:4px}
-.ab-ar-x{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 2px;line-height:1;opacity:.75}
-.ab-ar-x:disabled{opacity:.3;cursor:default}
+.ab-ar{padding-inline-end:4px}
+.ab-ar-x{border:0;border-radius:999px;background:color-mix(in srgb,var(--danger) 14%,var(--surface));color:var(--danger);font:700 .8rem var(--body,inherit);cursor:pointer;min-width:26px;height:26px;padding:0 8px;line-height:1;display:inline-flex;align-items:center;justify-content:center}
+.ab-ar-x:disabled{opacity:.35;cursor:default}
+.ab-ar.rmask{background:color-mix(in srgb,var(--danger) 18%,var(--surface));color:var(--danger)}
+.ab-ar.rmask .ab-ar-x{background:var(--danger);color:#fff}
 .ab-places{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.85rem}
 .ab-places>b{font-weight:700;white-space:nowrap}
 .ab-places .chip small{opacity:.8;font-weight:400}
@@ -377,7 +380,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · כמה איזורי אימון לספורטאי</div>
+  <div class="ver">גרסה 09/11/2026 · מחיקת איזור אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2305,7 +2308,7 @@ function arbRender(){
   $("arbList").innerHTML=list.map(u=>`<section class="ab-card${u.active?"":" off"}">
     <div class="ab-top"><b>${esc(u.name)}</b><span>${arbBranch(u)?`<span class="tag">${esc(arbBranch(u))}</span>`:""}${u.active?"":` <span class="tag over">לא פעיל</span>`}${+u.debt>0?` <span class="tag over">חוב ₪${esc(u.debt)}</span>`:""}</span></div>
     <div class="ab-ph">${tel(u.phone)}${u.phone2?tel(u.phone2):""}${u.email?`<a href="mailto:${esc(u.email)}" dir="ltr">✉️ ${esc(u.email)}</a>`:""}</div>
-    <div class="ab-area"><span class="ab-area-lbl">📍 איזורי אימון</span><span class="ab-area-chips">${areaChips(u)}</span><select class="tsel arb-area" aria-label="הוספת מקום אימון ל${esc(u.name)}" data-id="${esc(u.id)}">${areaOptions(u.area)}</select><span class="ab-area-st"></span></div>
+    <div class="ab-area"><span class="ab-area-lbl">📍 איזורי אימון</span><span class="ab-area-chips">${areaChips(u)}</span><select class="tsel arb-area" aria-label="הוספת מקום אימון ל${esc(u.name)}" data-id="${esc(u.id)}">${areaOptions(u.area)}</select><span class="ab-area-st">${areaList(u.area).length?"להסרת מקום: ✕ ואז \"להסיר?\"":""}</span></div>
     <div class="ab-places" data-id="${esc(u.id)}">${arbPlacesHtml(u)}</div>
     ${u.memberships.length?`<div class="chips">${u.memberships.map(m=>`<span class="chip blue">${esc(m.name||"מנוי")}${m.end?` · עד ${esc(fmtIso(m.end))}`:""}${m.left!==""?` · נותרו ${esc(m.left)}`:""}</span>`).join("")}</div>`:`<div class="hint">אין מנוי פעיל ב-Arbox</div>`}
     ${u.notes?`<div class="ab-note">📝 ${esc(u.notes)}</div>`:""}
@@ -2397,6 +2400,15 @@ $("arbList").addEventListener("change",e=>{
 $("arbList").addEventListener("click",e=>{
   const b=e.target.closest(".ab-ar-x"); if(!b) return;
   const u=(ARB.users||[]).find(x=>String(x.id)===b.dataset.id); if(!u) return;
+  // first tap asks ("להסיר?"), a second tap within 5 seconds deletes the place from the athlete in Arbox
+  const chip=b.closest(".ab-ar");
+  if(!chip.classList.contains("rmask")){
+    chip.closest(".ab-area-chips").querySelectorAll(".ab-ar.rmask").forEach(c=>{ c.classList.remove("rmask"); c.querySelector(".ab-ar-x").textContent="✕"; });
+    chip.classList.add("rmask"); b.textContent="להסיר?"; b.setAttribute("aria-label",`לחץ שוב כדי להסיר את ${b.dataset.v}`);
+    clearTimeout(chip._t); chip._t=setTimeout(()=>{ chip.classList.remove("rmask"); b.textContent="✕"; b.setAttribute("aria-label",`הסר את ${b.dataset.v}`); },5000);
+    return;
+  }
+  clearTimeout(chip._t);
   areaSave(u,areaList(u.area).filter(a=>a!==b.dataset.v),b.closest(".ab-area"));
 });
 $("arbPinBox").onsubmit=ev=>{ ev.preventDefault(); const v=$("arbPin").value.trim(); if(!v) return; store.set("arbox-pin",v); $("arbPin").value=""; ARB.users=null; arbShow(); };
