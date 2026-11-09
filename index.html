@@ -209,6 +209,10 @@ body.rep-open{overflow:hidden}
 .map-li{display:flex;align-items:center;gap:8px;text-align:right;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;color:var(--fg)}
 .map-li small{color:var(--muted);margin-inline-start:auto;font-size:.82rem}
 .map-tip{font:600 .8rem var(--body);direction:rtl}
+.map-add{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.map-add-hint{font-size:.88rem;color:var(--accent);font-weight:700}
+.loc-map.adding,.loc-map.adding .leaflet-interactive{cursor:crosshair}
+.loc-map.adding{outline:3px solid var(--accent);outline-offset:-3px}
 .ab-area-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
 .ab-ar{display:inline-flex;align-items:center;gap:4px}
 .ab-ar{padding-inline-end:4px}
@@ -387,7 +391,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · מפת ישראל</div>
+  <div class="ver">גרסה 09/11/2026 · הוספת מיקום מהמפה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1613,7 +1617,7 @@ function showRepList(){
   });
 }
 function openReport(id){
-  const r=REPORTS.find(x=>x.id===id); REP.cur=r;
+  const r=REPORTS.find(x=>x.id===id); REP.cur=r; REP.mapAdd=false; REP.mapView=null;
   $("repList").hidden=true; $("repView").hidden=false; $("repTitle").textContent=r.title;
   $("repPeriod").parentElement.hidden=!r.period; if(r.period) $("repPeriod").value=r.period; $("repCustom").hidden=true;
   // extra filter
@@ -1954,9 +1958,11 @@ function repMap(){
   REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
   const pts=locs.map(l=>({l,p:locOf(l.name)})).filter(x=>x.p), miss=locs.filter(l=>!locOf(l.name));
   RT.push(...pts.map(x=>locMsg(x.l,x.p)+"\n"));
-  setTimeout(()=>mapDraw(pts,!!br),0);
+  setTimeout(()=>{ mapDraw(pts,!!br); const b=$("mapAddBtn"); if(b) b.onclick=()=>{ REP.mapAdd=!REP.mapAdd; REP.mapView=LMAP?{c:LMAP.getCenter(),z:LMAP.getZoom()}:null; runReport(); }; },0);
   return `<div class="chips"><span class="chip"><span class="map-dot" aria-hidden="true"></span> ${pts.length} מקומות על המפה</span>${miss.length?`<span class="chip amber">${miss.length} בלי מיקום שמור</span>`:""}</div>
-    <div id="locMap" class="loc-map" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
+    <div class="map-add"><button type="button" class="btn${REP.mapAdd?" primary":""}" id="mapAddBtn">${REP.mapAdd?"✕ ביטול הוספה":"📍 הוספת מיקום על המפה"}</button>
+      ${REP.mapAdd?`<span class="map-add-hint">הקש על המפה בנקודה של מקום האימון (אפשר להגדיל קודם עם +)</span>`:""}</div>
+    <div id="locMap" class="loc-map${REP.mapAdd?" adding":""}" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
     ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<button type="button" class="map-li" data-i="${i}"><span class="map-dot" aria-hidden="true"></span><b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
     ${miss.length?`<p class="hint">בלי מיקום: ${miss.map(l=>esc(l.name)).join(", ")}. שומרים מיקום בדוח "📍 מיקומי אימון" ← "שמור מיקום כאן" (עומדים במקום האימון).</p>`:""}`;
 }
@@ -1973,11 +1979,36 @@ async function mapDraw(pts,zoomIn){
     mk.bindTooltip(x.l.name,{direction:"top",offset:[0,-8],className:"map-tip"});
     mk.bindPopup(`<div dir="rtl" style="text-align:right"><b>${esc(x.l.name)}</b>${x.l.branch?`<br>סניף ${esc(x.l.branch)}`:""}${x.p.note?`<br>📝 ${esc(x.p.note)}`:""}<br><a href="${esc(gmaps(x.p))}" target="_blank" rel="noopener">Google Maps</a> · <a href="${esc(waze(x.p))}" target="_blank" rel="noopener">Waze</a></div>`);
     return mk; });
-  if(zoomIn&&pts.length) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])).pad(0.3),{maxZoom:13});
+  if(REP.mapView){ m.setView(REP.mapView.c,REP.mapView.z); REP.mapView=null; }
+  else if(zoomIn&&pts.length) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])).pad(0.3),{maxZoom:13});
   else m.fitBounds(ISRAEL);
+  if(REP.mapAdd) m.on("click",e=>mapAddAt(m,e.latlng));
   document.querySelectorAll("#repOut .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
   setTimeout(()=>m.invalidateSize(),200);
 }
+// add a training location by tapping the map, and link it to one of the training places
+let MAPTMP=null;
+function mapAddAt(m,ll){
+  const p={lat:+ll.lat.toFixed(6),lng:+ll.lng.toFixed(6)};
+  if(!(p.lat>29&&p.lat<34&&p.lng>34&&p.lng<36.5)){ showToast("הנקודה מחוץ לישראל – הקש שוב"); return; }
+  if(MAPTMP){ try{ MAPTMP.remove(); }catch(_){} }
+  MAPTMP=L.circleMarker([p.lat,p.lng],{radius:10,color:"#ffffff",weight:3,fillColor:"#2f6fdb",fillOpacity:1}).addTo(m);
+  const brs=[...new Set(cfg.locations.map(l=>l.branch||""))], myBr=$("locBr").value;
+  const opts=brs.sort((a,b)=>(b===myBr)-(a===myBr)).map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.map((l,i)=>[l,i]).filter(([l])=>(l.branch||"")===b)
+    .map(([l,i])=>`<option value="${i}">${esc(l.name)}${locOf(l.name)?" (יש מיקום – יוחלף)":""}</option>`).join("")}</optgroup>`).join("");
+  locDialog({title:"מיקום חדש על המפה", ok:"שמור מיקום", done:"המיקום נשמר ✓", note:"",
+    payload:{lat:p.lat,lng:p.lng,acc:0},
+    pick:()=>{ const v=$("mapPick").value; if(v==="") return null; const l=cfg.locations[+v]; REP.mapAdd=false; REP.mapView=LMAP?{c:LMAP.getCenter(),z:LMAP.getZoom()}:null; return {branch:l.branch||"",place:l.name}; },
+    body:`<p>הנקודה שנבחרה: <b dir="ltr">${p.lat}, ${p.lng}</b> · <a target="_blank" rel="noopener" href="${esc(gmaps(p))}">לבדיקה ב-Google Maps ↗</a></p>
+      <label class="lbl" for="mapPick">לאיזה מקום אימון לקשר?</label>
+      <select id="mapPick" class="tsel"><option value="">בחר מקום אימון…</option>${opts}</select>
+      <p id="mapPickWarn" class="hint" style="margin-top:6px"></p>`});
+  $("mapPick").onchange=()=>{ const v=$("mapPick").value, w=$("mapPickWarn"); if(v===""){ w.textContent=""; return; }
+    const l=cfg.locations[+v], old=locOf(l.name);
+    w.innerHTML=old?`⚠️ ל${esc(l.name)} כבר שמור מיקום (עודכן ${esc(old.at||"")}${old.by?` ע"י ${esc(old.by)}`:""}). המיקום החדש רחוק <b>${distTxt(geoDist(old,p))}</b> ממנו ויחליף אותו.`:"";
+    if(old&&!$("locNote").value) $("locNote").value=old.note||""; };
+}
+$("locDlg").addEventListener("close",()=>{ if(MAPTMP){ try{ MAPTMP.remove(); }catch(_){} MAPTMP=null; } });
 // confirm dialog → save through the sheet script
 let LOCDLG=null;
 function locDialog(o){
@@ -1985,8 +2016,10 @@ function locDialog(o){
 }
 $("locDlgCancel").onclick=()=>{ $("locDlg").close(); LOCDLG=null; };
 $("locDlgOk").onclick=async()=>{
-  const o=LOCDLG; if(!o) return; const btn=$("locDlgOk"); btn.disabled=true; btn.textContent="שומר…";
-  try{ await scriptCall(Object.assign({action:"savePlace",note:$("locNote").value.trim(),by:coachName()},o.payload));
+  const o=LOCDLG; if(!o) return;
+  const pk=o.pick?o.pick():{}; if(!pk){ showToast("בחר מקום אימון"); return; }      // map: the training place is chosen inside the dialog
+  const btn=$("locDlgOk"); btn.disabled=true; btn.textContent="שומר…";
+  try{ await scriptCall(Object.assign({action:"savePlace",note:$("locNote").value.trim(),by:coachName()},o.payload,pk));
     $("locDlg").close(); LOCDLG=null; toastOk(o.done); await locsLoad(true); runReport(); }
   catch(e){ btn.disabled=false; btn.textContent=o.ok; showToast("השמירה נכשלה: "+e.message); }
 };
