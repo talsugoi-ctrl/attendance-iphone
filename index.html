@@ -201,6 +201,14 @@ body.rep-open{overflow:hidden}
 .ab-area-st{font-size:.85rem;color:var(--muted);width:100%}
 .ab-area-st.ok{color:#1f8a4c;font-weight:700}
 .ab-area-st.err{color:var(--danger);font-weight:700}
+.ab-area-lbl{font-weight:700;font-size:.9rem;white-space:nowrap}
+.ab-area-chips{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+.ab-ar{display:inline-flex;align-items:center;gap:4px}
+.ab-ar-x{border:0;background:transparent;color:inherit;font:inherit;cursor:pointer;padding:0 2px;line-height:1;opacity:.75}
+.ab-ar-x:disabled{opacity:.3;cursor:default}
+.ab-places{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:.85rem}
+.ab-places>b{font-weight:700;white-space:nowrap}
+.ab-places .chip small{opacity:.8;font-weight:400}
 .ab-note{background:color-mix(in srgb,#e0a100 14%,var(--surface));border-radius:8px;padding:6px 10px;font-size:.9rem}
 .ab-card details summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 .ab-card details table{width:100%;font-size:.82rem;border-collapse:collapse;margin-top:6px}
@@ -369,7 +377,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 08/11/2026 · קריטריום קיסריה לפי איזור אימון</div>
+  <div class="ver">גרסה 09/11/2026 · כמה איזורי אימון לספורטאי</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2284,6 +2292,7 @@ function arbBranch(u){ return arbProgs(u).some(p=>ARB_EMEK.test(p))?"עמק יז
 function fmtIso(d){ const m=String(d||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:String(d||""); }
 function arbRender(){
   const all=ARB.users||[], f=$("arbFilter").value, q=$("arbSearch").value.trim(), qd=q.replace(/\D/g,"");
+  if(!ARB.sheet) arbSheetLoad();
   const act=all.filter(u=>u.active).length;
   arbStatus(`${all.length} ספורטאים ב-Arbox · ${act} פעילים · ${all.length-act} לא פעילים`);
   const lsel=$("arbLoc"), lv=lsel.value, locs=[...new Set(all.map(arbBranch).filter(Boolean))].sort();
@@ -2296,32 +2305,99 @@ function arbRender(){
   $("arbList").innerHTML=list.map(u=>`<section class="ab-card${u.active?"":" off"}">
     <div class="ab-top"><b>${esc(u.name)}</b><span>${arbBranch(u)?`<span class="tag">${esc(arbBranch(u))}</span>`:""}${u.active?"":` <span class="tag over">לא פעיל</span>`}${+u.debt>0?` <span class="tag over">חוב ₪${esc(u.debt)}</span>`:""}</span></div>
     <div class="ab-ph">${tel(u.phone)}${u.phone2?tel(u.phone2):""}${u.email?`<a href="mailto:${esc(u.email)}" dir="ltr">✉️ ${esc(u.email)}</a>`:""}</div>
-    <div class="ab-area"><label for="ar-${esc(u.id)}">📍 איזור אימון</label><select class="tsel arb-area" id="ar-${esc(u.id)}" data-id="${esc(u.id)}">${areaOptions(u.area)}</select><span class="ab-area-st"></span></div>
+    <div class="ab-area"><span class="ab-area-lbl">📍 איזורי אימון</span><span class="ab-area-chips">${areaChips(u)}</span><select class="tsel arb-area" aria-label="הוספת מקום אימון ל${esc(u.name)}" data-id="${esc(u.id)}">${areaOptions(u.area)}</select><span class="ab-area-st"></span></div>
+    <div class="ab-places" data-id="${esc(u.id)}">${arbPlacesHtml(u)}</div>
     ${u.memberships.length?`<div class="chips">${u.memberships.map(m=>`<span class="chip blue">${esc(m.name||"מנוי")}${m.end?` · עד ${esc(fmtIso(m.end))}`:""}${m.left!==""?` · נותרו ${esc(m.left)}`:""}</span>`).join("")}</div>`:`<div class="hint">אין מנוי פעיל ב-Arbox</div>`}
     ${u.notes?`<div class="ab-note">📝 ${esc(u.notes)}</div>`:""}
     <details><summary>כל הפרטים ב-Arbox</summary><table>${Object.entries(u.all||{}).map(([k,v])=>`<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table></details>
   </section>`).join("")||`<div class="rep-empty">אין ספורטאים שמתאימים לחיפוש.</div>`;
 }
-// "איזור אימון" (Arbox custom field): pick a training place → saved straight to Arbox (Arbox access code needed)
-function areaOptions(cur){
-  cur=String(cur||"").trim();
-  const names=cfg.locations.map(l=>l.name), brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
-  const other=cur&&!names.includes(cur)?`<option value="${esc(cur)}" selected>${esc(cur)} (כפי שכתוב ב-Arbox)</option>`:"";
-  return `<option value=""${cur?"":" selected"}>— לא הוגדר —</option>${other}`+brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option value="${esc(l.name)}"${l.name===cur?" selected":""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("");
+// "איזור אימון" (Arbox custom field): one or more training places, saved to Arbox comma-separated ("נופית, רכיבת שבת C3US").
+// Add a place from the list, remove one with its ✕ – every change is written straight to Arbox (Arbox access code needed).
+const areaList=v=>String(v||"").split(",").map(x=>x.trim()).filter(Boolean);
+function areaChips(u){
+  const names=cfg.locations.map(l=>l.name), L=areaList(u.area);
+  return L.length?L.map(a=>{ const known=names.includes(a);
+    return `<span class="chip ${known?"blue":"amber"} ab-ar"${known?"":` title="אין מקום אימון בשם הזה באפליקציה"`}>${esc(a)}${known?"":" ⚠"}<button type="button" class="ab-ar-x" data-id="${esc(u.id)}" data-v="${esc(a)}" aria-label="הסר את ${esc(a)}">✕</button></span>`; }).join("")
+    :`<span class="hint">לא הוגדר</span>`;
 }
-$("arbList").addEventListener("change",async e=>{
-  const s=e.target.closest("select.arb-area"); if(!s) return;
-  const u=(ARB.users||[]).find(x=>String(x.id)===s.dataset.id); if(!u) return;
-  const v=s.value, prev=String(u.area||""), st=s.parentElement.querySelector(".ab-area-st");
-  s.disabled=true; st.className="ab-area-st"; st.textContent="שומר ב-Arbox…";
+function areaOptions(cur){
+  const L=areaList(cur), brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
+  return `<option value="" selected>${L.length?"+ הוסף מקום נוסף…":"+ בחר מקום אימון…"}</option>`+brs.map(b=>{
+    const ls=cfg.locations.filter(l=>(l.branch||"")===b&&!L.includes(l.name));
+    return ls.length?`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${ls.map(l=>`<option value="${esc(l.name)}">${esc(l.name)}</option>`).join("")}</optgroup>`:""; }).join("");
+}
+// where the athlete shows up in the app, and where that comes from: the Arbox "איזור אימון" field, the Arbox membership
+// (program name), a hand pin in the app, or a registration tab in Moran's sheet
+function arbPlacesHtml(u){
+  const names=arbSplit(u.name), L=areaList(u.area), noArea=Object.assign({},u,{area:""}), out=[];
+  cfg.locations.forEach(l=>{
+    const src=[];
+    if(u.active&&isArbLoc(l)){
+      if(L.includes(l.name)) src.push(["Arbox · איזור אימון","blue"]);
+      else if(names.some(n=>(ARB_EXTRA_LOC[l.name]||[]).includes(n)||ARB_PIN_LOC[n]===l.name)) src.push(["Arbox · שיוך באפליקציה","blue"]);
+      else if(names.some(n=>!ARB_PIN_LOC[n])&&arbInLoc(noArea,l)) src.push(["Arbox · לפי מנוי","blue"]);
+    }
+    if(ARB.sheet&&ARB.sheet.some(e=>e.loc===l.name&&names.includes(e.name))) src.push([SHEET_ONLY.test(l.name)||(cfg.rosterSource||"arbox")!=="arbox"?"גיליון":"גם בגיליון",""]);
+    if(src.length) out.push(`<span class="chip ${src[0][1]}">${esc(l.name)} <small>${src.map(x=>esc(x[0])).join(" + ")}</small></span>`);
+  });
+  const sheetNote=ARB.sheet?(ARB.sheetErr?` <span class="hint">(הגיליון לא נטען)</span>`:""):` <span class="hint">· בודק בגיליון…</span>`;
+  return `<b>🗂 מופיע באפליקציה:</b>${out.join("")||`<span class="hint">${u.active?"לא מופיע באף מקום":"לא פעיל – לא מופיע ברשימות"}</span>`}${sheetNote}`;
+}
+function arbPlacesRefresh(id){
+  document.querySelectorAll(id?`.ab-places[data-id="${CSS.escape(String(id))}"]`:".ab-places[data-id]").forEach(el=>{
+    const u=(ARB.users||[]).find(x=>String(x.id)===el.dataset.id); if(u) el.innerHTML=arbPlacesHtml(u); });
+}
+// names in each place's registration tab of the sheet (read once per Arbox-screen visit)
+async function arbSheetLoad(){
+  if(ARB.sheet) return; if(ARB.sheetLoading) return ARB.sheetLoading;
+  ARB.sheetLoading=(async()=>{
+    try{
+      const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
+      const gidM=String(cfg.sheetUrl).match(/gid=(\d+)/), gid=gidM?gidM[1]:"0", same=(a,b)=>JSON.stringify(a)===JSON.stringify(b);
+      const first=await sheetGet(base+"&gid="+gid), tabs=new Map(), m=[];
+      for(const loc of cfg.locations){
+        if(isOffLoc(loc)) continue;
+        if(!String(loc.tab||"").trim()&&(cfg.rosterSource||"arbox")==="arbox") continue;   // Arbox-only place (C3US)
+        const tab=(loc.tab||loc.name).trim();
+        if(!tabs.has(tab)){ let tr=null; try{ tr=await sheetGet(base+"&sheet="+encodeURIComponent(tab)); }catch(e){}
+          tabs.set(tab, tr&&(!same(tr,first)||firstTabName(first,tab))?tr:null); }
+        const rows=tabs.get(tab);
+        (rows?rosterPeople(rows,loc.filter):rosterPeople(first,loc.filter||loc.name)).forEach(p=>m.push({loc:loc.name,name:p.name}));
+      }
+      ARB.sheet=m; ARB.sheetErr="";
+    }catch(e){ ARB.sheet=[]; ARB.sheetErr=e.message; }
+    finally{ ARB.sheetLoading=null; }
+    arbPlacesRefresh();
+  })();
+  return ARB.sheetLoading;
+}
+async function areaSave(u,list,box){
+  const sel=box.querySelector("select.arb-area"), st=box.querySelector(".ab-area-st"), v=list.join(", ");
+  if(v.length>120){ st.className="ab-area-st err"; st.textContent="יותר מדי מקומות לשדה ב-Arbox (עד 120 תווים) – לא נשמר"; sel.value=""; return; }
+  box.querySelectorAll("select,button").forEach(x=>x.disabled=true); st.className="ab-area-st"; st.textContent="שומר ב-Arbox…";
   try{
     const r=await scriptCall({action:"arboxSetArea",pin:arbPin(),boxId:u.boxId||"",userId:u.id,name:u.name,value:v});
-    u.area=r.value; st.className="ab-area-st ok"; st.textContent=`✓ נשמר ב-Arbox${r.value?": "+r.value:" (נמחק)"}`;
+    u.area=r.value; const lu=(ARB.lite||[]).find(x=>String(x.id)===String(u.id)); if(lu) lu.area=r.value;   // registration lists use it right away
+    st.className="ab-area-st ok"; st.textContent=`✓ נשמר ב-Arbox${r.value?": "+r.value:" (נמחק)"}`;
     $("arbChips").querySelector(".chip:last-child").textContent=`📍 ${(ARB.users||[]).filter(x=>x.area).length} עם איזור אימון`;
   }catch(err){
-    s.innerHTML=areaOptions(prev); st.className="ab-area-st err";
+    st.className="ab-area-st err";
     st.textContent=(err.resp&&err.resp.pin)?"קוד הגישה ל-Arbox שגוי – לא נשמר":"לא נשמר: "+err.message;
-  }finally{ s.disabled=false; }
+  }finally{
+    box.querySelector(".ab-area-chips").innerHTML=areaChips(u); sel.innerHTML=areaOptions(u.area); sel.disabled=false; arbPlacesRefresh(u.id);
+  }
+}
+$("arbList").addEventListener("change",e=>{
+  const s=e.target.closest("select.arb-area"); if(!s||!s.value) return;
+  const u=(ARB.users||[]).find(x=>String(x.id)===s.dataset.id); if(!u) return;
+  const L=areaList(u.area); if(!L.includes(s.value)) L.push(s.value);
+  areaSave(u,L,s.closest(".ab-area"));
+});
+$("arbList").addEventListener("click",e=>{
+  const b=e.target.closest(".ab-ar-x"); if(!b) return;
+  const u=(ARB.users||[]).find(x=>String(x.id)===b.dataset.id); if(!u) return;
+  areaSave(u,areaList(u.area).filter(a=>a!==b.dataset.v),b.closest(".ab-area"));
 });
 $("arbPinBox").onsubmit=ev=>{ ev.preventDefault(); const v=$("arbPin").value.trim(); if(!v) return; store.set("arbox-pin",v); $("arbPin").value=""; ARB.users=null; arbShow(); };
 $("arbSearch").addEventListener("input",arbRender); $("arbFilter").onchange=arbRender; $("arbLoc").onchange=arbRender;
