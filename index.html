@@ -210,6 +210,19 @@ body.rep-open{overflow:hidden}
 .map-li small{color:var(--muted);margin-inline-start:auto;font-size:.82rem}
 .map-tip{font:600 .8rem var(--body);direction:rtl}
 .map-add{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:8px}
+.ic-wrap{position:fixed;inset:0;z-index:90;background:rgba(5,15,30,.6);display:flex;align-items:center;justify-content:center;padding:16px}
+.ic-card{width:min(420px,100%);background:var(--surface);color:var(--fg);border-radius:22px;padding:24px 20px 18px;text-align:center;box-shadow:0 14px 40px rgba(0,0,0,.35);display:flex;flex-direction:column;gap:10px;max-height:calc(100vh - 32px);overflow:auto}
+.ic-logo{width:96px;height:96px;border-radius:22px;margin:0 auto;box-shadow:0 6px 18px rgba(0,0,0,.18)}
+.ic-card h2{margin:4px 0 0;font:800 1.35rem var(--display);color:var(--accent)}
+.ic-sub{margin:0;color:var(--muted);font-size:.95rem}
+.ic-card ol{text-align:right;margin:6px 0;padding-inline-start:22px;display:flex;flex-direction:column;gap:8px;font-size:1.02rem;line-height:1.4}
+.ic-card p{margin:0}
+.ic-share{display:inline-block;background:var(--chip);border-radius:8px;padding:0 6px}
+.ic-go{font-size:1.1rem;padding:14px}
+.ic-later{background:transparent;border:0;color:var(--muted)}
+.ic-arrow{position:fixed;bottom:calc(8px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);font-size:2.6rem;color:#fff;animation:icb 1s ease-in-out infinite;text-shadow:0 2px 8px rgba(0,0,0,.5)}
+@keyframes icb{0%,100%{transform:translate(-50%,0)}50%{transform:translate(-50%,10px)}}
+@media (prefers-reduced-motion:reduce){.ic-arrow{animation:none}}
 .map-search{display:flex;gap:8px;margin-top:10px}
 .map-search input{flex:1;min-width:0;font:inherit;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
 .map-res{display:flex;flex-direction:column;gap:6px;margin-top:6px}
@@ -396,7 +409,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 10/11/2026 · כפתור התקנה</div>
+  <div class="ver">גרסה 10/11/2026 · כרטיס התקנה בטלפון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1488,6 +1501,56 @@ $("instBtn").onclick=async()=>{
   const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
   showToast(ios?"באייפון: כפתור השיתוף ⬆️ ← \"הוספה למסך הבית\"":"כבר מותקנת, או שהדפדפן לא מציע התקנה. בכרום: תפריט ⋮ ← \"העברה, שמירה ושיתוף\" ← \"התקנת הדף כאפליקציה\"",true);
 };
+// ---------- phones: a big "install the app" card when the app is opened in the browser ----------
+// Android: one tap opens the system install dialog. iPhone: Apple allows no install button, so the card shows the
+// "share ⬆️ → הוספה למסך הבית" steps (with an arrow at Safari's share button). Never shown once installed;
+// "לא עכשיו" hides it for 3 days.
+const INST_SNOOZE="install-card-snooze";
+function instCardShow(){
+  if(document.getElementById("instCard")||isStandalone()) return;
+  const ua=navigator.userAgent, ios=/iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const ipad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  const inApp=/FBAN|FBAV|Instagram|Line\/|WhatsApp|wv\)/.test(ua);
+  const iosChrome=/CriOS|FxiOS|EdgiOS/.test(ua);
+  let steps, btn="", arrow="";
+  if(inApp){
+    steps=`<p>האפליקציה נפתחה בתוך ${/WhatsApp/.test(ua)?"וואטסאפ":"אפליקציה אחרת"}, ומשם אי אפשר להתקין.</p>
+      <ol><li>לוחצים על <b>⋮</b> או <b>⬆️</b> בפינה</li><li>בוחרים <b>"פתיחה ב${ios?"ספארי":"כרום"}"</b></li><li>שם יופיע כפתור ההתקנה</li></ol>`;
+  } else if(ios){
+    const where=iosChrome?"בשורת הכתובת למעלה":ipad?"בפינה הימנית העליונה":"בתחתית המסך";
+    steps=`<ol><li>לוחצים על כפתור השיתוף <span class="ic-share" aria-label="שיתוף">⬆️</span> ${where}</li>
+      <li>גוללים ובוחרים <b>"הוספה למסך הבית"</b> <span aria-hidden="true">➕</span></li><li>לוחצים <b>"הוסף"</b> – והסמל מופיע במסך הבית</li></ol>`;
+    if(!iosChrome&&!ipad) arrow=`<div class="ic-arrow" aria-hidden="true">⬇</div>`;
+  } else if(INSTALL_EVT){
+    steps=`<p>לחיצה אחת – והאפליקציה מופיעה במסך הבית, נפתחת במסך מלא ועובדת גם בלי אינטרנט.</p>`;
+    btn=`<button type="button" class="btn primary ic-go" id="instCardGo">📲 התקן עכשיו</button>`;
+  } else {
+    steps=`<ol><li>לוחצים על <b>⋮</b> בפינה העליונה של הדפדפן</li><li>בוחרים <b>"התקנת אפליקציה"</b> או <b>"הוספה למסך הבית"</b></li><li>מאשרים – והסמל מופיע במסך הבית</li></ol>`;
+  }
+  const d=document.createElement("div"); d.id="instCard"; d.className="ic-wrap"; d.setAttribute("role","dialog"); d.setAttribute("aria-modal","true"); d.setAttribute("aria-labelledby","icTitle");
+  d.innerHTML=`<div class="ic-card"><img src="icon-192.png" alt="" class="ic-logo" width="96" height="96">
+    <h2 id="icTitle">התקינו את אפליקציית הנוכחות</h2><p class="ic-sub">סמל על מסך הבית – פתיחה בלחיצה, בלי לחפש קישור</p>
+    ${steps}${btn}<button type="button" class="btn ic-later" id="instCardLater">לא עכשיו</button></div>${arrow}`;
+  document.body.appendChild(d);
+  const close=snooze=>{ if(snooze) store.set(INST_SNOOZE,Date.now()); d.remove(); };
+  $("instCardLater").onclick=()=>close(true);
+  const go=$("instCardGo");
+  if(go) go.onclick=async()=>{ const e=INSTALL_EVT; if(!e){ close(false); return; } INSTALL_EVT=null; close(false);
+    try{ await e.prompt(); const c=await e.userChoice; if(c.outcome!=="accepted") store.set(INST_SNOOZE,Date.now()); }catch(_){ } };
+}
+function instCardMaybe(){
+  const ua=navigator.userAgent, phone=/Android|iPhone|iPad|iPod/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
+  if(!phone||isStandalone()) return;
+  if(Date.now()-(+store.get(INST_SNOOZE,0)||0)<3*24*3600*1000) return;
+  if(/Android/.test(ua)&&!INSTALL_EVT){                     // give Chrome a moment to offer the install
+    const t=setTimeout(instCardShow,4000);
+    window.addEventListener("beforeinstallprompt",()=>{ clearTimeout(t); setTimeout(instCardShow,300); },{once:true});
+    return;
+  }
+  instCardShow();
+}
+window.addEventListener("appinstalled",()=>{ const c=document.getElementById("instCard"); if(c) c.remove(); });
+setTimeout(instCardMaybe,1500);
 document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="hidden"){ hiddenAt=Date.now(); return; }
   if(hiddenAt&&Date.now()-hiddenAt>=30*60*1000) checkVersion("resume");
