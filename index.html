@@ -396,7 +396,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 09/11/2026 · חיפוש מקום במפה</div>
+  <div class="ver">גרסה 10/11/2026 · כפתור התקנה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -621,6 +621,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <button type="button" class="btn mgr-open-btn arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span> Arbox – ספורטאים מהמערכת</button>
     <button type="button" class="btn mgr-open-btn" id="sheetBtn"><span aria-hidden="true">📊</span> פתיחת גיליון הנוכחות בדפדפן</button>
     <button type="button" class="btn mgr-open-btn" id="updBtn"><span aria-hidden="true">🔄</span> בדיקת עדכון גרסה</button>
+    <button type="button" class="btn mgr-open-btn" id="instBtn"><span aria-hidden="true">📲</span> התקנת האפליקציה במחשב / בטלפון</button>
     <div class="card" id="sheetPwBox" hidden style="margin:0">
       <label class="lbl" for="sheetPw">סיסמה לגיליון הנוכחות</label>
       <input type="password" id="sheetPw" autocomplete="off" autocapitalize="characters" enterkeyhint="go">
@@ -1476,6 +1477,17 @@ async function checkVersion(mode){            // mode: "manual" | "resume" | "ti
 $("updGo").onclick=doUpdate;
 $("updLater").onclick=()=>{ $("updBar").hidden=true; updLater=Date.now(); };
 $("updBtn").onclick=()=>checkVersion("manual");
+// ---------- install as an app (desktop icon / home screen) ----------
+let INSTALL_EVT=null;
+const isStandalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+window.addEventListener("beforeinstallprompt",e=>{ e.preventDefault(); INSTALL_EVT=e; });
+window.addEventListener("appinstalled",()=>{ INSTALL_EVT=null; toastOk("האפליקציה הותקנה ✓ – יש סמל \"נוכחות\" בשולחן העבודה"); });
+$("instBtn").onclick=async()=>{
+  if(isStandalone()){ showToast("✓ האפליקציה כבר מותקנת ופתוחה עכשיו בחלון שלה",true); return; }
+  if(INSTALL_EVT){ const e=INSTALL_EVT; INSTALL_EVT=null; $("setup").close(); try{ await e.prompt(); const c=await e.userChoice; if(c.outcome!=="accepted") showToast("ההתקנה בוטלה – אפשר לנסות שוב מההגדרות"); }catch(_){ } return; }
+  const ios=/iPhone|iPad|iPod/.test(navigator.userAgent);
+  showToast(ios?"באייפון: כפתור השיתוף ⬆️ ← \"הוספה למסך הבית\"":"כבר מותקנת, או שהדפדפן לא מציע התקנה. בכרום: תפריט ⋮ ← \"העברה, שמירה ושיתוף\" ← \"התקנת הדף כאפליקציה\"",true);
+};
 document.addEventListener("visibilitychange",()=>{
   if(document.visibilityState==="hidden"){ hiddenAt=Date.now(); return; }
   if(hiddenAt&&Date.now()-hiddenAt>=30*60*1000) checkVersion("resume");
