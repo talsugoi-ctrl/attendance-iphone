@@ -163,6 +163,11 @@ body.rep-open{overflow:hidden}
 .rtable{width:100%;border-collapse:collapse;font-size:.88rem;font-variant-numeric:tabular-nums}
 .rtable th{background:var(--chip);font-weight:700;text-align:start;padding:8px 10px;white-space:nowrap}
 .rtable td{padding:8px 10px;border-top:1px solid var(--line);white-space:nowrap}
+.rtable.hist{table-layout:auto}
+.rtable.hist th,.rtable.hist td{white-space:normal;padding:7px 5px;font-size:.8rem;line-height:1.25;vertical-align:middle}
+.rtable.hist td small{display:block;color:var(--muted);font-size:.72rem}
+.rtable.hist th:last-child,.rtable.hist td:last-child{width:36px;padding-inline:3px}
+.rtable.hist .ses-go{min-width:34px;height:34px;font-size:1rem}
 .rtable tr.off td{color:var(--muted)}
 .rtable tr.over td{background:color-mix(in srgb,var(--danger) 9%,var(--surface));color:var(--danger)}
 .pie-wrap{display:flex;align-items:center;gap:16px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px}
@@ -2188,8 +2193,8 @@ function repCoach(){
   if(all) RT.push("",...Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`• ${k}: ${v.n} אימונים · ${Math.round(v.h*100)/100} שעות · הגיעו ${ofTxt(v.a,v.o)}`));
   RT.push("","*האימונים:*",...list.map(x=>`• ${x.r.date.slice(0,5)}${all?" "+x.r.coach:""} · ${x.r.loc}${x.r.type?" · "+x.r.type:""} · ${x.r.dur?durWords(x.r.dur):"—"} · הגיעו ${ofTxt(x.n,x.of)}${x.t?` (+${x.t} ניסיון/לא רשום)`:""}`));
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
-    ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th><th><span class="sr">דוח אימון</span></th></tr></thead><tbody>
-    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td><td><button type="button" class="ses-go" data-loc="${esc(x.r.loc)}" data-key="${x.r.key}" data-id="${esc(x.r.id)}" aria-label="דוח אימון ${esc(x.r.loc)} ${esc(x.r.date.slice(0,5))}" title="פתח דוח אימון">📋</button></td></tr>`).join("")}</tbody></table></div>
+    ${perHtml}<div class="tw"><table class="rtable hist"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום · סוג</th><th>זמן</th><th>הגיעו</th><th><span class="sr">דוח אימון</span></th></tr></thead><tbody>
+    ${list.map(x=>`<tr><td><b>${esc(x.r.date.slice(0,5))}</b><small>${esc(dayName(x.r.date).replace("יום ",""))}</small></td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}<small>${esc(x.r.type||"—")}</small></td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td><b>${x.of?`${x.n}/${x.of}`:x.n}</b>${x.of?`<small>${Math.round(x.n/x.of*100)}%</small>`:""}${x.t?`<small>+${x.t} ניסיון</small>`:""}</td><td><button type="button" class="ses-go" data-loc="${esc(x.r.loc)}" data-key="${x.r.key}" data-id="${esc(x.r.id)}" aria-label="דוח אימון ${esc(x.r.loc)} ${esc(x.r.date.slice(0,5))}" title="פתח דוח אימון">📋</button></td></tr>`).join("")}</tbody></table></div>
     <p class="hint">"הגיעו מתוך" = רק רשומים למקום (מ-Arbox; בכוכב יאיר – מהגיליון). מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון". "לא רשום" / "עזב" במנוי = לא נחשב רשום.</p>`;
 }
 
