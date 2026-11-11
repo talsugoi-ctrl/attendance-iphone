@@ -421,7 +421,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 11/11/2026 · סדר דוחות, Waze במפה</div>
+  <div class="ver">גרסה 11/11/2026 · שטח: דרורים, רעננה, צפון, קדימה צורן</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -721,7 +721,10 @@ const DEFAULTS = {
     {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
     {branch:"שטח", name:"שטח שוהם", tab:"", filter:"שוהם"},
     {branch:"שטח", name:"שטח השרון", tab:"", filter:"השרון"},
-    {branch:"שטח", name:"שטח קדימה", tab:"", filter:"קדימה"},
+    {branch:"שטח", name:"שטח קדימה צורן", tab:"", filter:"קדימה"},
+    {branch:"שטח", name:"שטח דרורים חמישי", tab:"", filter:"דרורים"},
+    {branch:"שטח", name:"שטח רעננה", tab:"", filter:"רעננה"},
+    {branch:"שטח", name:"שטח צפון", tab:"", filter:"צפון"},
     {branch:"שטח", name:"שטח כללי", tab:"", filter:""}
   ]
 };
@@ -735,6 +738,9 @@ let cfg = Object.assign({}, DEFAULTS, savedCfg||{});
 cfg.locations=cfg.locations.map(l=>Object.assign({branch:"עמק יזרעאל"},l));
 // the default number changed (Tal → Moran): phones that still hold the old default get the new one
 if(String(cfg.waPhone||"").replace(/\D/g,"").replace(/^0/,"972")==="972509015006"){ cfg.waPhone=DEFAULTS.waPhone; if(savedCfg) store.set(KEY,Object.assign({},savedCfg,{waPhone:DEFAULTS.waPhone})); }
+// "שטח קדימה" renamed to "שטח קדימה צורן" (11/11/2026) – rename on phones that already have it, so it does not come back as a second place
+(function(){ const l=cfg.locations.find(l=>l.name==="שטח קדימה"); if(l){ l.name="שטח קדימה צורן"; if(savedCfg) store.set(KEY,cfg); }
+  const seen=store.get("seen-locs",null); if(seen&&seen.includes("שטח קדימה")&&!seen.includes("שטח קדימה צורן")){ seen.push("שטח קדימה צורן"); store.set("seen-locs",seen); } })();
 // A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
   cfg.hiddenBranches=[];   // every branch is always shown
@@ -882,7 +888,7 @@ function extractPeople(rows, filter){
 // ---------- roster from Arbox ----------
 // which Arbox athletes belong to an app place: by program name (עמק יזרעאל) or by Arbox location
 // off-road riding places ("שטח …"): by the words in the Arbox program name; "שטח כללי" = an off-road program that names no place
-const OFF_KEYS=["תל מונד","תל אביב","ירושלים","שוהם","השרון","קדימה"];
+const OFF_KEYS=["תל מונד","תל אביב","ירושלים","שוהם","השרון","קדימה","דרורים","רעננה","צפון"];
 const isOffLoc=l=>/^שטח/.test(l.name||"");
 function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
