@@ -409,7 +409,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 10/11/2026 · Live טריינר</div>
+  <div class="ver">גרסה 11/11/2026 · שטח קדימה, נתניה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -696,6 +696,7 @@ const DEFAULTS = {
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
     {branch:"מרכז", name:"רמת גן", tab:"רמת גן", filter:""},
+    {branch:"מרכז", name:"נתניה", tab:"", filter:""},
     {branch:"יקנעם", name:"טריאתלון נוער יקנעם", tab:"יקנעם", filter:""},
     {branch:"C3US", name:"שחייה חדרה", tab:"", filter:""},
     {branch:"C3US", name:"קריטריום קיסריה", tab:"", filter:""},
@@ -708,6 +709,7 @@ const DEFAULTS = {
     {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
     {branch:"שטח", name:"שטח שוהם", tab:"", filter:"שוהם"},
     {branch:"שטח", name:"שטח השרון", tab:"", filter:"השרון"},
+    {branch:"שטח", name:"שטח קדימה", tab:"", filter:"קדימה"},
     {branch:"שטח", name:"שטח כללי", tab:"", filter:""}
   ]
 };
@@ -868,7 +870,7 @@ function extractPeople(rows, filter){
 // ---------- roster from Arbox ----------
 // which Arbox athletes belong to an app place: by program name (עמק יזרעאל) or by Arbox location
 // off-road riding places ("שטח …"): by the words in the Arbox program name; "שטח כללי" = an off-road program that names no place
-const OFF_KEYS=["תל מונד","תל אביב","ירושלים","שוהם","השרון"];
+const OFF_KEYS=["תל מונד","תל אביב","ירושלים","שוהם","השרון","קדימה"];
 const isOffLoc=l=>/^שטח/.test(l.name||"");
 function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
