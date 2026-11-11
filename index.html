@@ -147,6 +147,9 @@ body.rep-open{overflow:hidden}
 .rc-list.miss li{display:flex;justify-content:space-between;gap:10px;background:var(--surface);padding:8px 12px;border:1px solid var(--line);border-radius:10px}
 .rc-list.miss a{color:var(--accent);text-decoration:none}
 .rc-list.miss .mr{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.ses-go{border:0;background:#e6eef9;border-radius:10px;min-width:40px;height:40px;font-size:1.15rem;cursor:pointer;padding:0}
+.ses-go:active{background:#cfdcf0}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
 .rc-list.miss a.wa-mini{background:#1fa855;color:#fff;border-radius:999px;padding:4px 11px;font-size:.82rem;font-weight:700;white-space:nowrap}
 .tags{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
 .tag.over{color:var(--danger);border-color:var(--danger)}
@@ -409,7 +412,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 11/11/2026 · שטח קדימה, נתניה</div>
+  <div class="ver">גרסה 11/11/2026 · היסטוריית אימונים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1678,7 +1681,7 @@ const REPORTS=[
   {id:"exc",icon:"⚠️",title:"דוח חריגים",desc:"מעבר למכסה, אימון ניסיון, ואימונים שלא כלולים במנוי",period:"week",extra:null},
   {id:"pie",icon:"🥧",title:"נוכחות לפי מקום",desc:"כמה מהרשומים הגיעו – לפי מקום או סניף, ומי לא הגיע",period:"month",extra:"branch"},
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
-  {id:"coach",icon:"👤",title:"דוח מאמן",desc:"אילו אימונים מאמן העביר, מתי וכמה זמן",period:"month",extra:"coach"},
+  {id:"coach",icon:"🗂️",title:"היסטוריית אימונים",desc:"כל האימונים שהתבצעו – לפי מאמן, מתי וכמה זמן. 📋 ליד אימון פותח את דוח האימון",period:"month",extra:"coach"},
   {id:"ses",icon:"📋",title:"דוח אימון",desc:"אימון אחד לפי תאריך ומקום – מאמן, מי נכח, מי לא הגיע וחריגים",period:null,extra:"ses"},
   {id:"locs",icon:"📍",title:"מיקומי אימון",desc:"מיקום כל מקום אימון לפי סניף – שמירה מה-GPS, ניווט ושליחה בוואטסאפ",period:null,extra:"locs"},
   {id:"map",icon:"🗺️",title:"מפת מיקומי אימון",desc:"מפת ישראל עם נקודה אדומה בכל מקום אימון שנשמר לו מיקום",period:null,extra:"locs"},
@@ -2185,12 +2188,15 @@ function repCoach(){
   if(all) RT.push("",...Object.entries(per).sort((a,b)=>b[1].n-a[1].n).map(([k,v])=>`• ${k}: ${v.n} אימונים · ${Math.round(v.h*100)/100} שעות · הגיעו ${ofTxt(v.a,v.o)}`));
   RT.push("","*האימונים:*",...list.map(x=>`• ${x.r.date.slice(0,5)}${all?" "+x.r.coach:""} · ${x.r.loc}${x.r.type?" · "+x.r.type:""} · ${x.r.dur?durWords(x.r.dur):"—"} · הגיעו ${ofTxt(x.n,x.of)}${x.t?` (+${x.t} ניסיון/לא רשום)`:""}`));
   return `<div class="chips"><span class="chip">${list.length} אימונים</span><span class="chip">${Math.round(hours*100)/100} שעות</span><span class="chip">הגיעו ${ofTxt(came,of)}</span>${Object.entries(byType).map(([t,n])=>`<span class="chip blue">${esc(t)}: ${n}</span>`).join("")}</div>
-    ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th></tr></thead><tbody>
-    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td></tr>`).join("")}</tbody></table></div>
+    ${perHtml}<div class="tw"><table class="rtable"><thead><tr><th>תאריך</th>${all?"<th>מאמן</th>":""}<th>מקום</th><th>סוג</th><th>זמן</th><th>הגיעו</th><th><span class="sr">דוח אימון</span></th></tr></thead><tbody>
+    ${list.map(x=>`<tr><td>${dayName(x.r.date)} ${esc(x.r.date.slice(0,5))}</td>${all?`<td>${esc(x.r.coach)}</td>`:""}<td>${esc(x.r.loc)}</td><td>${esc(x.r.type||"—")}</td><td>${x.r.dur?esc(durWords(x.r.dur)):"—"}</td><td>${ofTxt(x.n,x.of)}${x.t?`<small style="color:var(--muted)"> · +${x.t} ניסיון</small>`:""}</td><td><button type="button" class="ses-go" data-loc="${esc(x.r.loc)}" data-key="${x.r.key}" data-id="${esc(x.r.id)}" aria-label="דוח אימון ${esc(x.r.loc)} ${esc(x.r.date.slice(0,5))}" title="פתח דוח אימון">📋</button></td></tr>`).join("")}</tbody></table></div>
     <p class="hint">"הגיעו מתוך" = רק רשומים למקום (מ-Arbox; בכוכב יאיר – מהגיליון). מתאמנים בניסיון (או שלא רשומים למקום) לא נכנסים לחישוב – מוצגים בנפרד כ"+ ניסיון". "לא רשום" / "עזב" במנוי = לא נחשב רשום.</p>`;
 }
 
 $("repBtn").onclick=openReports;
+// history → tap 📋 next to a training to open its session report
+$("repOut").addEventListener("click",e=>{ const b=e.target.closest(".ses-go"); if(!b) return;
+  const k=String(b.dataset.key); REP.sesPreset={loc:b.dataset.loc,iso:`${k.slice(0,4)}-${k.slice(4,6)}-${k.slice(6,8)}`,id:b.dataset.id}; openReport("ses"); });
 // ================= training schedule (מערכת אימונים) =================
 // weekly sessions from the sheet tab "מערכת אימונים" (branch → area → sessions) + this week's Arbox schedule
 const SCH={rows:null, arb:null, br:null, loading:null};
