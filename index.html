@@ -431,7 +431,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 12/11/2026 · צבעי נקודות במפה לפי סוג מקום</div>
+  <div class="ver">גרסה 12/11/2026 · מפה: זום אוטומטי לכל הנקודות</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2147,12 +2147,12 @@ async function mapDraw(pts,zoomIn){
     mk.bindTooltip(x.l.name,{direction:"top",offset:[0,-8],className:"map-tip"});
     mk.bindPopup(`<div dir="rtl" style="text-align:right"><b>${esc(x.l.name)}</b>${x.l.branch?`<br>סניף ${esc(x.l.branch)}`:""}${x.p.note?`<br>📝 ${esc(x.p.note)}`:""}<br><a href="${esc(gmaps(x.p))}" target="_blank" rel="noopener">Google Maps</a> · <a href="${esc(waze(x.p))}" target="_blank" rel="noopener">Waze</a></div>`);
     return mk; });
-  if(REP.mapView){ m.setView(REP.mapView.c,REP.mapView.z); REP.mapView=null; }
-  else if(zoomIn&&pts.length) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])).pad(0.3),{maxZoom:13});
-  else m.fitBounds(ISRAEL);
+  const fit=()=>{ if(pts.length>1) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])),{padding:[28,28],maxZoom:15});   // tightest view that still shows every dot
+    else if(pts.length) m.setView([pts[0].p.lat,pts[0].p.lng],14); else m.fitBounds(ISRAEL); };
+  const keep=REP.mapView; if(keep){ m.setView(keep.c,keep.z); REP.mapView=null; } else fit();
   if(REP.mapAdd) m.on("click",e=>mapAddAt(m,e.latlng));
   document.querySelectorAll("#repOut .map-list .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
-  setTimeout(()=>m.invalidateSize(),200);
+  setTimeout(()=>{ m.invalidateSize(); if(!keep) fit(); },200);   // refit once the box has its final size
 }
 // search a real place (OpenStreetMap Nominatim, Photon as a fallback) → centre the map on it → "קבע כאן מקום אימון"
 let MAPFOUND=null;
