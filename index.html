@@ -212,6 +212,8 @@ body.rep-open{overflow:hidden}
 .ab-area-st.err{color:var(--danger);font-weight:700}
 .ab-area-lbl{font-weight:700;font-size:.9rem;white-space:nowrap}
 .loc-map{height:min(72vh,620px);border-radius:14px;overflow:hidden;border:1px solid var(--line);background:var(--surface);margin:8px 0;z-index:0}
+.map-legend{display:flex;flex-wrap:wrap;gap:6px 14px;margin:6px 0 8px;font-size:.85rem;font-weight:600}
+.map-legend span{display:inline-flex;align-items:center;gap:5px}
 .map-dot{display:inline-block;width:11px;height:11px;border-radius:50%;background:#e11d2e;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,.25);vertical-align:-1px;flex:none}
 .map-list{display:flex;flex-direction:column;gap:6px}
 .map-li{display:flex;align-items:center;gap:8px;text-align:right;font:inherit;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:8px 12px;cursor:pointer;color:var(--fg)}
@@ -429,7 +431,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 12/11/2026 · חריגים: ללא כוכב יאיר מסומן</div>
+  <div class="ver">גרסה 12/11/2026 · צבעי נקודות במפה לפי סוג מקום</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2101,20 +2103,35 @@ function leafletLoad(){
   return LEAF;
 }
 const ISRAEL=[[29.45,34.25],[33.35,35.9]];
+// map dot colour by kind of place: pool = red, off-road = green, running = orange, criterium = purple, anything else = grey
+const MAP_KINDS={pool:{c:"#e11d2e",t:"בריכה"},off:{c:"#1f9d55",t:"שטח"},run:{c:"#f08c00",t:"ריצה"},crit:{c:"#7c3aed",t:"קריטריום"},other:{c:"#64748b",t:"אחר"}};
+function placeKind(l){
+  const n=l.name||"";
+  if(/^שטח/.test(n)) return "off";
+  if(/קריטריום/.test(n)) return "crit";
+  if(/ריצה/.test(n)) return "run";
+  if(/שחייה|שחיה|בריכה/.test(n)) return "pool";
+  const cnt={}; new Map((REP.log||[]).filter(r=>r.loc===n).map(r=>[r.id,r.type])).forEach(t=>{ cnt[t]=(cnt[t]||0)+1; });   // the type most trainings here were reported as
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1])[0], t=top?top[0]:"";
+  return /שחייה/.test(t)?"pool":/שטח/.test(t)?"off":/ריצה/.test(t)?"run":/קריטריום/.test(t)?"crit":"other";
+}
+const kindDot=k=>`<span class="map-dot" style="background:${MAP_KINDS[k].c}" aria-hidden="true"></span>`;
 function repMap(){
   if(!LOCS.rows){ locsLoad(false).then(()=>{ if(REP.cur&&REP.cur.id==="map") runReport(); }); REP.locLabel=""; return `<p class="hint">טוען מיקומים…</p>`; }
   const br=$("locBr").value, locs=cfg.locations.filter(l=>!br||(l.branch||"")===br);
   REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
-  const pts=locs.map(l=>({l,p:locOf(l.name)})).filter(x=>x.p), miss=locs.filter(l=>!locOf(l.name));
+  const pts=locs.map(l=>({l,p:locOf(l.name),k:placeKind(l)})).filter(x=>x.p), miss=locs.filter(l=>!locOf(l.name));
+  const kc={}; pts.forEach(x=>{ kc[x.k]=(kc[x.k]||0)+1; });
   RT.push(...pts.map(x=>locMsg(x.l,x.p)+"\n"));
   setTimeout(()=>{ mapDraw(pts,!!br); $("mapSearch").onsubmit=ev=>{ ev.preventDefault(); mapSearch($("mapQ").value); }; const b=$("mapAddBtn"); if(b) b.onclick=()=>{ REP.mapAdd=!REP.mapAdd; REP.mapView=LMAP?{c:LMAP.getCenter(),z:LMAP.getZoom()}:null; runReport(); }; },0);
-  return `<div class="chips"><span class="chip"><span class="map-dot" aria-hidden="true"></span> ${pts.length} מקומות על המפה</span>${miss.length?`<span class="chip amber">${miss.length} בלי מיקום שמור</span>`:""}</div>
+  return `<div class="chips"><span class="chip">${pts.length} מקומות על המפה</span>${miss.length?`<span class="chip amber">${miss.length} בלי מיקום שמור</span>`:""}</div>
+    <div class="map-legend" aria-label="מקרא צבעים">${Object.keys(MAP_KINDS).filter(k=>kc[k]).map(k=>`<span>${kindDot(k)} ${MAP_KINDS[k].t} (${kc[k]})</span>`).join("")}</div>
     <form class="map-search" id="mapSearch" role="search"><input type="search" id="mapQ" value="${esc(REP.mapQ||"")}" placeholder="חיפוש מקום אמיתי – למשל ספורטן חיפה" autocomplete="off" enterkeyhint="search" aria-label="חיפוש מקום על המפה"><button type="submit" class="btn primary">🔎 חפש</button></form>
     <div class="map-res" id="mapRes"></div>
     <div class="map-add"><button type="button" class="btn${REP.mapAdd?" primary":""}" id="mapAddBtn">${REP.mapAdd?"✕ ביטול הוספה":"📍 הוספת מיקום על המפה"}</button>
       ${REP.mapAdd?`<span class="map-add-hint">הקש על המפה בנקודה של מקום האימון (אפשר להגדיל קודם עם +)</span>`:""}</div>
     <div id="locMap" class="loc-map${REP.mapAdd?" adding":""}" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
-    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<div class="map-row"><button type="button" class="map-li" data-i="${i}"><span class="map-dot" aria-hidden="true"></span><b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button><a class="waze-go" href="${esc(waze(x.p))}" target="_blank" rel="noopener" aria-label="נווט ב-Waze אל ${esc(x.l.name)}">🚗 נווט ב-Waze</a></div>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
+    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<div class="map-row"><button type="button" class="map-li" data-i="${i}">${kindDot(x.k)}<b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button><a class="waze-go" href="${esc(waze(x.p))}" target="_blank" rel="noopener" aria-label="נווט ב-Waze אל ${esc(x.l.name)}">🚗 נווט ב-Waze</a></div>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
     ${miss.length?`<p class="hint">בלי מיקום: ${miss.map(l=>esc(l.name)).join(", ")}. שומרים מיקום בדוח "📍 שמור / הגדר מיקום אימון" ← "שמור מיקום כאן" (עומדים במקום האימון).</p>`:""}`;
 }
 async function mapDraw(pts,zoomIn){
@@ -2126,7 +2143,7 @@ async function mapDraw(pts,zoomIn){
   const m=L.map(box,{zoomControl:true,attributionControl:true,scrollWheelZoom:false}); LMAP=m;
   L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:18,attribution:'&copy; OpenStreetMap'}).addTo(m);
   const marks=pts.map(x=>{
-    const mk=L.circleMarker([x.p.lat,x.p.lng],{radius:9,color:"#ffffff",weight:2,fillColor:"#e11d2e",fillOpacity:1}).addTo(m);
+    const mk=L.circleMarker([x.p.lat,x.p.lng],{radius:9,color:"#ffffff",weight:2,fillColor:MAP_KINDS[x.k||"pool"].c,fillOpacity:1}).addTo(m);
     mk.bindTooltip(x.l.name,{direction:"top",offset:[0,-8],className:"map-tip"});
     mk.bindPopup(`<div dir="rtl" style="text-align:right"><b>${esc(x.l.name)}</b>${x.l.branch?`<br>סניף ${esc(x.l.branch)}`:""}${x.p.note?`<br>📝 ${esc(x.p.note)}`:""}<br><a href="${esc(gmaps(x.p))}" target="_blank" rel="noopener">Google Maps</a> · <a href="${esc(waze(x.p))}" target="_blank" rel="noopener">Waze</a></div>`);
     return mk; });
@@ -2160,7 +2177,7 @@ function mapGoTo(x){
   const m=LMAP; if(!m) return;
   if(MAPFOUND){ try{ MAPFOUND.remove(); }catch(_){} }
   m.setView([x.lat,x.lng],17);
-  MAPFOUND=L.circleMarker([x.lat,x.lng],{radius:11,color:"#ffffff",weight:3,fillColor:"#f08c00",fillOpacity:1}).addTo(m);
+  MAPFOUND=L.circleMarker([x.lat,x.lng],{radius:11,color:"#ffffff",weight:3,fillColor:"#0f172a",fillOpacity:1}).addTo(m);
   const el=document.createElement("div"); el.dir="rtl"; el.style.textAlign="right";
   el.innerHTML=`<b>${esc(x.name)}</b><br><small>${esc(x.full)}</small><br><button type="button" class="btn primary" style="margin-top:6px">📍 קבע כאן מקום אימון</button><br><small>לדיוק: "הוספת מיקום על המפה" והקשה על הנקודה המדויקת</small>`;
   el.querySelector("button").onclick=()=>{ m.closePopup(); mapAddAt(m,{lat:x.lat,lng:x.lng}); };
