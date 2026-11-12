@@ -298,6 +298,8 @@ dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface)
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .brcards{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .brcard{border:1.5px solid var(--line);border-radius:14px;background:var(--bg);overflow:hidden}
+.rep-chk{display:flex;align-items:center;gap:8px;min-height:44px;font-weight:600;cursor:pointer}
+.rep-chk input{width:22px;height:22px;accent-color:var(--accent)}
 .wa-rules{display:flex;flex-direction:column;gap:8px;margin-top:8px}
 .wa-rule{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);padding:10px}
 .wa-rule .full{grid-column:1/-1}
@@ -427,7 +429,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 12/11/2026 · WhatsApp לפי מאמן</div>
+  <div class="ver">גרסה 12/11/2026 · דוח חריגים ללא כוכב יאיר</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1729,7 +1731,7 @@ function phoneOf(name){ const p=REP.roster.find(x=>x.name===name&&x.phone); retu
 // ---------- report definitions ----------
 const REPORTS=[
   {id:"coach",icon:"🗂️",title:"היסטוריית אימונים",desc:"כל האימונים שהתבצעו – לפי מאמן, מתי וכמה זמן. 📋 ליד אימון פותח את דוח האימון",period:"month",extra:"coach"},
-  {id:"exc",icon:"⚠️",title:"דוח חריגים",desc:"מעבר למכסה, אימון ניסיון, ואימונים שלא כלולים במנוי",period:"week",extra:null},
+  {id:"exc",icon:"⚠️",title:"דוח חריגים",desc:"מעבר למכסה, אימון ניסיון, ואימונים שלא כלולים במנוי",period:"week",extra:"exc"},
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
   {id:"map",icon:"🗺️",title:"מפת מיקומי אימון",desc:"מפת ישראל עם נקודה אדומה בכל מקום אימון שנשמר לו מיקום",period:null,extra:"locs"},
   {id:"locs",icon:"📍",title:"שמור / הגדר מיקום אימון (גאוגרפי)",desc:"מיקום כל מקום אימון לפי סניף – שמירה מה-GPS, ניווט ושליחה בוואטסאפ",period:null,extra:"locs"},
@@ -1779,6 +1781,9 @@ function openReport(id){
       <label class="lbl" for="sesLoc" style="margin-top:8px">מקום</label><select id="sesLoc" class="tsel">${brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option${l.name===L0?" selected":""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("")}</select>
       <div id="sesPickBox" hidden><label class="lbl" for="sesPick" style="margin-top:8px">אימון</label><select id="sesPick" class="tsel"></select></div>`;
     $("sesPick").addEventListener("change",()=>{ REP.sesId=$("sesPick").value; });
+  } else if(r.extra==="exc"){
+    ex.innerHTML=`<label class="rep-chk"><input type="checkbox" id="excNoKY"${store.get("exc-no-ky",false)?" checked":""}> ללא כוכב יאיר</label>`;
+    $("excNoKY").addEventListener("change",()=>store.set("exc-no-ky",$("excNoKY").checked));
   } else if(r.extra==="bday"){
     const m0=new Date().getMonth()+1, myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
     ex.innerHTML=`<label class="lbl" for="bdMonth">חודש</label><select id="bdMonth" class="tsel">${HEB_M.map((m,i)=>`<option value="${i+1}"${i+1===m0?" selected":""}>${m}</option>`).join("")}</select>
@@ -1841,7 +1846,9 @@ $("repCopy").onclick=async()=>{
 
 // 1) exceptions
 function repExceptions(){
-  const rows=inPeriod(REP.log), by=new Map();
+  const noKY=!!($("excNoKY")&&$("excNoKY").checked);   // "ללא כוכב יאיר" checkbox
+  const rows=inPeriod(REP.log).filter(r=>!noKY||r.loc!=="כוכב יאיר"), by=new Map();
+  if(noKY) RT.push("(ללא כוכב יאיר)");
   rows.forEach(r=>{
     const why=[];
     if(r.trial) why.push({k:"trial",t:"אימון ניסיון"});
