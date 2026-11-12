@@ -429,7 +429,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 12/11/2026 · דוח חריגים ללא כוכב יאיר</div>
+  <div class="ver">גרסה 12/11/2026 · חריגים: ללא כוכב יאיר מסומן</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1782,8 +1782,8 @@ function openReport(id){
       <div id="sesPickBox" hidden><label class="lbl" for="sesPick" style="margin-top:8px">אימון</label><select id="sesPick" class="tsel"></select></div>`;
     $("sesPick").addEventListener("change",()=>{ REP.sesId=$("sesPick").value; });
   } else if(r.extra==="exc"){
-    ex.innerHTML=`<label class="rep-chk"><input type="checkbox" id="excNoKY"${store.get("exc-no-ky",false)?" checked":""}> ללא כוכב יאיר</label>`;
-    $("excNoKY").addEventListener("change",()=>store.set("exc-no-ky",$("excNoKY").checked));
+    ex.innerHTML=`<label class="rep-chk"><input type="checkbox" id="excNoKY"${store.get("exc-no-ky2",true)?" checked":""}> ללא כוכב יאיר</label>`;
+    $("excNoKY").addEventListener("change",()=>store.set("exc-no-ky2",$("excNoKY").checked));
   } else if(r.extra==="bday"){
     const m0=new Date().getMonth()+1, myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
     ex.innerHTML=`<label class="lbl" for="bdMonth">חודש</label><select id="bdMonth" class="tsel">${HEB_M.map((m,i)=>`<option value="${i+1}"${i+1===m0?" selected":""}>${m}</option>`).join("")}</select>
