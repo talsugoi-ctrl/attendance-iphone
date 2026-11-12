@@ -298,6 +298,12 @@ dialog{border:1px solid var(--line);border-radius:16px;background:var(--surface)
 dialog::backdrop{background:rgba(0,0,0,.45)}
 .brcards{display:flex;flex-direction:column;gap:12px;margin-top:8px}
 .brcard{border:1.5px solid var(--line);border-radius:14px;background:var(--bg);overflow:hidden}
+.wa-rules{display:flex;flex-direction:column;gap:8px;margin-top:8px}
+.wa-rule{display:grid;grid-template-columns:1fr 1fr;gap:6px 8px;border:1.5px solid var(--line);border-radius:14px;background:var(--bg);padding:10px}
+.wa-rule .full{grid-column:1/-1}
+.wa-rule label{display:flex;flex-direction:column;gap:2px}
+.wa-rule small{color:var(--muted);font-size:.78rem}
+.wa-rule .wr-del{justify-self:start;border:0;background:none;color:var(--danger);font:inherit;font-size:.85rem;padding:6px 0;cursor:pointer}
 .brcard.off{opacity:.6}
 .brhead{display:flex;align-items:center;gap:8px;padding:10px 12px;background:var(--chip);border-bottom:1px solid var(--line);font-weight:700;color:var(--accent)}
 .brhead .show{display:flex;align-items:center;gap:6px;font-size:.85rem;font-weight:600;color:var(--muted);flex:none;cursor:pointer}
@@ -421,7 +427,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 11/11/2026 · שטח: שיוך לפי איזור אימון</div>
+  <div class="ver">גרסה 12/11/2026 · WhatsApp לפי מאמן</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -667,12 +673,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <button type="button" class="btn add-branch" id="addBranch">+ הוסף סניף</button>
     </div>
     <div>
-      <label class="lbl" for="waPhone">מספר וואטסאפ 1 לשליחת הדוח</label>
-      <input type="text" id="waPhone" dir="ltr" placeholder="+972504555426">
-      <div class="hint">אם משאירים ריק, נשלח למורן כפתורי (050-4555426).</div>
-    </div>
-    <div>
-      <label class="lbl" for="waPhone2">מספר וואטסאפ 2 (לא חובה)</label>
+      <label class="lbl" for="waPhone2">מספר וואטסאפ נוסף (לא חובה)</label>
       <input type="text" id="waPhone2" dir="ltr" placeholder="השאר ריק אם יש רק מספר אחד">
       <div class="hint">אם ממלאים, יופיע כפתור שליחה נוסף למספר הזה.</div>
     </div>
@@ -680,6 +681,19 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
       <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
       <div class="hint">הרשימה מ-Arbox מתעדכנת בכל טלפון בלי קוד (מסך Arbox המלא עדיין דורש קוד גישה). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
+    </div>
+    <div>
+      <span class="lbl">טלפון ברירת מחדל WhatsApp לפי מאמן</span>
+      <div class="hint">לאן נשלחים דוח הנוכחות והדוחות. ב"חל על" כותבים שמות מאמנים ו/או מקומות אימון, מופרדים בפסיק. מאמן או מקום שלא מופיעים באף שורה – נשלח לברירת המחדל.</div>
+      <div class="wa-rules" id="waRulesEd">
+        <div class="wa-rule">
+          <b class="full">כל המאמנים (ברירת מחדל)</b>
+          <label><small>שם</small><input type="text" id="waName" placeholder="מורן כפתורי"></label>
+          <label><small>טלפון</small><input type="text" id="waPhone" dir="ltr" placeholder="050-4555426"></label>
+        </div>
+        <div id="waRuleRows" class="wa-rules"></div>
+      </div>
+      <button type="button" class="btn" id="waRuleAdd" style="margin-top:8px">+ הוסף מאמן / מקום</button>
     </div>
     <div class="row">
       <button type="button" class="btn primary" id="saveSetup">שמור</button>
@@ -698,6 +712,8 @@ window.onerror=function(msg){
 const DEFAULTS = {
   sheetUrl: "https://docs.google.com/spreadsheets/d/1fFCDLbp7Y_61uX2h8s2MZJPOWBbGGlDKxU8mfF-S1wI/edit?gid=0#gid=0",
   waPhone: "+972504555426",   // מורן כפתורי
+  waName: "מורן כפתורי",
+  waRules: [{name:"דרור", who:"תל אביב, כוכב יאיר", phone:"054-8009988"}],   // WhatsApp target by coach / place – everything else goes to waPhone
   scriptUrl: "https://script.google.com/macros/s/AKfycby1ZB37OEsLwvRUVMmb5FX1lsGX6zjSVaDlbQuwsABdlSGRcomS-EfQZ6A-jSX0mFZbUQ/exec",   // Moran's system – the sheet's web-app address (…/exec)
   locations: [
     {branch:"עמק יזרעאל", name:"נופית", tab:"נופית", filter:""},
@@ -1271,11 +1287,19 @@ $("coach").addEventListener("change",()=>store.set("coach",$("coach").value.trim
 function waDigits(n){ let d=String(n||"").replace(/\D/g,""); if(d.startsWith("0")) d="972"+d.slice(1); else if(/^5\d{8}$/.test(d)) d="972"+d; return d; }
 function waHref(text,phone){ return `https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(text)}`; }
 function fmtPhone(n){ const d=waDigits(n); return d.startsWith("972")?"0"+d.slice(3).replace(/^(\d{2})(\d{7})$/,"$1-$2"):"+"+d; }
+// WhatsApp target by coach / training place (Settings → "טלפון ברירת מחדל WhatsApp לפי מאמן"); no match → the default (מורן)
+function waRules(){ return Array.isArray(cfg.waRules)?cfg.waRules:DEFAULTS.waRules; }
+function waTarget(coach,place){
+  const c=String(coach||"").trim(), c1=c.split(/\s+/)[0], p=String(place||"").trim();
+  const r=waRules().find(r=>waDigits(r.phone).length>=11&&String(r.who||"").split(/[,،]/).map(t=>t.trim()).filter(Boolean).some(t=>t===p||(c&&(t===c||t===c1))));
+  return r?{phone:r.phone,name:r.name||""}:{phone:cfg.waPhone||DEFAULTS.waPhone,name:cfg.waName!=null?cfg.waName:DEFAULTS.waName};
+}
+const waLabel=t=>t.name?`שלח ל${t.name} (${fmtPhone(t.phone)})`:`שלח ל-${fmtPhone(t.phone)}`;
 function setWaButtons(text){
-  const p1=cfg.waPhone||DEFAULTS.waPhone, p2=(cfg.waPhone2||"").trim();
-  const two=waDigits(p2).length>=9;
+  const L=cfg.locations[current]||{}, t=waTarget(coachName(),L.name), p1=t.phone, p2=(cfg.waPhone2||"").trim();
+  const two=waDigits(p2).length>=9&&waDigits(p2)!==waDigits(p1);
   $("waBtn").href=waHref(text,p1);
-  $("waBtn").textContent=two?`שלח ל-${fmtPhone(p1)}`:"שלח בוואטסאפ";
+  $("waBtn").textContent=waLabel(t);
   $("waBtn2").hidden=!two; $("waHint").hidden=true;
 
   if(two){ $("waBtn2").href=waHref(text,p2); $("waBtn2").textContent=`שלח ל-${fmtPhone(p2)}`; }
@@ -1452,8 +1476,19 @@ function draftToConfig(){
   });
   return {locations,hidden};
 }
+function waRuleRow(r){
+  const d=document.createElement("div"); d.className="wa-rule";
+  d.innerHTML=`<label><small>שם</small><input type="text" class="wr-name" placeholder="דרור"></label><label><small>טלפון</small><input type="text" class="wr-phone" dir="ltr" placeholder="05X-XXXXXXX"></label>
+    <label class="full"><small>חל על (מאמנים / מקומות אימון, מופרד בפסיק)</small><input type="text" class="wr-who" placeholder="תל אביב, כוכב יאיר"></label>
+    <button type="button" class="wr-del full">✕ הסר שורה</button>`;
+  d.querySelector(".wr-name").value=r.name||""; d.querySelector(".wr-phone").value=r.phone||""; d.querySelector(".wr-who").value=r.who||"";
+  d.querySelector(".wr-del").onclick=()=>d.remove(); $("waRuleRows").appendChild(d); return d;
+}
+function waRulesRead(){ return [...$("waRuleRows").querySelectorAll(".wa-rule")].map(d=>({name:d.querySelector(".wr-name").value.trim(),who:d.querySelector(".wr-who").value.trim(),phone:d.querySelector(".wr-phone").value.trim()})).filter(r=>r.who&&r.phone); }
+$("waRuleAdd").onclick=()=>waRuleRow({}).querySelector(".wr-name").focus();
 $("setupBtn").onclick=()=>{
-  $("sheetUrl").value=cfg.sheetUrl; $("waPhone").value=cfg.waPhone||DEFAULTS.waPhone; $("waPhone2").value=cfg.waPhone2||""; $("rosterSource").value=cfg.rosterSource||"arbox";
+  $("sheetUrl").value=cfg.sheetUrl; $("waPhone").value=fmtPhone(cfg.waPhone||DEFAULTS.waPhone); $("waPhone2").value=cfg.waPhone2||"";
+  $("waName").value=cfg.waName!=null?cfg.waName:DEFAULTS.waName; $("waRuleRows").innerHTML=""; waRules().forEach(waRuleRow); $("rosterSource").value=cfg.rosterSource||"arbox";
  
   draft=toDraft(); renderBranchEditor();
   $("setup").showModal();
@@ -1462,7 +1497,7 @@ $("cancelSetup").onclick=()=>$("setup").close();
 $("saveSetup").onclick=()=>{
   const dc=draftToConfig(), locs=dc.locations;
   const prevLoc=current!=null?cfg.locations[current]:null;
-  cfg={hiddenBranches:dc.hidden, sheetUrl:$("sheetUrl").value.trim()||DEFAULTS.sheetUrl, waPhone:$("waPhone").value.trim()||DEFAULTS.waPhone, waPhone2:$("waPhone2").value.trim(), rosterSource:$("rosterSource").value, locations:locs.length?locs:DEFAULTS.locations};
+  cfg={hiddenBranches:dc.hidden, sheetUrl:$("sheetUrl").value.trim()||DEFAULTS.sheetUrl, waPhone:$("waPhone").value.trim()||DEFAULTS.waPhone, waName:$("waName").value.trim(), waRules:waRulesRead(), waPhone2:$("waPhone2").value.trim(), rosterSource:$("rosterSource").value, locations:locs.length?locs:DEFAULTS.locations};
   store.set(KEY,cfg);
   $("setup").close();
   // keep the chosen location if it still exists and its branch is still shown
@@ -1788,8 +1823,13 @@ let RT=[];
 function setRepSend(){
   const box=$("repSend"), t=REP.text; box.hidden=!t; $("repFab").hidden=!t; if(!t) return;
   $("repWa").href=$("repFab").href="https://wa.me/?text="+encodeURIComponent(t);
-  const nums=[cfg.waPhone||DEFAULTS.waPhone,(cfg.waPhone2||"").trim()].filter(n=>waDigits(n).length>=9);
-  $("repWaNums").innerHTML=nums.map(n=>`<a class="btn wa" target="_blank" rel="noopener" href="${waHref(t,n)}">שלח ל-${esc(fmtPhone(n))}</a>`).join("");
+  const id=REP.cur&&REP.cur.id; let co="", pl="";      // the report's coach / place picks the WhatsApp number
+  if(id==="ses"){ pl=($("sesLoc")||{}).value||""; co=REP.sesCoach||""; }
+  else if(id==="coach"){ const v=($("repCoach")||{}).value||""; if(v!=="*") co=v; }
+  else if(id==="pie"){ const v=($("repBranch")||{}).value||""; if(v.startsWith("l:")) pl=v.slice(2); }
+  const tg=waTarget(co,pl), p2=(cfg.waPhone2||"").trim();
+  const nums=[tg].concat(waDigits(p2).length>=9&&waDigits(p2)!==waDigits(tg.phone)?[{phone:p2,name:""}]:[]);
+  $("repWaNums").innerHTML=nums.map(n=>`<a class="btn wa" target="_blank" rel="noopener" href="${waHref(t,n.phone)}">${esc(waLabel(n))}</a>`).join("");
   $("repShare").hidden=!navigator.share;
 }
 $("repShare").onclick=async()=>{ try{ await navigator.share({text:REP.text}); }catch(e){} };
@@ -1951,7 +1991,7 @@ function repSession(){
   REP.sesLabel=`${dayName(dmy)} ${dmy} · ${L}`;
   const day=REP.log.filter(r=>r.key===key), rows=day.filter(r=>r.loc===L), ids=[...new Set(rows.map(r=>r.id))];
   const pickBox=$("sesPickBox"), pick=$("sesPick");
-  if(!ids.length){ pickBox.hidden=true;
+  if(!ids.length){ pickBox.hidden=true; REP.sesCoach="";
     const other=[...new Set(day.map(r=>r.loc))];
     RT.push(`לא דווח אימון ב${L} בתאריך הזה.`);
     return `<div class="rep-empty">לא דווח אימון ב${esc(L)} בתאריך הזה.${other.length?`<br><small>באותו יום דווחו אימונים ב: ${other.map(esc).join(", ")}</small>`:""}</div>`; }
@@ -1959,7 +1999,7 @@ function repSession(){
   pickBox.hidden=S.length<2;
   if(!ids.includes(REP.sesId)) REP.sesId=ids[0];
   pick.innerHTML=S.map(s=>`<option value="${esc(s.id)}">${esc([s.r0.type||"אימון",s.r0.coach,s.rs.length+" נוכחים"].filter(Boolean).join(" · "))}</option>`).join(""); pick.value=REP.sesId;
-  const {rs,r0}=S.find(s=>s.id===REP.sesId);
+  const {rs,r0}=S.find(s=>s.id===REP.sesId); REP.sesCoach=r0.coach||"";
   const reg=[], seen=new Set(); REP.roster.filter(p=>p.loc===L&&activeSub(p.sub)).forEach(p=>{ if(!seen.has(p.name)){ seen.add(p.name); reg.push(p); } });
   const att=rs.slice().sort((a,b)=>a.name.localeCompare(b.name,"he")).map(r=>{
     const ent=REP.roster.find(p=>p.name===r.name&&p.loc===L), tags=[];
