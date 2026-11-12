@@ -2152,7 +2152,8 @@ async function mapDraw(pts,zoomIn){
   const keep=REP.mapView; if(keep){ m.setView(keep.c,keep.z); REP.mapView=null; } else fit();
   if(REP.mapAdd) m.on("click",e=>mapAddAt(m,e.latlng));
   document.querySelectorAll("#repOut .map-list .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
-  setTimeout(()=>{ m.invalidateSize(); if(!keep) fit(); },200);   // refit once the box has its final size
+  let tries=0; const refit=()=>{ m.invalidateSize(); if(m.getSize().x>0){ if(!keep) fit(); } else if(++tries<20) setTimeout(refit,300); };   // refit once the box has its real size
+  setTimeout(refit,200);
 }
 // search a real place (OpenStreetMap Nominatim, Photon as a fallback) → centre the map on it → "קבע כאן מקום אימון"
 let MAPFOUND=null;
