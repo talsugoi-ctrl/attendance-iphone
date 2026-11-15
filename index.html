@@ -431,7 +431,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 15/11/2026 · הצג סניף במסך ראשי</div>
+  <div class="ver">גרסה 15/11/2026 · נתניה/פולג</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -729,7 +729,7 @@ const DEFAULTS = {
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
     {branch:"מרכז", name:"רמת גן", tab:"רמת גן", filter:""},
-    {branch:"מרכז", name:"נתניה", tab:"", filter:""},
+    {branch:"מרכז", name:"נתניה/פולג", tab:"", filter:""},
     {branch:"יקנעם", name:"טריאתלון נוער יקנעם", tab:"יקנעם", filter:""},
     {branch:"C3US", name:"שחייה חדרה", tab:"", filter:""},
     {branch:"C3US", name:"קריטריום קיסריה", tab:"", filter:""},
@@ -763,6 +763,9 @@ if(String(cfg.waPhone||"").replace(/\D/g,"").replace(/^0/,"972")==="972509015006
 // "שטח קדימה" renamed to "שטח קדימה צורן" (11/11/2026) – rename on phones that already have it, so it does not come back as a second place
 (function(){ const l=cfg.locations.find(l=>l.name==="שטח קדימה"); if(l){ l.name="שטח קדימה צורן"; if(savedCfg) store.set(KEY,cfg); }
   const seen=store.get("seen-locs",null); if(seen&&seen.includes("שטח קדימה")&&!seen.includes("שטח קדימה צורן")){ seen.push("שטח קדימה צורן"); store.set("seen-locs",seen); } })();
+// "נתניה" renamed to "נתניה/פולג" (15/11/2026) – same one-time rename on phones that already have it
+(function(){ const O="נתניה", N="נתניה/פולג", l=cfg.locations.find(l=>l.name===O); if(l){ l.name=N; if(l.tab===O) l.tab=N; if(savedCfg) store.set(KEY,cfg); }
+  const seen=store.get("seen-locs",null); if(seen&&seen.includes(O)&&!seen.includes(N)){ seen.push(N); store.set("seen-locs",seen); } })();
 // A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
   if(!store.get("hb-v2",false)){ cfg.hiddenBranches=[]; store.set("hb-v2",true); if(savedCfg) store.set(KEY,cfg); }   // 15/11/2026: hiding a branch is back (Settings → "הצג במסך ראשי"); old hidden marks are cleared once
