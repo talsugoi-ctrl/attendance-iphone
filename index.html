@@ -431,7 +431,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 15/11/2026 · ספורטן</div>
+  <div class="ver">גרסה 15/11/2026 · ספורטן, פולג, יקנעם</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -954,13 +954,16 @@ async function arbEnsure(){
 // branch → sheet tab for athletes who are not (yet) in Arbox. The tab has columns "שם" and "מקומות אימון"
 // (comma-separated place names); they are added to the Arbox list of every place named in their row.
 const SHEET_EXTRA_TAB={"C3US":"C3US","חיפה":"חיפה"};
+// every extra tab is read for every place: an athlete listed there can train in another branch too (e.g. Haifa kids at נתניה/פולג)
 async function sheetExtra(loc){
-  const tab=SHEET_EXTRA_TAB[loc.branch||""]; if(!tab||!cfg.sheetUrl) return [];
-  let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return []; }
-  const h=rows.findIndex(r=>r.some(c=>c==="מקומות אימון")); if(h<0) return [];        // a missing tab comes back as the first tab – ignore it
-  const nc=rows[h].findIndex(c=>c==="שם"), pc=rows[h].indexOf("מקומות אימון"), tc=rows[h].findIndex(c=>/טלפון/.test(c)); if(nc<0) return [];
-  return rows.slice(h+1).filter(r=>normName(r[nc])&&String(r[pc]||"").split(",").map(x=>x.trim()).includes(loc.name))
-    .map(r=>({name:normName(r[nc]),sub:"",phone:tc>=0?(r[tc]||"").trim():"",sheet:true}));
+  if(!cfg.sheetUrl) return [];
+  const lists=await Promise.all([...new Set(Object.values(SHEET_EXTRA_TAB))].map(async tab=>{
+    let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return []; }
+    const h=rows.findIndex(r=>r.some(c=>c==="מקומות אימון")); if(h<0) return [];        // a missing tab comes back as the first tab – ignore it
+    const nc=rows[h].findIndex(c=>c==="שם"), pc=rows[h].indexOf("מקומות אימון"), tc=rows[h].findIndex(c=>/טלפון/.test(c)); if(nc<0) return [];
+    return rows.slice(h+1).filter(r=>normName(r[nc])&&areaList(r[pc]).includes(loc.name))
+      .map(r=>({name:normName(r[nc]),sub:"",phone:tc>=0?(r[tc]||"").trim():"",sheet:true})); }));
+  const seen=new Set(); return lists.flat().filter(p=>!seen.has(p.name)&&seen.add(p.name));
 }
 const SHEET_ONLY=/כוכב יאיר|יקנעם/;           // יקנעם: a hand-picked youth group (incl. a kid not yet in Arbox) – managed in its sheet tab
 // athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
