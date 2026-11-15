@@ -431,7 +431,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 15/11/2026 · ספורטן ריצה</div>
+  <div class="ver">גרסה 15/11/2026 · הצג סניף במסך ראשי</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -765,7 +765,8 @@ if(String(cfg.waPhone||"").replace(/\D/g,"").replace(/^0/,"972")==="972509015006
   const seen=store.get("seen-locs",null); if(seen&&seen.includes("שטח קדימה")&&!seen.includes("שטח קדימה צורן")){ seen.push("שטח קדימה צורן"); store.set("seen-locs",seen); } })();
 // A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
-  cfg.hiddenBranches=[];   // every branch is always shown
+  if(!store.get("hb-v2",false)){ cfg.hiddenBranches=[]; store.set("hb-v2",true); if(savedCfg) store.set(KEY,cfg); }   // 15/11/2026: hiding a branch is back (Settings → "הצג במסך ראשי"); old hidden marks are cleared once
+  cfg.hiddenBranches=Array.isArray(cfg.hiddenBranches)?cfg.hiddenBranches:[];
   if(!savedCfg){ store.set("seen-locs",DEFAULTS.locations.map(l=>l.name)); return; }   // first run: defaults as they are
   const seen=store.get("seen-locs",null)||["נופית","שמשית ילדים","שמשית מאסטרס","תל אביב","כוכב יאיר"];
   let changed=false;
@@ -1439,7 +1440,9 @@ function renderBranchEditor(focus){
     const head=el("div","brhead");
     const name=el("input","bname"); name.type="text"; name.value=br.name; name.placeholder="שם הסניף"; name.setAttribute("aria-label","שם הסניף");
     name.oninput=()=>{ br.name=name.value; };
-    head.append(el("span",null,"סניף"),name);
+    const show=el("label","show"); const sc=el("input"); sc.type="checkbox"; sc.checked=br.show!==false; sc.setAttribute("aria-label","הצג את סניף "+(br.name||"")+" במסך הראשי");
+    sc.onchange=()=>{ br.show=sc.checked; card.classList.toggle("off",!sc.checked); }; show.append(sc,document.createTextNode("הצג במסך ראשי"));
+    head.append(el("span",null,"סניף"),name,show);
     card.appendChild(head);
     const list=el("div","brlocs");
     if(!br.locs.length) list.appendChild(el("div","brempty","אין עדיין מקומות בסניף הזה."));
@@ -1478,6 +1481,7 @@ function draftToConfig(){
     const b=br.name.trim();
     const ls=br.locs.filter(l=>l.name.trim());
     if(!ls.length) return;
+    if(br.show===false&&!hidden.includes(b)) hidden.push(b);
     ls.forEach(l=>locations.push({branch:b,name:l.name.trim(),tab:l.tab.trim()||l.name.trim(),filter:l.filter.trim()}));
   });
   return {locations,hidden};
