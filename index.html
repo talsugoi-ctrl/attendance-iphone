@@ -431,7 +431,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 15/11/2026 · נתניה/פולג</div>
+  <div class="ver">גרסה 15/11/2026 · ספורטן</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -736,8 +736,7 @@ const DEFAULTS = {
     {branch:"C3US", name:"ריצה שחייה שישי", tab:"", filter:""},
     {branch:"C3US", name:"רכיבת שבת C3US", tab:"", filter:""},
     {branch:"C3US", name:"Live טריינר", tab:"", filter:""},
-    {branch:"חיפה", name:"ספורטן שחייה", tab:"", filter:""},
-    {branch:"חיפה", name:"ספורטן ריצה", tab:"", filter:""},
+    {branch:"חיפה", name:"ספורטן", tab:"", filter:""},
     {branch:"שטח", name:"שטח תל מונד", tab:"", filter:"תל מונד"},
     {branch:"שטח", name:"שטח תל אביב", tab:"", filter:"תל אביב"},
     {branch:"שטח", name:"שטח ירושלים", tab:"", filter:"ירושלים"},
@@ -765,6 +764,12 @@ if(String(cfg.waPhone||"").replace(/\D/g,"").replace(/^0/,"972")==="972509015006
   const seen=store.get("seen-locs",null); if(seen&&seen.includes("שטח קדימה")&&!seen.includes("שטח קדימה צורן")){ seen.push("שטח קדימה צורן"); store.set("seen-locs",seen); } })();
 // "נתניה" renamed to "נתניה/פולג" (15/11/2026) – same one-time rename on phones that already have it
 (function(){ const O="נתניה", N="נתניה/פולג", l=cfg.locations.find(l=>l.name===O); if(l){ l.name=N; if(l.tab===O) l.tab=N; if(savedCfg) store.set(KEY,cfg); }
+  const seen=store.get("seen-locs",null); if(seen&&seen.includes(O)&&!seen.includes(N)){ seen.push(N); store.set("seen-locs",seen); } })();
+// "ספורטן שחייה" renamed to "ספורטן" and "ספורטן ריצה" removed (15/11/2026)
+(function(){ const O="ספורטן שחייה", N="ספורטן", R="ספורטן ריצה"; let ch=false;
+  const l=cfg.locations.find(l=>l.name===O); if(l){ if(cfg.locations.some(x=>x.name===N)) cfg.locations=cfg.locations.filter(x=>x!==l); else { l.name=N; if(l.tab===O) l.tab=""; } ch=true; }
+  if(cfg.locations.some(x=>x.name===R)){ cfg.locations=cfg.locations.filter(x=>x.name!==R); ch=true; }
+  if(ch&&savedCfg) store.set(KEY,cfg);
   const seen=store.get("seen-locs",null); if(seen&&seen.includes(O)&&!seen.includes(N)){ seen.push(N); store.set("seen-locs",seen); } })();
 // A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
@@ -919,7 +924,7 @@ const isOffLoc=l=>/^שטח/.test(l.name||"");
 function arbInLoc(u,loc){
   const ps=arbProgs(u), n=loc.name, has=rx=>ps.some(p=>rx.test(p));
   // "איזור אימון" in Arbox (custom field, comma-separated) adds the athlete to every place named there
-  if(String(u.area||"").split(",").map(x=>x.trim()).includes(n)) return true;
+  if(areaList(u.area).includes(n)) return true;
   if(loc.branch==="C3US") return false;   // C3US places: only athletes whose "איזור אימון" names the place (not the Emek Yizrael קריטריום group)
   if(isOffLoc(loc)){ const off=ps.filter(p=>/שטח/.test(p)), k=(loc.filter||n.replace(/^שטח\s*/,"")).trim();
     return k&&k!=="כללי"?off.some(p=>p.includes(k)):(!String(u.area||"").split(",").some(x=>/^שטח/.test(x.trim()))&&off.some(p=>!OFF_KEYS.some(w=>p.includes(w)))); }   // "שטח כללי": only riders with no off-road area set in Arbox
@@ -1004,7 +1009,7 @@ async function arboxRoster(loc){
     const inLoc=arbInLoc(u,loc), sub=arbProgs(u).filter(p=>!/הקמת לקוח|ייעוץ|חסות/.test(p)).join(" + ");
     arbSplit(u.name).forEach(n=>{
       const pin=ARB_PIN_LOC[n];
-      const inArea=String(u.area||"").split(",").map(x=>x.trim()).includes(loc.name);   // the Arbox field wins over a hand pin
+      const inArea=areaList(u.area).includes(loc.name);   // the Arbox field wins over a hand pin
       if(((pin?pin===loc.name:inLoc)||inArea||(ARB_EXTRA_LOC[loc.name]||[]).includes(n))&&!seen.has(n)){ seen.add(n); out.push({name:n,sub,phone:u.phone,arbox:u.id}); }
     });
   });
@@ -2632,7 +2637,9 @@ function arbRender(){
 }
 // "איזור אימון" (Arbox custom field): one or more training places, saved to Arbox comma-separated ("נופית, רכיבת שבת C3US").
 // Add a place from the list, remove one with its ✕ – every change is written straight to Arbox (Arbox access code needed).
-const areaList=v=>String(v||"").split(",").map(x=>x.trim()).filter(Boolean);
+// places renamed after athletes were already tagged with them in Arbox (15/11/2026: "ספורטן שחייה" + "ספורטן ריצה" → "ספורטן")
+function areaList(v){ const R={"ספורטן שחייה":"ספורטן","ספורטן ריצה":"ספורטן"};
+  return [...new Set(String(v||"").split(",").map(x=>x.trim()).filter(Boolean).map(x=>R[x]||x))]; }
 function areaChips(u){
   const names=cfg.locations.map(l=>l.name), L=areaList(u.area);
   return L.length?L.map(a=>{ const known=names.includes(a);
