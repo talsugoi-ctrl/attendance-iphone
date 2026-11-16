@@ -255,6 +255,9 @@ body.rep-open{overflow:hidden}
 .map-li small{color:var(--muted);margin-inline-start:auto;font-size:.82rem}
 .map-row{display:flex;gap:6px;align-items:stretch}
 .map-row .map-li{flex:1;min-width:0}
+.map-list:has(.map-kind){gap:14px} .map-row:has(.map-kind){flex-wrap:wrap} .map-row:has(.map-kind) .map-li{flex:1 1 100%}
+.map-kind{flex:1;min-width:0;min-height:40px;font:inherit;font-size:.85rem;padding:6px 8px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--fg)}
+.map-row:has(.map-kind) .waze-go{flex:1}
 .waze-go{display:flex;align-items:center;justify-content:center;flex:none;padding:6px 10px;border-radius:10px;background:#33ccff;color:#06283a;font-weight:700;font-size:.82rem;text-decoration:none;white-space:nowrap}
 .waze-go:active{background:#1fb3e6}
 .map-tip{font:600 .8rem var(--body);direction:rtl}
@@ -476,7 +479,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · חובה לבחור מאמן</div>
+  <div class="ver">גרסה 16/11/2026 · סוג אימון במפה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2243,12 +2246,12 @@ async function locsLoad(force){
       const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
       // Google's CSV drops the header text of number/date columns ("קו רוחב", "קו אורך", "דיוק", "עודכן") –
       // find the header by "סניף"+"מקום" and fall back to the tab's fixed column order for the blank ones
-      const LOC_COLS=["סניף","מקום","קו רוחב","קו אורך","דיוק (מ')","הערה","עודכן","עודכן ע\"י"];
+      const LOC_COLS=["סניף","מקום","קו רוחב","קו אורך","דיוק (מ')","הערה","עודכן","עודכן ע\"י","סוג"];
       const rows=await sheetGet(base+"&sheet="+encodeURIComponent(LOC_TAB)), h=rows.findIndex(r=>r.includes("מקום")&&r.includes("סניף"));
       if(h<0){ LOCS.rows=[]; return; }                // tab not created yet (first save creates it)
       const H=rows[h], g=(r,t)=>{ let i=H.indexOf(t); const k=LOC_COLS.indexOf(t); if(i<0&&k>=0&&!String(H[k]||"").trim()) i=k; return i<0?"":String(r[i]||"").trim(); };
       LOCS.rows=rows.slice(h+1).filter(r=>g(r,"מקום")).map(r=>({branch:g(r,"סניף"),place:g(r,"מקום"),lat:parseFloat(g(r,"קו רוחב")),lng:parseFloat(g(r,"קו אורך")),
-        acc:parseFloat(g(r,"דיוק (מ')"))||0,note:g(r,"הערה"),at:g(r,"עודכן"),by:g(r,"עודכן ע\"י")}));
+        acc:parseFloat(g(r,"דיוק (מ')"))||0,note:g(r,"הערה"),at:g(r,"עודכן"),by:g(r,"עודכן ע\"י"),kind:g(r,"סוג")}));
     }catch(e){ LOCS.rows=LOCS.rows||[]; LOCS.err=e.message; }
     finally{ LOCS.loading=null; }
   })();
@@ -2291,9 +2294,11 @@ function leafletLoad(){
 }
 const ISRAEL=[[29.45,34.25],[33.35,35.9]];
 // map dot colour by kind of place: pool = red, off-road = green, running = orange, criterium = purple, anything else = grey
-const MAP_KINDS={pool:{c:"#e11d2e",t:"בריכה"},off:{c:"#1f9d55",t:"שטח"},run:{c:"#f08c00",t:"ריצה"},crit:{c:"#7c3aed",t:"קריטריום"},other:{c:"#64748b",t:"אחר"}};
+const MAP_KINDS={pool:{c:"#e11d2e",t:"בריכה"},off:{c:"#1f9d55",t:"שטח"},run:{c:"#f08c00",t:"ריצה"},crit:{c:"#7c3aed",t:"קריטריום"},ride:{c:"#7c3aed",t:"רכיבה"},mix:{c:"#0e7490",t:"משולב"},other:{c:"#64748b",t:"אחר"}};
+// the type chosen by hand for a saved place (column "סוג" in "מיקומים") wins over the automatic guess
+const KIND_HE={"שחייה":"pool","רכיבה":"ride","ריצה":"run","משולב":"mix","אחר":"other"};
 function placeKind(l){
-  const n=l.name||"";
+  const n=l.name||"", man=locOf(n); if(man&&KIND_HE[man.kind]) return KIND_HE[man.kind];
   if(/^שטח/.test(n)) return "off";
   if(/קריטריום/.test(n)) return "crit";
   if(/ריצה/.test(n)) return "run";
@@ -2318,7 +2323,7 @@ function repMap(){
     <div class="map-add"><button type="button" class="btn${REP.mapAdd?" primary":""}" id="mapAddBtn">${REP.mapAdd?"✕ ביטול הוספה":"📍 הוספת מיקום על המפה"}</button>
       ${REP.mapAdd?`<span class="map-add-hint">הקש על המפה בנקודה של מקום האימון (אפשר להגדיל קודם עם +)</span>`:""}</div>
     <div id="locMap" class="loc-map${REP.mapAdd?" adding":""}" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
-    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<div class="map-row"><button type="button" class="map-li" data-i="${i}">${kindDot(x.k)}<b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button><a class="waze-go" href="${esc(waze(x.p))}" target="_blank" rel="noopener" aria-label="נווט ב-Waze אל ${esc(x.l.name)}">🚗 נווט ב-Waze</a></div>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
+    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<div class="map-row"><button type="button" class="map-li" data-i="${i}">${kindDot(x.k)}<b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button><select class="map-kind" data-i="${i}" aria-label="סוג אימון ב${esc(x.l.name)}"><option value=""${x.p.kind?"":" selected"}>סוג: אוטומטי</option>${Object.keys(KIND_HE).map(t=>`<option${x.p.kind===t?" selected":""}>${t}</option>`).join("")}</select><a class="waze-go" href="${esc(waze(x.p))}" target="_blank" rel="noopener" aria-label="נווט ב-Waze אל ${esc(x.l.name)}">🚗 נווט ב-Waze</a></div>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
     ${miss.length?`<p class="hint">בלי מיקום: ${miss.map(l=>esc(l.name)).join(", ")}. שומרים מיקום בדוח "📍 שמור / הגדר מיקום אימון" ← "שמור מיקום כאן" (עומדים במקום האימון).</p>`:""}`;
 }
 async function mapDraw(pts,zoomIn){
@@ -2339,6 +2344,10 @@ async function mapDraw(pts,zoomIn){
   const keep=REP.mapView; if(keep){ m.setView(keep.c,keep.z); REP.mapView=null; } else fit();
   if(REP.mapAdd) m.on("click",e=>mapAddAt(m,e.latlng));
   document.querySelectorAll("#repOut .map-list .map-li").forEach(b=>b.onclick=()=>{ const x=pts[+b.dataset.i]; m.setView([x.p.lat,x.p.lng],14); marks[+b.dataset.i].openPopup(); box.scrollIntoView({behavior:"smooth",block:"center"}); });
+  document.querySelectorAll("#repOut .map-list .map-kind").forEach(s=>s.onchange=async()=>{ const x=pts[+s.dataset.i], kind=s.value; s.disabled=true;
+    try{ const r=await scriptCall({action:"setPlaceKind",place:x.l.name,kind}); if(r&&r.ok===false) throw new Error(r.error||"");
+      x.p.kind=kind; toastOk(`✓ ${x.l.name}: ${kind||"סוג אוטומטי"}`); REP.mapView={c:m.getCenter(),z:m.getZoom()}; runReport(); }
+    catch(e){ s.disabled=false; showToast("השמירה נכשלה: "+e.message); } });
   let tries=0; const refit=()=>{ m.invalidateSize(); if(m.getSize().x>0){ if(!keep) fit(); } else if(++tries<20) setTimeout(refit,300); };   // refit once the box has its real size
   setTimeout(refit,200);
 }
