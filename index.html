@@ -330,6 +330,10 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .brempty{padding:10px 12px;font-size:.85rem;color:var(--muted);border-bottom:1px solid var(--line)}
 .add-branch{width:100%;margin-top:10px;border-style:dashed}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+.netbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#FFF4D6;color:#7A4A00;font-weight:700;font-size:.92rem}
+.netbar.off{background:#E8EEF5;color:#24364F}
+.netbar button{margin-inline-start:auto;border:0;border-radius:999px;padding:6px 12px;font:inherit;font-size:.85rem;background:#7A4A00;color:#fff;cursor:pointer}
+@media (prefers-color-scheme:dark){.netbar{background:#3A2E12;color:#FFD98A}.netbar.off{background:#1E2A3A;color:#C9D7EA}.netbar button{background:#FFD98A;color:#3A2E12}}
 </style>
 </head>
 <body>
@@ -348,6 +352,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     </button>
     </div>
   </header>
+  <div class="netbar" id="netBar" role="status" hidden></div>
 
   <section class="card" id="sessionCard">
     <div>
@@ -431,7 +436,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 15/11/2026 · ספורטן, פולג, יקנעם</div>
+  <div class="ver">גרסה 16/11/2026 · עבודה בלי קליטה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -945,10 +950,17 @@ async function arbEnsure(){
   // attendance list only (names, programs, place, phone) – works on every phone without the access code.
   // The full Arbox screen (⚙ ← 🔗 Arbox) still needs the code.
   if(ARB.lite&&Date.now()-(ARB.liteAt||0)<10*60*1000) return true;
+  // offline: the last list saved on this phone (every place works with no reception, once the app was opened online)
+  const saved=store.get("arb-lite",null);
+  const useSaved=()=>{ if(!saved||!Array.isArray(saved.users)) return false; ARB.lite=saved.users; ARB.liteStaff=saved.staff||[]; ARB.liteAt=Date.now()-9*60*1000; ARB.liteSavedAt=saved.at; return true; };
+  if(!navigator.onLine&&useSaved()) return true;
   const u=scriptUrl();
-  const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxRoster"}))}`,60000);
-  if(!r||!r.ok||!Array.isArray(r.users)) throw new Error((r&&r.error)||"אין תשובה מ-Arbox");
-  ARB.lite=r.users; ARB.liteStaff=r.staff||[]; ARB.liteAt=Date.now(); return true;
+  let r=null;
+  try{ r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxRoster"}))}`,saved?15000:60000); }
+  catch(e){ if(useSaved()) return true; throw e; }
+  if(!r||!r.ok||!Array.isArray(r.users)){ if(useSaved()) return true; throw new Error((r&&r.error)||"אין תשובה מ-Arbox"); }
+  ARB.lite=r.users; ARB.liteStaff=r.staff||[]; ARB.liteAt=Date.now(); ARB.liteSavedAt=0;
+  store.set("arb-lite",{at:Date.now(),users:r.users,staff:r.staff||[]}); return true;
 }
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
 // branch → sheet tab for athletes who are not (yet) in Arbox. The tab has columns "שם" and "מקומות אימון"
@@ -958,12 +970,13 @@ const SHEET_EXTRA_TAB={"C3US":"C3US","חיפה":"חיפה"};
 async function sheetExtra(loc){
   if(!cfg.sheetUrl) return [];
   const lists=await Promise.all([...new Set(Object.values(SHEET_EXTRA_TAB))].map(async tab=>{
-    let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return []; }
+    let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return null; }
     const h=rows.findIndex(r=>r.some(c=>c==="מקומות אימון")); if(h<0) return [];        // a missing tab comes back as the first tab – ignore it
     const nc=rows[h].findIndex(c=>c==="שם"), pc=rows[h].indexOf("מקומות אימון"), tc=rows[h].findIndex(c=>/טלפון/.test(c)); if(nc<0) return [];
     return rows.slice(h+1).filter(r=>normName(r[nc])&&areaList(r[pc]).includes(loc.name))
       .map(r=>({name:normName(r[nc]),sub:"",phone:tc>=0?(r[tc]||"").trim():"",sheet:true})); }));
-  const seen=new Set(); return lists.flat().filter(p=>!seen.has(p.name)&&seen.add(p.name));
+  const k="sx:"+loc.name; if(lists.some(l=>l===null)) return store.get(k,[]);   // no reception → the list saved last time
+  const seen=new Set(), out=lists.flat().filter(p=>!seen.has(p.name)&&seen.add(p.name)); store.set(k,out); return out;
 }
 const SHEET_ONLY=/כוכב יאיר|יקנעם/;           // יקנעם: a hand-picked youth group (incl. a kid not yet in Arbox) – managed in its sheet tab
 // athletes whose Arbox program doesn't name their place – pinned by hand until fixed in Arbox
@@ -1034,13 +1047,17 @@ async function loadPeople(){
       if(list===null) arbNote="אין קוד גישה ל-Arbox בטלפון הזה (⚙ ← 🔗 Arbox) – ";
       else if(list.length){
         people=list; store.set(cacheKey,people); loadWeekLog();
-        setStatus(`${people.length} נרשמים · ${loc.name} · מ-Arbox${nSh?` + ${nSh} מהגיליון`:""}`); renderRoster(); return;
+        setStatus(`${people.length} נרשמים · ${loc.name} · מ-Arbox${nSh?` + ${nSh} מהגיליון`:""}${ARB.liteSavedAt?` · 📴 רשימה שמורה מ-${savedWhen(ARB.liteSavedAt)}`:""}`); renderRoster(); return;
       } else arbNote=`אין ב-Arbox ספורטאים ל"${loc.name}" – `;
     }catch(e){ arbNote=`Arbox לא זמין (${e.message}) – `; }
   }
   if(isOffLoc(loc)){ people=[]; setStatus(arbNote+"רשימת רוכבי השטח קיימת רק ב-Arbox.",true); renderRoster(); return; }
   if(!String(loc.tab||"").trim()&&(cfg.rosterSource||"arbox")==="arbox"){   // a place that lives only in Arbox (no sheet tab)
     people=[]; setStatus((/לא זמין|קוד גישה/.test(arbNote)?arbNote:"")+`אין עדיין ספורטאים ב"${loc.name}". משייכים ספורטאי דרך "איזור אימון" במסך Arbox (⚙ ← 🔗 Arbox), או מוסיפים לאימון מ-Arbox למטה.`,true); renderRoster(); return; }
+  if(!navigator.onLine){                               // no reception: the list saved on this phone
+    people=store.get(cacheKey,[]); loadWeekLog();
+    setStatus(people.length?`📴 אין קליטה – מוצגת הרשימה השמורה (${people.length} נרשמים · ${loc.name})`:`📴 אין קליטה ואין רשימה שמורה ל"${loc.name}". פתח את המקום פעם אחת עם קליטה, או הוסף ספורטאים ידנית למטה.`,!people.length);
+    renderRoster(); return; }
   const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`;
   const gidM=String(cfg.sheetUrl).match(/gid=(\d+)/); const gid=gidM?gidM[1]:"0";
   async function get(u){
@@ -1351,12 +1368,47 @@ function sync(t,cls,retry){
   if(retry){ const b=document.createElement("button"); b.className="btn"; b.type="button"; b.textContent="נסה שוב"; b.onclick=()=>sendLog(); el.appendChild(b); }
 }
 let verifyT=null, tries=0;
+function postReport(r){
+  try{ fetch(scriptUrl(),{method:"POST",mode:"no-cors",keepalive:true,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(r)}).catch(()=>{}); }catch(e){}
+}
+// reports waiting for reception: kept on the phone and sent by themselves when the app is open with a connection
+const OUTBOX="outbox-v1";
+const outbox=()=>store.get(OUTBOX,[]);
+function outboxPut(r){ store.set(OUTBOX,outbox().filter(x=>x.id!==r.id&&x.id!==r.replaces).concat([r])); netBar(); }
+function outboxDrop(id){ store.set(OUTBOX,outbox().filter(x=>x.id!==id)); netBar(); }
+function savedWhen(t){ const d=new Date(t), p=n=>String(n).padStart(2,"0"); return `${p(d.getDate())}/${p(d.getMonth()+1)} ${p(d.getHours())}:${p(d.getMinutes())}`; }
+function netBar(){
+  const el=$("netBar"); if(!el) return; const n=outbox().length, off=!navigator.onLine;
+  if(!n&&!off){ el.hidden=true; return; }
+  el.hidden=false; el.className="netbar"+(n?"":" off");
+  el.textContent=(off?"📴 אין קליטה – אפשר לסמן נוכחות כרגיל. ":"")+(n?`⏳ ${n===1?"דיווח אחד ממתין":n+" דיווחים ממתינים"} לשליחה למערכת – יישלח אוטומטית כשתהיה קליטה.`:"");
+  if(n&&!off){ const b=document.createElement("button"); b.type="button"; b.textContent="שלח עכשיו"; b.onclick=()=>flushOutbox(true); el.appendChild(b); }
+}
+let flushing=false;
+async function flushOutbox(manual){
+  if(flushing||!navigator.onLine||!scriptUrl()) return; const list=outbox(); if(!list.length) return;
+  flushing=true; let sent=0; const url=scriptUrl();
+  const logged=async id=>{ try{ const r=await jsonp(cb=>`${url}${url.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"status",id}))}`,15000); return !!(r&&r.logged); }catch(e){ return null; } };
+  try{
+    for(const r of list){
+      let ok=await logged(r.id); if(ok===null) break;              // still no real connection – try again later
+      if(!ok){ postReport(r); for(let i=0;i<4&&!ok;i++){ await new Promise(z=>setTimeout(z,4000)); ok=await logged(r.id); } }
+      if(ok){ outboxDrop(r.id); sent++; if(report&&report.id===r.id){ report.done=true; sync(`המערכת של מורן עודכנה ✓ (${r.people.length} משתתפים, ${r.date})`,"ok"); } }
+    }
+  } finally { flushing=false; netBar(); }
+  if(sent){ showToast(`✓ ${sent===1?"דיווח שנשמר בלי קליטה נשלח":sent+" דיווחים שנשמרו בלי קליטה נשלחו"} למערכת`,true); loadWeekLog(); }
+  else if(manual&&outbox().length) showToast("עדיין לא הצלחתי לשלוח – אנסה שוב אוטומטית.");
+}
+window.addEventListener("online",()=>{ netBar(); setTimeout(()=>flushOutbox(),1500); });
+window.addEventListener("offline",netBar);
+setInterval(()=>{ if(outbox().length) flushOutbox(); },60000);
+setTimeout(()=>{ netBar(); flushOutbox(); },2500);
 function sendLog(){
   const url=scriptUrl(); if(!url||!report) return;
+  outboxPut(report);                                   // kept until the sheet confirms it
+  if(!navigator.onLine){ sync("📴 אין קליטה – הדיווח נשמר בטלפון וישלח אוטומטית למערכת של מורן כשתחזור קליטה (כשהאפליקציה פתוחה)."); return; }
   sync("מעדכן את המערכת של מורן…");
-  try{
-    fetch(url,{method:"POST",mode:"no-cors",keepalive:true,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(report)}).catch(()=>{});
-  }catch(e){}
+  postReport(report);
   tries=0; clearTimeout(verifyT); verifyT=setTimeout(verifyLog,3500);
 }
 async function verifyLog(){
@@ -1364,11 +1416,25 @@ async function verifyLog(){
   const url=scriptUrl();
   try{
     const r=await jsonp(cb=>`${url}${url.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"status",id:report.id}))}`,15000);
-    if(r&&r.logged){ sync(`המערכת של מורן עודכנה ✓ (${report.people.length} משתתפים, ${report.date})`,"ok"); report.done=true; loadWeekLog(); return; }
+    if(r&&r.logged){ sync(`המערכת של מורן עודכנה ✓ (${report.people.length} משתתפים, ${report.date})`,"ok"); report.done=true; outboxDrop(report.id); loadWeekLog(); return; }
   }catch(e){}
   if(++tries<4){ verifyT=setTimeout(verifyLog,4000); return; }
-  sync("לא הצלחתי לוודא שהמערכת עודכנה. בדוק חיבור לאינטרנט.","err",true);
+  sync("📴 לא הצלחתי לוודא שהמערכת עודכנה. הדיווח שמור בטלפון וישלח שוב אוטומטית כשתהיה קליטה.","err",true);
 }
+document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"){ netBar(); setTimeout(()=>flushOutbox(),1200); } });
+// while there is reception: keep a copy of every list on the phone, so all places open with no reception too
+async function warmOffline(){
+  if(!navigator.onLine||!cfg.sheetUrl) return;
+  try{ await arbEnsure(); }catch(e){}                   // the Arbox list is saved on every refresh
+  if(Date.now()-store.get("warm-at",0)<6*3600*1000) return; store.set("warm-at",Date.now());   // sheet lists: every few hours is enough
+  for(const loc of cfg.locations){ if((cfg.rosterSource||"arbox")==="arbox"&&!SHEET_ONLY.test(loc.name)){ try{ await sheetExtra(loc); }catch(e){} continue; }
+    try{ const base=`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0`, tab=(loc.tab||loc.name).trim();
+      const [first,rows]=await Promise.all([sheetGet(base+"&gid="+((String(cfg.sheetUrl).match(/gid=(\d+)/)||[])[1]||"0")),sheetGet(base+"&sheet="+encodeURIComponent(tab))]);
+      if(JSON.stringify(first)===JSON.stringify(rows)&&!firstTabName(first,tab)) continue;   // no such tab
+      const list=extractPeople(rows,loc.filter); if(list.length&&!store.get("roster:"+loc.name,null)) store.set("roster:"+loc.name,list);
+    }catch(e){} }
+}
+setTimeout(()=>warmOffline(),8000);
 document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&report&&answer===true&&!report.done){ tries=0; clearTimeout(verifyT); verifyT=setTimeout(verifyLog,800); } });
 
 // ask once per report, on the first send
