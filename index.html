@@ -143,6 +143,9 @@ ul.roster .overmsg{margin-top:4px;font-size:.85rem;font-weight:700;color:var(--d
 .em .kv span{font-size:.78rem;color:var(--muted)} .em .kv b{font:700 1rem var(--display)}
 .em .link{background:none;border:0;color:var(--accent);font:inherit;font-weight:700;font-size:.85rem;padding:4px 0;text-align:start;cursor:pointer}
 .hdr-side{display:flex;flex-direction:column;gap:6px;flex:none}
+header .hdr-btns{gap:6px} header .hdr-btns .icon-btn{width:40px;height:40px} header .hdr-btns .icon-btn svg{width:20px;height:20px}
+header .brand{gap:10px} header .brand img{width:44px;height:44px} header h1{font-size:1.25rem}
+@media (max-width:370px){header .brand img{width:38px;height:38px} header h1{font-size:1.12rem} header .hdr-btns{gap:5px} header .hdr-btns .icon-btn{width:38px;height:38px}}
 .tagline{text-align:center;white-space:nowrap;font:500 .8rem/1 var(--display);letter-spacing:.16em;margin-inline-end:-.16em;color:var(--muted)}
 body.rep-open{overflow:hidden}
 .rep{position:fixed;inset:0;z-index:45;background:var(--bg);overflow-y:auto;padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -472,7 +475,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · מצב חירום</div>
+  <div class="ver">גרסה 16/11/2026 · כותרת מסודרת</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
