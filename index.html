@@ -475,7 +475,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · חירום: Waze וכפתור שליחה</div>
+  <div class="ver">גרסה 16/11/2026 · חירום נשלח לגיא</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2532,7 +2532,7 @@ $("schedBack").onclick=closeSched;
 const EMG={watch:null,pos:null,addr:"",addrAt:null,scope:"now",pick:null,showId:false,map:null,marker:null};
 function emgCfg(){ return Object.assign({beachName:"",beachPhone:"",clubName:"גיא כפתורי",clubPhone:"052-2549591",toName:"",toPhone:""},store.get("emg-cfg",{})); }
 function emgSave(c){ store.set("emg-cfg",c); }
-function emgTo(){ const c=emgCfg(); if(waDigits(c.toPhone).length>=11) return {name:c.toName,phone:c.toPhone}; const L=cfg.locations[current]||{}; return waTarget(coachName(),L.name); }
+function emgTo(){ const c=emgCfg(); if(waDigits(c.toPhone).length>=11) return {name:c.toName,phone:c.toPhone}; return {name:c.clubName,phone:c.clubPhone}; }   // emergency reports go to the club contact (גיא כפתורי) unless changed
 function emgNums(){
   const c=emgCfg(), b=$("emgBeach"), k=$("emgClub");
   if(waDigits(c.beachPhone).length>=9){ b.href="tel:"+c.beachPhone.replace(/[^\d+]/g,""); b.classList.remove("off"); $("emgBeachSub").textContent=(c.beachName?c.beachName+" · ":"")+fmtPhone(c.beachPhone); }
@@ -2552,7 +2552,7 @@ function emgEdit(){
 $("emgEditNums").onclick=emgEdit;
 $("emgEditTo").onclick=()=>{
   const c=emgCfg(), t=emgTo();
-  const ph=prompt("למי לשלוח את מיקום החירום בוואטסאפ? (טלפון; ריק = ברירת המחדל של המאמן)",waDigits(c.toPhone).length>=11?c.toPhone:fmtPhone(t.phone)); if(ph===null) return;
+  const ph=prompt("למי לשלוח את מיקום החירום בוואטסאפ? (טלפון; ריק = איש הקשר במועדון)",waDigits(c.toPhone).length>=11?c.toPhone:fmtPhone(t.phone)); if(ph===null) return;
   if(!ph.trim()){ c.toPhone=""; c.toName=""; }
   else { c.toPhone=ph.trim(); const nm=prompt("שם הנמען (לא חובה):",c.toName||""); c.toName=nm===null?"":nm.trim(); }
   emgSave(c); emgNums(); emgMsg();
