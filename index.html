@@ -476,7 +476,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · מאמן ברירת מחדל טל שלם</div>
+  <div class="ver">גרסה 16/11/2026 · חובה לבחור מאמן</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1394,7 +1394,7 @@ $("durMinus").onclick=()=>stepDur(-0.25);
 $("durPlus").onclick=()=>stepDur(0.25);
 $("dur").addEventListener("input",showDur);
 $("dur").addEventListener("blur",()=>{ $("dur").value=durHours(); showDur(); });
-function coachName(){ return $("coach").value.trim()||DEFAULT_COACH; }
+function coachName(){ return $("coach").value.trim(); }
 // coach names – one spelling each (first + last name), so the reports count every coach once
 const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין"];
 const COACH_FIX={"אסף":"אסף אשכנזי","תמיר":"תמיר רבינוביץ","דרור יועץ עסקי":"דרור"};
@@ -1410,15 +1410,16 @@ setTimeout(coachArbox,4000);
 function coachSync(){                                   // the list follows the coach name (typed, saved or taken from the schedule)
   const v=coachFix($("coach").value); $("coach").value=v;
   if(v&&!coachList().includes(v)) store.set("coach-custom",store.get("coach-custom",[]).concat([v]));
-  const show=v||DEFAULT_COACH;                         // nothing chosen → the default coach (טל שלם) is shown, as it is what gets reported
-  $("coachSel").innerHTML=coachList().map(n=>`<option${n===show?" selected":""}>${esc(n)}</option>`).join("")+`<option value="__manual">✏️ הוספה ידנית…</option>`;
+  // no default coach: a report can't be sent until a coach is chosen
+  $("coachSel").innerHTML=`<option value=""${v?"":" selected"}>בחר מאמן…</option>`+coachList().map(n=>`<option${n===v?" selected":""}>${esc(n)}</option>`).join("")+`<option value="__manual">✏️ הוספה ידנית…</option>`;
+  $("coachSel").classList.remove("missing");
 }
 $("coach").value=coachFix(store.get("coach","")); if($("coach").value!==store.get("coach","")) store.set("coach",$("coach").value);
 coachSync();
 $("coachSel").addEventListener("change",()=>{
   const v=$("coachSel").value;
   if(v==="__manual"){ $("coach").hidden=false; $("coach").value=""; $("coach").focus(); return; }
-  $("coach").hidden=true; $("coach").value=v; store.set("coach",v); syncResult&&syncResult();
+  $("coach").hidden=true; $("coach").value=v; store.set("coach",v); $("coachSel").classList.toggle("missing",!v); syncResult&&syncResult();
 });
 $("coach").addEventListener("change",()=>{ const v=coachFix($("coach").value); if(!v) return; $("coach").value=v; store.set("coach",v); coachSync(); $("coach").hidden=true; syncResult&&syncResult(); });
 function waDigits(n){ let d=String(n||"").replace(/\D/g,""); if(d.startsWith("0")) d="972"+d.slice(1); else if(/^5\d{8}$/.test(d)) d="972"+d; return d; }
@@ -1590,6 +1591,7 @@ function arbSessionType(name){
 }
 $("ttype").addEventListener("change",()=>{ $("ttype").classList.toggle("missing",!$("ttype").value); syncResult(); });
 $("confirmBtn").onclick=()=>{
+  if(!coachName()){ $("coachSel").classList.add("missing"); showToast("בחר את שם המאמן מהרשימה (או \"הוספה ידנית\")"); $("coachSel").focus(); $("coachSel").scrollIntoView({behavior:"smooth",block:"center"}); return; }
   if(!$("ttype").value){ $("ttype").classList.add("missing"); showToast("בחר סוג אימון: שחייה, רכיבת כביש, רכיבת שטח, ריצה או משולב"); $("ttype").focus(); $("ttype").scrollIntoView({behavior:"smooth",block:"center"}); return; }
   addTrialFromField();          // a trial name typed but not added yet is included
   $("toast").hidden=true;
@@ -2590,7 +2592,7 @@ function emgWaze(){ const p=EMG.pos; return p?`https://waze.com/ul?ll=${p.lat.to
 function emgFab(){ const t=(EMG.msg||"")+(EMG.athTxt?`\n\n${EMG.athTxt}`:""); $("emgFab").href=waHref(t,emgTo().phone); }
 function emgMsg(){
   const L=cfg.locations[current]||{}, p=EMG.pos;
-  const txt=`🚨 אירוע חירום באימון קבוצת הטריאתלון${L.name?` (${L.name})`:""}.\nהמיקום המדויק שלי:${p?`\n📍 Google Maps: ${emgLink()}\n🚗 Waze: ${emgWaze()}`:" [ממתין ל-GPS]"}${EMG.addr?`\n${EMG.addr}`:""}${p?`\nדיוק ±${Math.round(p.acc)} מ׳ · ${new Date(p.t).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})}`:""}\nמאמן: ${coachName()}`;
+  const txt=`🚨 אירוע חירום באימון קבוצת הטריאתלון${L.name?` (${L.name})`:""}.\nהמיקום המדויק שלי:${p?`\n📍 Google Maps: ${emgLink()}\n🚗 Waze: ${emgWaze()}`:" [ממתין ל-GPS]"}${EMG.addr?`\n${EMG.addr}`:""}${p?`\nדיוק ±${Math.round(p.acc)} מ׳ · ${new Date(p.t).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})}`:""}\nמאמן: ${coachName()||"לא צוין"}`;
   $("emgMsg").textContent=txt; EMG.msg=txt; emgFab();
   const a=$("emgWa"); a.href=waHref(txt,emgTo().phone); a.classList.toggle("wait",!p);
   $("emgWaTxt").textContent=p?"שלח מיקום חירום ב-WhatsApp":"ממתין למיקום GPS…";
