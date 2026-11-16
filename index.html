@@ -409,8 +409,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       </script>
     </div>
     <div>
-      <label class="lbl" for="coach">שם המאמן</label>
-      <input type="text" id="coach" placeholder="טל שלם" autocomplete="off">
+      <label class="lbl" for="coachSel">שם המאמן</label>
+      <select id="coachSel" class="tsel"></select>
+      <input type="text" id="coach" placeholder="הקלד את שם המאמן (שם ומשפחה)" autocomplete="off" hidden style="margin-top:8px">
     </div>
     <div>
       <label class="lbl" for="ttype">סוג אימון</label>
@@ -475,7 +476,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · חירום נשלח לגיא</div>
+  <div class="ver">גרסה 16/11/2026 · בחירת מאמן מרשימה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1392,8 +1393,24 @@ $("durPlus").onclick=()=>stepDur(0.25);
 $("dur").addEventListener("input",showDur);
 $("dur").addEventListener("blur",()=>{ $("dur").value=durHours(); showDur(); });
 function coachName(){ return $("coach").value.trim()||DEFAULT_COACH; }
-$("coach").value=store.get("coach","");
-$("coach").addEventListener("change",()=>store.set("coach",$("coach").value.trim()));
+// coach names – one spelling each (first + last name), so the reports count every coach once
+const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין"];
+const COACH_FIX={"אסף":"אסף אשכנזי","תמיר":"תמיר רבינוביץ"};
+const coachFix=n=>COACH_FIX[normName(n)]||normName(n);
+function coachList(){ return [...new Set(COACHES.concat(store.get("coach-custom",[])).map(normName).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he")); }
+function coachSync(){                                   // the list follows the coach name (typed, saved or taken from the schedule)
+  const v=coachFix($("coach").value); $("coach").value=v;
+  if(v&&!coachList().includes(v)) store.set("coach-custom",store.get("coach-custom",[]).concat([v]));
+  $("coachSel").innerHTML=`<option value="">בחר מאמן…</option>`+coachList().map(n=>`<option${n===v?" selected":""}>${esc(n)}</option>`).join("")+`<option value="__manual">✏️ הוספה ידנית…</option>`;
+}
+$("coach").value=coachFix(store.get("coach","")); if($("coach").value!==store.get("coach","")) store.set("coach",$("coach").value);
+coachSync();
+$("coachSel").addEventListener("change",()=>{
+  const v=$("coachSel").value;
+  if(v==="__manual"){ $("coach").hidden=false; $("coach").value=""; $("coach").focus(); return; }
+  $("coach").hidden=true; $("coach").value=v; store.set("coach",v); syncResult&&syncResult();
+});
+$("coach").addEventListener("change",()=>{ const v=coachFix($("coach").value); if(!v) return; $("coach").value=v; store.set("coach",v); coachSync(); $("coach").hidden=true; syncResult&&syncResult(); });
 function waDigits(n){ let d=String(n||"").replace(/\D/g,""); if(d.startsWith("0")) d="972"+d.slice(1); else if(/^5\d{8}$/.test(d)) d="972"+d; return d; }
 function waHref(text,phone){ return `https://wa.me/${waDigits(phone)}?text=${encodeURIComponent(text)}`; }
 function fmtPhone(n){ const d=waDigits(n); return d.startsWith("972")?"0"+d.slice(3).replace(/^(\d{2})(\d{7})$/,"$1-$2"):"+"+d; }
@@ -1823,7 +1840,7 @@ async function repLoad(force){
                name:ci("שם"),sub:ci("מנוי"),quota:ci("מכסה שבועית"),trial:ci("ניסיון"),over:ci("חריגה")};
       const g=(r,k)=>c[k]>=0?(r[c[k]]||"").trim():"";
       REP.log=h<0?[]:lr.slice(h+1).filter(r=>r[0]).map(r=>({id:r[0],date:g(r,"date"),key:ymdKey(g(r,"date")),week:g(r,"week"),branch:g(r,"branch"),loc:g(r,"loc"),
-        type:g(r,"type"),coach:g(r,"coach"),dur:parseFloat(g(r,"dur"))||0,name:normName(g(r,"name")),sub:g(r,"sub"),quota:+g(r,"quota")||0,
+        type:g(r,"type"),coach:coachFix(g(r,"coach")),dur:parseFloat(g(r,"dur"))||0,name:normName(g(r,"name")),sub:g(r,"sub"),quota:+g(r,"quota")||0,
         trial:g(r,"trial")==="כן",over:g(r,"over")==="כן"}));
       { const cnt={}; REP.log.slice().sort((a,b)=>a.key-b.key).forEach(r=>{ if(r.trial) return; const q=quotaOf(r.sub); if(!q) return;
           const k=r.name+"|"+r.week; cnt[k]=(cnt[k]||0)+1; r.quota=q; if(cnt[k]>q) r.over=true; }); }
@@ -2516,7 +2533,7 @@ function schUse(x){
   if(i<0&&want) i=cfg.locations.findIndex(l=>l.name.includes(want)||want.includes(l.name));
   if(i<0&&x.arbox) i=cfg.locations.findIndex(l=>(l.branch||"")===x.branch&&x.name.includes(l.name));
   if(x.type&&[...$("ttype").options].some(o=>o.value===x.type)){ $("ttype").value=x.type; $("ttype").classList.remove("missing"); }
-  if(x.coach){ $("coach").value=x.coach; store.set("coach",x.coach); }
+  if(x.coach){ $("coach").value=coachFix(x.coach); store.set("coach",$("coach").value); coachSync(); }
   const d=hmDur(x.start,x.end); if(d){ $("dur").value=d; showDur(); }
   closeSched();
   if(i>=0){ if(current!==i){ trials=[]; guests=[]; } current=i; renderLocs(); loadPeople(); setTimeout(()=>$("rosterCard").scrollIntoView({behavior:"smooth"}),150); }
