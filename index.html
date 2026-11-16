@@ -112,7 +112,7 @@ ul.roster .overmsg{margin-top:4px;font-size:.85rem;font-weight:700;color:var(--d
 .tag{font:700 .72rem var(--body);color:var(--accent-2);border:1px solid var(--accent-2);border-radius:999px;padding:1px 8px;margin-inline-start:6px;vertical-align:middle}
 .rm{border:0;background:none;color:var(--muted);font-size:1.1rem;cursor:pointer;padding:4px 8px}
 .hdr-btns{display:flex;gap:8px}
-.sos-btn{background:var(--danger);border-color:var(--danger);color:#fff}
+.sos-btn{background:var(--danger);border-color:var(--danger);color:#fff;margin-inline-end:12px}
 .em .rep-head h1{color:var(--danger)}
 .em .rep-in{display:flex;flex-direction:column;gap:14px;max-width:560px;margin:0 auto}
 .em .calls{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -145,7 +145,7 @@ ul.roster .overmsg{margin-top:4px;font-size:.85rem;font-weight:700;color:var(--d
 .hdr-side{display:flex;flex-direction:column;gap:6px;flex:none}
 header .hdr-btns{gap:6px} header .hdr-btns .icon-btn{width:40px;height:40px} header .hdr-btns .icon-btn svg{width:20px;height:20px}
 header .brand{gap:10px} header .brand img{width:44px;height:44px} header h1{font-size:1.25rem}
-@media (max-width:370px){header .brand img{width:38px;height:38px} header h1{font-size:1.12rem} header .hdr-btns{gap:5px} header .hdr-btns .icon-btn{width:38px;height:38px}}
+@media (max-width:370px){header .brand img{width:38px;height:38px} header h1{font-size:1.12rem} header .hdr-btns{gap:5px} header .hdr-btns .icon-btn{width:38px;height:38px} .sos-btn{margin-inline-end:9px}}
 .tagline{text-align:center;white-space:nowrap;font:500 .8rem/1 var(--display);letter-spacing:.16em;margin-inline-end:-.16em;color:var(--muted)}
 body.rep-open{overflow:hidden}
 .rep{position:fixed;inset:0;z-index:45;background:var(--bg);overflow-y:auto;padding:env(safe-area-inset-top,0px) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
@@ -475,7 +475,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · כותרת מסודרת</div>
+  <div class="ver">גרסה 16/11/2026 · חירום: Waze וכפתור שליחה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -560,6 +560,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <div id="emgCard"></div>
       <p class="status">תעודת זהות ותאריך לידה מוצגים רק בטלפון עם קוד גישה ל-Arbox, ולא נשמרים בטלפון.</p>
     </section>
+    <a class="btn wa rep-fab" id="emgFab" target="_blank" rel="noopener">📤 שלח את דוח החירום ב-WhatsApp</a>
   </div>
 </section>
 
@@ -2529,7 +2530,7 @@ $("schedBack").onclick=closeSched;
 
 // ---------- emergency screen (header 🔺): one-tap calls, live GPS + WhatsApp, the injured athlete's details ----------
 const EMG={watch:null,pos:null,addr:"",addrAt:null,scope:"now",pick:null,showId:false,map:null,marker:null};
-function emgCfg(){ return Object.assign({beachName:"",beachPhone:"",clubName:DEFAULTS.waName||"מורן כפתורי",clubPhone:DEFAULTS.waPhone,toName:"",toPhone:""},store.get("emg-cfg",{})); }
+function emgCfg(){ return Object.assign({beachName:"",beachPhone:"",clubName:"גיא כפתורי",clubPhone:"052-2549591",toName:"",toPhone:""},store.get("emg-cfg",{})); }
 function emgSave(c){ store.set("emg-cfg",c); }
 function emgTo(){ const c=emgCfg(); if(waDigits(c.toPhone).length>=11) return {name:c.toName,phone:c.toPhone}; const L=cfg.locations[current]||{}; return waTarget(coachName(),L.name); }
 function emgNums(){
@@ -2546,7 +2547,7 @@ function emgEdit(){
   const bp=prompt("טלפון מוקד החוף:",c.beachPhone); if(bp===null) return;
   const cn=prompt("שם איש הקשר במועדון:",c.clubName); if(cn===null) return;
   const cp=prompt("טלפון איש הקשר במועדון:",c.clubPhone); if(cp===null) return;
-  Object.assign(c,{beachName:bn.trim(),beachPhone:bp.trim(),clubName:cn.trim(),clubPhone:cp.trim()||DEFAULTS.waPhone}); emgSave(c); emgNums(); emgMsg();
+  Object.assign(c,{beachName:bn.trim(),beachPhone:bp.trim(),clubName:cn.trim(),clubPhone:cp.trim()||"052-2549591"}); emgSave(c); emgNums(); emgMsg();
 }
 $("emgEditNums").onclick=emgEdit;
 $("emgEditTo").onclick=()=>{
@@ -2557,10 +2558,13 @@ $("emgEditTo").onclick=()=>{
   emgSave(c); emgNums(); emgMsg();
 };
 function emgLink(){ const p=EMG.pos; return p?`https://maps.google.com/?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`:""; }
+function emgWaze(){ const p=EMG.pos; return p?`https://waze.com/ul?ll=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&navigate=yes`:""; }
+// floating button: the whole emergency report – location (Google Maps + Waze) and the chosen athlete
+function emgFab(){ const t=(EMG.msg||"")+(EMG.athTxt?`\n\n${EMG.athTxt}`:""); $("emgFab").href=waHref(t,emgTo().phone); }
 function emgMsg(){
   const L=cfg.locations[current]||{}, p=EMG.pos;
-  const txt=`🚨 אירוע חירום באימון קבוצת הטריאתלון${L.name?` (${L.name})`:""}.\nהמיקום המדויק שלי הוא: ${p?emgLink():"[ממתין ל-GPS]"}${EMG.addr?`\n${EMG.addr}`:""}${p?`\nדיוק ±${Math.round(p.acc)} מ׳ · ${new Date(p.t).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})}`:""}\nמאמן: ${coachName()}`;
-  $("emgMsg").textContent=txt;
+  const txt=`🚨 אירוע חירום באימון קבוצת הטריאתלון${L.name?` (${L.name})`:""}.\nהמיקום המדויק שלי:${p?`\n📍 Google Maps: ${emgLink()}\n🚗 Waze: ${emgWaze()}`:" [ממתין ל-GPS]"}${EMG.addr?`\n${EMG.addr}`:""}${p?`\nדיוק ±${Math.round(p.acc)} מ׳ · ${new Date(p.t).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})}`:""}\nמאמן: ${coachName()}`;
+  $("emgMsg").textContent=txt; EMG.msg=txt; emgFab();
   const a=$("emgWa"); a.href=waHref(txt,emgTo().phone); a.classList.toggle("wait",!p);
   $("emgWaTxt").textContent=p?"שלח מיקום חירום ב-WhatsApp":"ממתין למיקום GPS…";
   const m=$("emgMapLink"); m.hidden=!p; if(p) m.href=emgLink();
@@ -2621,7 +2625,7 @@ async function emgFull(){
     if(r&&r.ok){ ARB.users=r.users||[]; emgCardRender(); } }catch(e){}
 }
 function emgCardRender(){
-  const p=EMG.pick, box=$("emgCard"); if(!p){ box.innerHTML=""; return; }
+  const p=EMG.pick, box=$("emgCard"); if(!p){ box.innerHTML=""; EMG.athTxt=""; emgFab(); return; }
   const f=emgFullUser(), a=f&&f.all||{}, bd=(f&&f.birthday)||a.birthday||"", age=emgAge(bd), pid=String(a.personal_id||"").trim();
   const ph=[...new Set([p.phone,f&&f.phone,f&&f.phone2].filter(x=>waDigits(x).length>=9).map(x=>String(x).trim()))];
   const ini=p.name.split(" ").filter(Boolean).slice(0,2).map(w=>w[0]).join("");
@@ -2635,8 +2639,9 @@ function emgCardRender(){
     ${ph.length?`<p class="status">הטלפון הרשום ב-Arbox – אצל קטינים בדרך כלל של ההורה.</p>`:""}
   </div>`;
   const t=$("emgIdT"); if(t) t.onclick=()=>{ EMG.showId=!EMG.showId; emgCardRender(); };
-  const txt=`🚨 פרטי ספורטאי – אירוע חירום\nשם: ${p.name}${age!=null?`\nגיל: ${age}${bd?` (נולד/ה ${fmtIso(bd)})`:""}`:""}${pid&&EMG.showId?`\nת״ז: ${pid}`:""}${ph.length?`\nטלפון: ${ph.map(fmtPhone).join(", ")}`:""}${EMG.pos?`\nמיקום: ${emgLink()}`:""}`;
+  const txt=`🚨 פרטי ספורטאי – אירוע חירום\nשם: ${p.name}${age!=null?`\nגיל: ${age}${bd?` (נולד/ה ${fmtIso(bd)})`:""}`:""}${pid&&EMG.showId?`\nת״ז: ${pid}`:""}${ph.length?`\nטלפון: ${ph.map(fmtPhone).join(", ")}`:""}${EMG.pos?`\nמיקום: ${emgLink()}\nWaze: ${emgWaze()}`:""}`;
   $("emgShare").href=`https://wa.me/?text=${encodeURIComponent(txt)}`;
+  EMG.athTxt=txt.replace(/^🚨 פרטי ספורטאי – אירוע חירום\n/,"👤 הנפגע/ת:\n").replace(/\nמיקום: [\s\S]*$/,""); emgFab();
 }
 function openEmg(){
   $("emg").hidden=false; document.body.classList.add("rep-open"); $("emg").scrollTop=0;
