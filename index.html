@@ -476,7 +476,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · בחירת מאמן מרשימה</div>
+  <div class="ver">גרסה 16/11/2026 · מאמנים מ-Arbox</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1395,9 +1395,16 @@ $("dur").addEventListener("blur",()=>{ $("dur").value=durHours(); showDur(); });
 function coachName(){ return $("coach").value.trim()||DEFAULT_COACH; }
 // coach names – one spelling each (first + last name), so the reports count every coach once
 const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין"];
-const COACH_FIX={"אסף":"אסף אשכנזי","תמיר":"תמיר רבינוביץ"};
+const COACH_FIX={"אסף":"אסף אשכנזי","תמיר":"תמיר רבינוביץ","דרור יועץ עסקי":"דרור"};
 const coachFix=n=>COACH_FIX[normName(n)]||normName(n);
-function coachList(){ return [...new Set(COACHES.concat(store.get("coach-custom",[])).map(normName).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he")); }
+function coachList(){ return [...new Set(COACHES.concat(store.get("coach-arbox",[]),store.get("coach-custom",[])).map(coachFix).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he")); }
+// a coach added to the Arbox staff shows up in the list by itself (names only; refreshed every few hours while online)
+async function coachArbox(){
+  if(!navigator.onLine||!scriptUrl()||Date.now()-store.get("coach-arbox-at",0)<6*3600*1000) return;
+  try{ const u=scriptUrl(); const r=await jsonp(cb=>`${u}${u.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify({action:"arboxCoaches"}))}`,30000);
+    if(r&&r.ok&&Array.isArray(r.coaches)){ store.set("coach-arbox",r.coaches); store.set("coach-arbox-at",Date.now()); coachSync(); } }catch(e){}
+}
+setTimeout(coachArbox,4000);
 function coachSync(){                                   // the list follows the coach name (typed, saved or taken from the schedule)
   const v=coachFix($("coach").value); $("coach").value=v;
   if(v&&!coachList().includes(v)) store.set("coach-custom",store.get("coach-custom",[]).concat([v]));
