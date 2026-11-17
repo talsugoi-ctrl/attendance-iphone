@@ -380,7 +380,9 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .sg-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
 .sg-tools2{grid-template-columns:1fr 1fr}
 .sg-tools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font:700 .8rem var(--body);color:var(--fg);cursor:pointer;min-height:64px}
-.sg-tools button span{font-size:1.3rem}
+.sg-tools button span{font-size:1.3rem} .sg-tools button i{font-style:normal}
+.sg-tools button.done{opacity:.6;color:var(--muted);filter:grayscale(1)}
+.sg-tools button.hot{border-color:var(--accent);background:var(--chip);color:var(--accent)}
 .sg-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .sg-2 label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted);font-weight:700}
 .sg-coaches{display:flex;flex-wrap:wrap;gap:6px}
@@ -503,7 +505,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 17/11/2026 · הגדרות מסודרות</div>
+  <div class="ver">גרסה 17/11/2026 · עדכון והתקנה בכלים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -759,12 +761,14 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 
 <dialog id="setup">
   <form method="dialog" id="setupForm" style="display:flex;flex-direction:column;gap:10px">
-    <h1 style="font-size:1.15rem">הגדרות</h1>
+    <h1 style="font-size:1.15rem;outline:none" tabindex="-1" autofocus>הגדרות</h1>
     <details class="sg" data-g="tools"><summary><span class="sg-ic" aria-hidden="true">🧰</span><span class="sg-tt"><b>כלים</b><small id="sgSum_tools"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
       <div class="sg-tools">
         <button type="button" id="mgrBtn"><span aria-hidden="true">👥</span>ניהול ספורטאים</button>
         <button type="button" class="arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span>Arbox</button>
         <button type="button" id="sheetBtn"><span aria-hidden="true">📊</span>פתיחת הגיליון</button>
+        <button type="button" id="updBtn"><span aria-hidden="true">🔄</span><i>בדיקת עדכון</i></button>
+        <button type="button" id="instBtn"><span aria-hidden="true">📲</span><i>התקנת האפליקציה</i></button>
       </div>
     <div class="card" id="sheetPwBox" hidden style="margin:0">
       <label class="lbl" for="sheetPw">סיסמה לגיליון הנוכחות</label>
@@ -815,10 +819,6 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
       <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
       <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
       <div class="hint">הרשימה מ-Arbox מתעדכנת בכל טלפון בלי קוד (מסך Arbox המלא עדיין דורש קוד גישה). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
-      <div class="sg-tools sg-tools2">
-        <button type="button" id="updBtn"><span aria-hidden="true">🔄</span>בדיקת עדכון</button>
-        <button type="button" id="instBtn"><span aria-hidden="true">📲</span>התקנת האפליקציה</button>
-      </div>
       <div class="hint" id="sgVer"></div>
     </div></details>
     <div class="sg-save">
@@ -1727,7 +1727,7 @@ $("setupBtn").onclick=()=>{
  
   draft=toDraft(); renderBranchEditor();
   const ec=emgCfg(); $("emgClubNameIn").value=ec.clubName||""; $("emgClubPhoneIn").value=ec.clubPhone||""; $("emgBeachNameIn").value=ec.beachName||""; $("emgBeachPhoneIn").value=ec.beachPhone||""; $("emgToNameIn").value=ec.toName||""; $("emgToPhoneIn").value=ec.toPhone||"";
-  setupCoachEd(); setupSums(); $("sgVer").textContent=(document.querySelector(".ver")||{}).textContent||"";
+  setupCoachEd(); setupSums(); setupAppState(); $("sgVer").textContent=(document.querySelector(".ver")||{}).textContent||"";
   const open=store.get("setup-open",["tools"]); document.querySelectorAll("#setup .sg").forEach(d=>{ d.open=open.includes(d.dataset.g); });
   $("setup").showModal(); $("setup").scrollTop=0;
 };
@@ -1735,12 +1735,21 @@ $("setupBtn").onclick=()=>{
 function setupSums(){
   const sum=(k,t)=>{ const e=$("sgSum_"+k); if(e) e.textContent=t; };
   const nb=draft.length, nl=draft.reduce((a,b)=>a+b.locs.length,0), hid=draft.filter(b=>b.show===false).length;
-  sum("tools","ניהול ספורטאים · Arbox · גיליון");
+  sum("tools","ספורטאים · Arbox · גיליון · עדכון · התקנה");
   sum("branches",`${nb} סניפים · ${nl} מקומות${hid?` · ${hid} מוסתרים`:""}`);
   const rn=waRulesRead().length; sum("wa",`ברירת מחדל: ${$("waName").value.trim()||fmtPhone($("waPhone").value)}${rn?` · ${rn===1?"עוד כלל אחד":rn+" כללים"}`:""}`);
   sum("emg",`איש קשר: ${$("emgClubNameIn").value.trim()||"—"} · חוף: ${waDigits($("emgBeachPhoneIn").value).length>=9?($("emgBeachNameIn").value.trim()||"הוגדר"):"לא הוגדר"}`);
   sum("coaches",`${coachList().length} מאמנים ברשימה`);
-  sum("adv","קישור לגיליון · מקור רשימה · עדכון · התקנה");
+  sum("adv","קישור לגיליון · מקור רשימה · גרסה");
+}
+// "installed" / "up to date" shown on the two buttons (greyed when there is nothing to do)
+async function setupAppState(){
+  const ib=$("instBtn"), ub=$("updBtn"), lab=(b,t)=>{ b.querySelector("i").textContent=t; };
+  const inst=isStandalone(); ib.classList.toggle("done",inst); lab(ib,inst?"✓ מותקנת":"התקנת האפליקציה");
+  ub.classList.remove("done","hot"); lab(ub,"בודק גרסה…");
+  if(!APP_VER||location.protocol!=="https:"||!navigator.onLine){ lab(ub,"בדיקת עדכון"); return; }
+  try{ const v=await siteVersion(); if(v===APP_VER){ ub.classList.add("done"); lab(ub,"✓ מעודכנת"); } else { ub.classList.add("hot"); lab(ub,"יש עדכון – לחץ"); } }
+  catch(e){ lab(ub,"בדיקת עדכון"); }
 }
 function setupCoachEd(){
   const cu=store.get("coach-custom",[]), box=$("coachCustomEd");
