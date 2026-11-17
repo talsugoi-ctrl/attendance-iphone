@@ -479,7 +479,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 16/11/2026 · סוג אימון במפה</div>
+  <div class="ver">גרסה 17/11/2026 · נועה ראובן בשמשית</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1046,16 +1046,16 @@ async function arbEnsure(){
 // places managed outside Arbox (כוכב יאיר – managed by the community centre): always from the sheet
 // branch → sheet tab for athletes who are not (yet) in Arbox. The tab has columns "שם" and "מקומות אימון"
 // (comma-separated place names); they are added to the Arbox list of every place named in their row.
-const SHEET_EXTRA_TAB={"C3US":"C3US","חיפה":"חיפה"};
+const SHEET_EXTRA_TAB={"C3US":"C3US","חיפה":"חיפה","עמק יזרעאל":"שמשית"};   // שמשית: athletes not active in Arbox, listed in the tab with "מקומות אימון"
 // every extra tab is read for every place: an athlete listed there can train in another branch too (e.g. Haifa kids at נתניה/פולג)
 async function sheetExtra(loc){
   if(!cfg.sheetUrl) return [];
   const lists=await Promise.all([...new Set(Object.values(SHEET_EXTRA_TAB))].map(async tab=>{
     let rows; try{ rows=await sheetGet(`https://docs.google.com/spreadsheets/d/${sheetId(cfg.sheetUrl)}/gviz/tq?tqx=out:csv&headers=0&sheet=${encodeURIComponent(tab)}`); }catch(e){ return null; }
     const h=rows.findIndex(r=>r.some(c=>c==="מקומות אימון")); if(h<0) return [];        // a missing tab comes back as the first tab – ignore it
-    const nc=rows[h].findIndex(c=>c==="שם"), pc=rows[h].indexOf("מקומות אימון"), tc=rows[h].findIndex(c=>/טלפון/.test(c)); if(nc<0) return [];
+    const nc=rows[h].findIndex(c=>c==="שם"), pc=rows[h].indexOf("מקומות אימון"), tc=rows[h].findIndex(c=>/טלפון/.test(c)), sc=rows[h].indexOf("מנוי"); if(nc<0) return [];
     return rows.slice(h+1).filter(r=>normName(r[nc])&&areaList(r[pc]).includes(loc.name))
-      .map(r=>({name:normName(r[nc]),sub:"",phone:tc>=0?(r[tc]||"").trim():"",sheet:true})); }));
+      .map(r=>({name:normName(r[nc]),sub:sc>=0?String(r[sc]||"").trim():"",phone:tc>=0?(r[tc]||"").trim():"",sheet:true})); }));
   const k="sx:"+loc.name; if(lists.some(l=>l===null)) return store.get(k,[]);   // no reception → the list saved last time
   const seen=new Set(), out=lists.flat().filter(p=>!seen.has(p.name)&&seen.add(p.name)); store.set(k,out); return out;
 }
