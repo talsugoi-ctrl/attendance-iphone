@@ -367,6 +367,30 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .brfoot .delbr.sure{color:var(--accent-2);font-weight:700}
 .brempty{padding:10px 12px;font-size:.85rem;color:var(--muted);border-bottom:1px solid var(--line)}
 .add-branch{width:100%;margin-top:10px;border-style:dashed}
+/* settings: collapsible groups (one summary line each) + save bar that stays in view */
+#setup{max-height:calc(100dvh - 24px);overflow-y:auto}
+.sg{border:1px solid var(--line);border-radius:14px;background:var(--surface);overflow:hidden;flex:none}
+.sg>summary{list-style:none;display:flex;align-items:center;gap:10px;padding:12px;cursor:pointer;min-height:56px}
+.sg>summary::-webkit-details-marker{display:none}
+.sg-ic{width:34px;height:34px;border-radius:10px;background:var(--chip);display:grid;place-items:center;font-size:1.05rem;flex:none}
+.sg-tt{flex:1;min-width:0;display:flex;flex-direction:column}
+.sg-tt b{font:700 1rem var(--display)} .sg-tt small{color:var(--muted);font-size:.8rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.sg-ch{color:var(--muted);font-size:1.2rem;transition:transform .2s} .sg[open] .sg-ch{transform:rotate(-90deg)}
+.sg-in{padding:10px 12px 14px;display:flex;flex-direction:column;gap:10px;border-top:1px solid var(--line)}
+.sg-tools{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sg-tools2{grid-template-columns:1fr 1fr}
+.sg-tools button{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 4px;border:1px solid var(--line);border-radius:12px;background:var(--bg);font:700 .8rem var(--body);color:var(--fg);cursor:pointer;min-height:64px}
+.sg-tools button span{font-size:1.3rem}
+.sg-2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.sg-2 label{display:flex;flex-direction:column;gap:4px;font-size:.78rem;color:var(--muted);font-weight:700}
+.sg-coaches{display:flex;flex-wrap:wrap;gap:6px}
+.sg-coaches .chip button{border:0;background:none;color:var(--danger);font:inherit;margin-inline-start:4px;cursor:pointer}
+.sg-save{position:sticky;bottom:-16px;display:flex;gap:8px;padding:10px 0 4px;background:var(--surface);z-index:2}
+.sg-save .btn{flex:1}
+.brcard .brcount{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--muted);border-radius:999px;padding:4px 10px;font:600 .8rem var(--body);cursor:pointer}
+.brcard.closed .brlocs,.brcard.closed .brfoot{display:none}
+.sg>summary:focus:not(:focus-visible){outline:none} .sg-in .brhead{flex-wrap:wrap} .sg-in .brhead .bname{flex:1 1 100%} .sg-in .brhead .show{flex:1}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 .netbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px;padding:10px 12px;border-radius:12px;background:#FFF4D6;color:#7A4A00;font-weight:700;font-size:.92rem}
 .netbar.off{background:#E8EEF5;color:#24364F}
@@ -479,7 +503,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 17/11/2026 · נועה ראובן בשמשית</div>
+  <div class="ver">גרסה 17/11/2026 · הגדרות מסודרות</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -546,7 +570,7 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <a class="call alt" id="emgBeach"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 17c2 0 2-1.5 4-1.5s2 1.5 4 1.5 2-1.5 4-1.5 2 1.5 4 1.5 2-1.5 4-1.5"/><circle cx="12" cy="8" r="4"/></svg><b>חוף / ימי</b><small id="emgBeachSub"></small></a>
         <a class="call alt" id="emgClub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4-6 8-6s7 2 8 6"/></svg><b id="emgClubName"></b><small id="emgClubSub"></small></a>
       </div>
-      <button type="button" class="link" id="emgEditNums">✎ עריכת מספר החוף ואיש הקשר במועדון</button>
+      <button type="button" class="link" id="emgEditNums">✎ עריכה בהגדרות ← מצב חירום</button>
     </section>
     <section class="card">
       <span class="lbl">2 · איפה אנחנו</span>
@@ -734,13 +758,14 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </dialog>
 
 <dialog id="setup">
-  <form method="dialog" id="setupForm" style="display:flex;flex-direction:column;gap:12px">
+  <form method="dialog" id="setupForm" style="display:flex;flex-direction:column;gap:10px">
     <h1 style="font-size:1.15rem">הגדרות</h1>
-    <button type="button" class="btn primary mgr-open-btn" id="mgrBtn"><span aria-hidden="true">👥</span> ניהול ספורטאים – הוספה, עריכה, ארכיון ונוכחות שנשכחה</button>
-    <button type="button" class="btn mgr-open-btn arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span> Arbox – ספורטאים מהמערכת</button>
-    <button type="button" class="btn mgr-open-btn" id="sheetBtn"><span aria-hidden="true">📊</span> פתיחת גיליון הנוכחות בדפדפן</button>
-    <button type="button" class="btn mgr-open-btn" id="updBtn"><span aria-hidden="true">🔄</span> בדיקת עדכון גרסה</button>
-    <button type="button" class="btn mgr-open-btn" id="instBtn"><span aria-hidden="true">📲</span> התקנת האפליקציה במחשב / בטלפון</button>
+    <details class="sg" data-g="tools"><summary><span class="sg-ic" aria-hidden="true">🧰</span><span class="sg-tt"><b>כלים</b><small id="sgSum_tools"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <div class="sg-tools">
+        <button type="button" id="mgrBtn"><span aria-hidden="true">👥</span>ניהול ספורטאים</button>
+        <button type="button" class="arb-btn" id="arbBtn"><span aria-hidden="true">🔗</span>Arbox</button>
+        <button type="button" id="sheetBtn"><span aria-hidden="true">📊</span>פתיחת הגיליון</button>
+      </div>
     <div class="card" id="sheetPwBox" hidden style="margin:0">
       <label class="lbl" for="sheetPw">סיסמה לגיליון הנוכחות</label>
       <input type="password" id="sheetPw" autocomplete="off" autocapitalize="characters" enterkeyhint="go">
@@ -749,30 +774,14 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         <button type="button" class="btn" id="sheetPwCancel">ביטול</button>
       </div>
     </div>
-    <div>
-      <label class="lbl" for="sheetUrl">קישור לגיליון הנרשמים</label>
-      <input type="url" id="sheetUrl" dir="ltr">
-      <div class="hint">הגיליון צריך להיות משותף ב"כל מי שיש לו את הקישור – צופה".</div>
-    </div>
-    <div>
-      <span class="lbl">סניפים ומקומות אימון</span>
-      <div class="hint">כל הסניפים מוצגים במסך הראשי. הוסף מתחת לכל סניף את מקומות האימון שלו. השמות נטענים מקישור הגיליון שלמעלה.</div>
+    </div></details>
+    <details class="sg" data-g="branches"><summary><span class="sg-ic" aria-hidden="true">🏟️</span><span class="sg-tt"><b>סניפים ומקומות אימון</b><small id="sgSum_branches"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <div class="hint">המתג ליד כל סניף קובע אם הוא מוצג במסך הראשי. לחיצה על מספר המקומות פותחת אותם לעריכה.</div>
       <div class="brcards" id="branchEditor"></div>
       <button type="button" class="btn add-branch" id="addBranch">+ הוסף סניף</button>
-    </div>
-    <div>
-      <label class="lbl" for="waPhone2">מספר וואטסאפ נוסף (לא חובה)</label>
-      <input type="text" id="waPhone2" dir="ltr" placeholder="השאר ריק אם יש רק מספר אחד">
-      <div class="hint">אם ממלאים, יופיע כפתור שליחה נוסף למספר הזה.</div>
-    </div>
-    <div>
-      <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
-      <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
-      <div class="hint">הרשימה מ-Arbox מתעדכנת בכל טלפון בלי קוד (מסך Arbox המלא עדיין דורש קוד גישה). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
-    </div>
-    <div>
-      <span class="lbl">טלפון ברירת מחדל WhatsApp לפי מאמן</span>
-      <div class="hint">לאן נשלחים דוח הנוכחות והדוחות. ב"חל על" כותבים שמות מאמנים ו/או מקומות אימון, מופרדים בפסיק. מאמן או מקום שלא מופיעים באף שורה – נשלח לברירת המחדל.</div>
+    </div></details>
+    <details class="sg" data-g="wa"><summary><span class="sg-ic" aria-hidden="true">💬</span><span class="sg-tt"><b>וואטסאפ ודיווחים</b><small id="sgSum_wa"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <div class="hint">לאן נשלחים דוח הנוכחות והדוחות. ב"חל על" כותבים שמות מאמנים ו/או מקומות אימון, מופרדים בפסיק. מאמן או מקום שלא מופיעים כאן – נשלח לברירת המחדל.</div>
       <div class="wa-rules" id="waRulesEd">
         <div class="wa-rule">
           <b class="full">כל המאמנים (ברירת מחדל)</b>
@@ -781,9 +790,38 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
         </div>
         <div id="waRuleRows" class="wa-rules"></div>
       </div>
-      <button type="button" class="btn" id="waRuleAdd" style="margin-top:8px">+ הוסף מאמן / מקום</button>
-    </div>
-    <div class="row">
+      <button type="button" class="btn" id="waRuleAdd">+ הוסף מאמן / מקום</button>
+      <label class="lbl" for="waPhone2">מספר וואטסאפ נוסף (לא חובה)</label>
+      <input type="text" id="waPhone2" dir="ltr" placeholder="השאר ריק אם יש רק מספר אחד">
+      <div class="hint">אם ממלאים, יופיע כפתור שליחה נוסף למספר הזה.</div>
+    </div></details>
+    <details class="sg" data-g="emg"><summary><span class="sg-ic" aria-hidden="true">🚨</span><span class="sg-tt"><b>מצב חירום</b><small id="sgSum_emg"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <span class="lbl">איש קשר במועדון (כפתור החיוג במסך החירום)</span>
+      <div class="sg-2"><label>שם<input type="text" id="emgClubNameIn" placeholder="גיא כפתורי"></label><label>טלפון<input type="text" id="emgClubPhoneIn" dir="ltr" placeholder="052-2549591"></label></div>
+      <span class="lbl">מוקד חוף / הצלה</span>
+      <div class="sg-2"><label>שם<input type="text" id="emgBeachNameIn" placeholder="למשל: מצילים חוף דדו"></label><label>טלפון<input type="text" id="emgBeachPhoneIn" dir="ltr" placeholder="לא הוגדר"></label></div>
+      <span class="lbl">הודעות חירום בוואטסאפ נשלחות אל</span>
+      <div class="sg-2"><label>שם<input type="text" id="emgToNameIn" placeholder="איש הקשר במועדון"></label><label>טלפון<input type="text" id="emgToPhoneIn" dir="ltr" placeholder="ריק = איש הקשר במועדון"></label></div>
+      <div class="hint">ההגדרות האלה נשמרות בטלפון הזה.</div>
+    </div></details>
+    <details class="sg" data-g="coaches"><summary><span class="sg-ic" aria-hidden="true">👤</span><span class="sg-tt"><b>מאמנים</b><small id="sgSum_coaches"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <div class="hint">הרשימה נבנית מהמאמנים הקבועים ומאנשי הצוות ב-Arbox (מתעדכן לבד). כאן אפשר למחוק שמות שהוקלדו ידנית בטלפון הזה.</div>
+      <div id="coachCustomEd" class="sg-coaches"></div>
+    </div></details>
+    <details class="sg" data-g="adv"><summary><span class="sg-ic" aria-hidden="true">⚙️</span><span class="sg-tt"><b>מתקדם</b><small id="sgSum_adv"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <label class="lbl" for="sheetUrl">קישור לגיליון הנרשמים</label>
+      <input type="url" id="sheetUrl" dir="ltr">
+      <div class="hint">הגיליון צריך להיות משותף ב"כל מי שיש לו את הקישור – צופה".</div>
+      <label class="lbl" for="rosterSource">מקור רשימת הספורטאים לסימון נוכחות</label>
+      <select id="rosterSource" class="tsel"><option value="arbox">Arbox (ברירת מחדל)</option><option value="sheet">גיליון הנרשמים</option></select>
+      <div class="hint">הרשימה מ-Arbox מתעדכנת בכל טלפון בלי קוד (מסך Arbox המלא עדיין דורש קוד גישה). כוכב יאיר תמיד נטען מהגיליון (מנוהל במתנ״ס). מקום שאין לו ספורטאים ב-Arbox נטען גם הוא מהגיליון.</div>
+      <div class="sg-tools sg-tools2">
+        <button type="button" id="updBtn"><span aria-hidden="true">🔄</span>בדיקת עדכון</button>
+        <button type="button" id="instBtn"><span aria-hidden="true">📲</span>התקנת האפליקציה</button>
+      </div>
+      <div class="hint" id="sgVer"></div>
+    </div></details>
+    <div class="sg-save">
       <button type="button" class="btn primary" id="saveSetup">שמור</button>
       <button type="button" class="btn" id="cancelSetup">ביטול</button>
     </div>
@@ -1626,7 +1664,10 @@ function renderBranchEditor(focus){
     name.oninput=()=>{ br.name=name.value; };
     const show=el("label","show"); const sc=el("input"); sc.type="checkbox"; sc.checked=br.show!==false; sc.setAttribute("aria-label","הצג את סניף "+(br.name||"")+" במסך הראשי");
     sc.onchange=()=>{ br.show=sc.checked; card.classList.toggle("off",!sc.checked); }; show.append(sc,document.createTextNode("הצג במסך ראשי"));
-    head.append(el("span",null,"סניף"),name,show);
+    const cnt=el("button","brcount",`${br.locs.length} ${br.locs.length===1?"מקום":"מקומות"} ${br._open?"▴":"▾"}`); cnt.type="button"; cnt.setAttribute("aria-expanded",String(!!br._open));
+    cnt.onclick=()=>{ br._open=!br._open; renderBranchEditor(); };
+    if(!br._open) card.classList.add("closed");
+    head.append(name,show,cnt);
     card.appendChild(head);
     const list=el("div","brlocs");
     if(!br.locs.length) list.appendChild(el("div","brempty","אין עדיין מקומות בסניף הזה."));
@@ -1650,7 +1691,7 @@ function renderBranchEditor(focus){
     card.appendChild(list);
     const foot=el("div","brfoot");
     const add=el("button","addloc","+ הוסף מקום לסניף"); add.type="button";
-    add.onclick=()=>{ br.locs.push({name:"",tab:"",filter:""}); renderBranchEditor({b:bi,l:br.locs.length-1}); };
+    add.onclick=()=>{ br._open=true; br.locs.push({name:"",tab:"",filter:""}); renderBranchEditor({b:bi,l:br.locs.length-1}); };
     const delb=el("button","delbr","מחק סניף"); delb.type="button";
     delb.onclick=()=>{ if(!delb.classList.contains("sure")){ delb.classList.add("sure"); delb.textContent="לחץ שוב למחיקה"; setTimeout(()=>{delb.classList.remove("sure");delb.textContent="מחק סניף";},3000); return; } draft.splice(bi,1); renderBranchEditor(); };
     foot.append(add,delb); card.appendChild(foot);
@@ -1685,14 +1726,38 @@ $("setupBtn").onclick=()=>{
   $("waName").value=cfg.waName!=null?cfg.waName:DEFAULTS.waName; $("waRuleRows").innerHTML=""; waRules().forEach(waRuleRow); $("rosterSource").value=cfg.rosterSource||"arbox";
  
   draft=toDraft(); renderBranchEditor();
-  $("setup").showModal();
+  const ec=emgCfg(); $("emgClubNameIn").value=ec.clubName||""; $("emgClubPhoneIn").value=ec.clubPhone||""; $("emgBeachNameIn").value=ec.beachName||""; $("emgBeachPhoneIn").value=ec.beachPhone||""; $("emgToNameIn").value=ec.toName||""; $("emgToPhoneIn").value=ec.toPhone||"";
+  setupCoachEd(); setupSums(); $("sgVer").textContent=(document.querySelector(".ver")||{}).textContent||"";
+  const open=store.get("setup-open",["tools"]); document.querySelectorAll("#setup .sg").forEach(d=>{ d.open=open.includes(d.dataset.g); });
+  $("setup").showModal(); $("setup").scrollTop=0;
 };
+// settings groups: one summary line each; the groups left open are remembered on this phone
+function setupSums(){
+  const sum=(k,t)=>{ const e=$("sgSum_"+k); if(e) e.textContent=t; };
+  const nb=draft.length, nl=draft.reduce((a,b)=>a+b.locs.length,0), hid=draft.filter(b=>b.show===false).length;
+  sum("tools","ניהול ספורטאים · Arbox · גיליון");
+  sum("branches",`${nb} סניפים · ${nl} מקומות${hid?` · ${hid} מוסתרים`:""}`);
+  const rn=waRulesRead().length; sum("wa",`ברירת מחדל: ${$("waName").value.trim()||fmtPhone($("waPhone").value)}${rn?` · ${rn===1?"עוד כלל אחד":rn+" כללים"}`:""}`);
+  sum("emg",`איש קשר: ${$("emgClubNameIn").value.trim()||"—"} · חוף: ${waDigits($("emgBeachPhoneIn").value).length>=9?($("emgBeachNameIn").value.trim()||"הוגדר"):"לא הוגדר"}`);
+  sum("coaches",`${coachList().length} מאמנים ברשימה`);
+  sum("adv","קישור לגיליון · מקור רשימה · עדכון · התקנה");
+}
+function setupCoachEd(){
+  const cu=store.get("coach-custom",[]), box=$("coachCustomEd");
+  box.innerHTML=cu.length?cu.map((n,i)=>`<span class="chip">${esc(n)}<button type="button" data-i="${i}" aria-label="מחק את ${esc(n)} מהרשימה">✕</button></span>`).join(""):`<span class="hint">אין שמות שהוקלדו ידנית.</span>`;
+  box.querySelectorAll("button").forEach(b=>b.onclick=()=>{ const l=store.get("coach-custom",[]); l.splice(+b.dataset.i,1); store.set("coach-custom",l); setupCoachEd(); coachSync(); setupSums(); });
+}
+document.querySelectorAll("#setup .sg").forEach(d=>d.addEventListener("toggle",()=>{ store.set("setup-open",[...document.querySelectorAll("#setup .sg")].filter(x=>x.open).map(x=>x.dataset.g)); if(d.open) setupSums(); }));
+$("setupForm").addEventListener("input",()=>{ clearTimeout(setupSums.t); setupSums.t=setTimeout(setupSums,300); });
+function openSetupAt(g){ $("setupBtn").onclick(); const d=document.querySelector(`#setup .sg[data-g="${g}"]`); if(d){ d.open=true; setTimeout(()=>d.scrollIntoView({block:"start"}),50); } }
 $("cancelSetup").onclick=()=>$("setup").close();
 $("saveSetup").onclick=()=>{
   const dc=draftToConfig(), locs=dc.locations;
   const prevLoc=current!=null?cfg.locations[current]:null;
   cfg={hiddenBranches:dc.hidden, sheetUrl:$("sheetUrl").value.trim()||DEFAULTS.sheetUrl, waPhone:$("waPhone").value.trim()||DEFAULTS.waPhone, waName:$("waName").value.trim(), waRules:waRulesRead(), waPhone2:$("waPhone2").value.trim(), rosterSource:$("rosterSource").value, locations:locs.length?locs:DEFAULTS.locations};
   store.set(KEY,cfg);
+  const ec=emgCfg(); emgSave(Object.assign(ec,{clubName:$("emgClubNameIn").value.trim()||"גיא כפתורי",clubPhone:$("emgClubPhoneIn").value.trim()||"052-2549591",beachName:$("emgBeachNameIn").value.trim(),beachPhone:$("emgBeachPhoneIn").value.trim(),toName:$("emgToNameIn").value.trim(),toPhone:$("emgToPhoneIn").value.trim()}));
+  if(!$("emg").hidden){ emgNums(); emgMsg(); }
   $("setup").close();
   // keep the chosen location if it still exists and its branch is still shown
   current=null;
@@ -2578,7 +2643,7 @@ function emgNums(){
   k.href="tel:"+String(c.clubPhone).replace(/[^\d+]/g,""); $("emgClubName").textContent=c.clubName||"איש קשר במועדון"; $("emgClubSub").innerHTML=`<bdi dir="ltr">${esc(fmtPhone(c.clubPhone))}</bdi>`;
   const t=emgTo(); $("emgTo").innerHTML=(t.name?esc(t.name)+" · ":"")+`<bdi dir="ltr" style="white-space:nowrap">${esc(fmtPhone(t.phone))}</bdi>`;
 }
-$("emgBeach").addEventListener("click",e=>{ if(!$("emgBeach").getAttribute("href")){ e.preventDefault(); emgEdit(); } });
+$("emgBeach").addEventListener("click",e=>{ if(!$("emgBeach").getAttribute("href")){ e.preventDefault(); openSetupAt("emg"); } });
 function emgEdit(){
   const c=emgCfg();
   const bn=prompt("שם מוקד החוף / הצלה (למשל: מגדל המצילים חוף דדו):",c.beachName); if(bn===null) return;
@@ -2587,14 +2652,8 @@ function emgEdit(){
   const cp=prompt("טלפון איש הקשר במועדון:",c.clubPhone); if(cp===null) return;
   Object.assign(c,{beachName:bn.trim(),beachPhone:bp.trim(),clubName:cn.trim(),clubPhone:cp.trim()||"052-2549591"}); emgSave(c); emgNums(); emgMsg();
 }
-$("emgEditNums").onclick=emgEdit;
-$("emgEditTo").onclick=()=>{
-  const c=emgCfg(), t=emgTo();
-  const ph=prompt("למי לשלוח את מיקום החירום בוואטסאפ? (טלפון; ריק = איש הקשר במועדון)",waDigits(c.toPhone).length>=11?c.toPhone:fmtPhone(t.phone)); if(ph===null) return;
-  if(!ph.trim()){ c.toPhone=""; c.toName=""; }
-  else { c.toPhone=ph.trim(); const nm=prompt("שם הנמען (לא חובה):",c.toName||""); c.toName=nm===null?"":nm.trim(); }
-  emgSave(c); emgNums(); emgMsg();
-};
+$("emgEditNums").onclick=()=>openSetupAt("emg");
+$("emgEditTo").onclick=()=>openSetupAt("emg");
 function emgLink(){ const p=EMG.pos; return p?`https://maps.google.com/?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`:""; }
 function emgWaze(){ const p=EMG.pos; return p?`https://waze.com/ul?ll=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&navigate=yes`:""; }
 // floating button: the whole emergency report – location (Google Maps + Waze) and the chosen athlete
