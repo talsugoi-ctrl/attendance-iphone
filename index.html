@@ -482,6 +482,24 @@ ul.roster li.reg .nm{color:var(--fg)}
 ul.roster li.reg.miss label{background:color-mix(in srgb,var(--accent-2) 13%,var(--surface));box-shadow:inset 0 0 0 2px var(--accent-2)}
 .regtag{flex:none;margin-inline-start:auto;font:800 .78rem var(--body);color:#fff;background:var(--ok);border-radius:999px;padding:5px 11px;white-space:nowrap}
 ul.roster li.reg.miss .regtag{background:var(--accent-2)}
+.done-ov{position:fixed;inset:0;z-index:96;background:radial-gradient(120% 70% at 50% 0%,color-mix(in srgb,var(--ok) 16%,var(--bg)) 0,var(--bg) 60%);display:flex;align-items:center;justify-content:center;padding:24px 18px calc(24px + env(safe-area-inset-bottom,0px));overflow-y:auto}
+.done-in{width:min(420px,100%);display:flex;flex-direction:column;gap:12px;text-align:center;align-items:stretch}
+.done-art{width:150px;height:150px;margin:0 auto}
+.done-art .ring{stroke:var(--ok);stroke-dasharray:315;stroke-dashoffset:315;animation:dn-ring .6s ease-out forwards;transform-origin:80px 80px;transform:rotate(-90deg)}
+.done-art .tick{stroke:var(--ok);stroke-dasharray:80;stroke-dashoffset:80;animation:dn-tick .35s .55s ease-out forwards}
+.done-art .burst circle{opacity:0;transform-origin:80px 80px;animation:dn-burst .7s .75s ease-out forwards}
+@keyframes dn-ring{to{stroke-dashoffset:0}}
+@keyframes dn-tick{to{stroke-dashoffset:0}}
+@keyframes dn-burst{0%{opacity:0;transform:scale(.4)}40%{opacity:1}100%{opacity:.9;transform:scale(1)}}
+@media (prefers-reduced-motion:reduce){.done-art .ring,.done-art .tick{animation:none;stroke-dashoffset:0}.done-art .burst circle{animation:none;opacity:.9}}
+.done-in h2{margin:0;font:800 1.6rem var(--display);color:var(--ok)}
+.done-card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px;display:flex;flex-direction:column;gap:4px;box-shadow:0 4px 16px rgba(11,74,148,.08)}
+.done-card b{font:800 1.05rem var(--display)}.done-card span{color:var(--muted);font-size:.9rem}
+.done-card .done-n{color:var(--fg);font-weight:700}.done-card .done-n i{font-style:normal;color:var(--accent-2)}
+.done-st{font-size:.9rem;font-weight:700;color:var(--muted);background:var(--surface);border:1px dashed var(--line);border-radius:12px;padding:9px 12px}
+.done-st.ok{color:var(--ok);border-style:solid;border-color:color-mix(in srgb,var(--ok) 45%,var(--line))}
+.done-st.err{color:var(--danger);border-style:solid;border-color:color-mix(in srgb,var(--danger) 45%,var(--line))}
+.done-p{margin:0;color:var(--muted)}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -628,7 +646,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · מרחב נתניה/פולג</div>
+  <div class="ver">גרסה 18/11/2026 · מסך העדכון עבר בהצלחה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4063,6 +4081,61 @@ function coachPwOpen(){
   window.addEventListener("online",()=>{ if(!$("ath").hidden) athLoad(true); else if(coachCred()) regApply(true); });
   setInterval(()=>{ if(document.visibilityState==="visible"&&coachCred()&&current!=null&&$("resultCard").hidden) regApply(true); },120000);
   gateStart();
+})();
+
+// ================= after sending: "העדכון עבר בהצלחה" =================
+// shown after "כן – עדכן ושלח" and after "לא – שלח רק בוואטסאפ"; the status line follows the system update live
+function doneShow(yes){
+  const r=report||{}, n=(r.people||[]).length, no=(r.reg&&r.reg.noShow||[]).length;
+  let ov=$("doneOv"); if(ov) ov.remove();
+  ov=document.createElement("div"); ov.id="doneOv"; ov.className="done-ov"; ov.setAttribute("role","dialog"); ov.setAttribute("aria-modal","true"); ov.setAttribute("aria-labelledby","doneTitle");
+  ov.innerHTML=`<div class="done-in">
+    <svg class="done-art" viewBox="0 0 160 160" aria-hidden="true">
+      <g class="burst">${[0,45,90,135,180,225,270,315].map((a,i)=>`<circle cx="${80+66*Math.cos(a*Math.PI/180)}" cy="${80+66*Math.sin(a*Math.PI/180)}" r="${i%2?4:6}" fill="${["#0b4a94","#d9600f","#1f7a4d","#4fb0e6"][i%4]}"/>`).join("")}</g>
+      <circle class="ring" cx="80" cy="80" r="50" fill="none" stroke-width="9"/>
+      <path class="tick" d="M56 82 l16 16 l32 -36" fill="none" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+    <h2 id="doneTitle">העדכון עבר בהצלחה</h2>
+    <div class="done-card">
+      <b>${TYPE_ICON[r.type]||"🏅"} ${esc(r.type||"אימון")} · ${esc(r.location||"")}</b>
+      <span>${esc(r.date?dayName(r.date)+" "+r.date:"")}${r.coach?" · "+esc(r.coach):""}</span>
+      <span class="done-n">✅ ${n} ${n===1?"משתתף":"משתתפים"}${no?` · <i>${no} נרשמו ולא הגיעו</i>`:""}</span>
+    </div>
+    <div class="done-st" id="doneSt">${yes?"⏳ מעדכן את המערכת…":"💬 ההודעה נשלחה בוואטסאפ · המערכת לא עודכנה (לפי הבחירה)"}</div>
+    <button type="button" class="btn primary big" id="doneHome">⌂ חזרה למסך הראשי</button>
+    <button type="button" class="btn big" id="doneClose">⏻ סגור אפליקציה</button>
+  </div>`;
+  document.body.appendChild(ov);
+  if(yes){ const s=$("syncStatus"); if(s&&!s.hidden&&s.textContent) doneSync(s.textContent,s.className); }
+  $("doneHome").onclick=doneHome; $("doneClose").onclick=doneClose;
+  setTimeout(()=>{ try{ $("doneHome").focus(); }catch(e){} },400);
+}
+function doneSync(t,cls){
+  const el=$("doneSt"); if(!el) return;
+  t=String(t||"").replace(/נסה שוב$/,"").trim();
+  el.textContent=/עודכנה ✓/.test(t)?"✓ המערכת עודכנה והנוכחות נשמרה בגיליון":/אין קליטה|נשמר בטלפון/.test(t)?"📴 אין קליטה – הדיווח שמור בטלפון וישלח לבד כשתחזור קליטה":t;
+  el.className="done-st"+(/\bok\b/.test(cls||"")||/עודכנה ✓/.test(t)?" ok":/\berr\b/.test(cls||"")?" err":"");
+}
+// back to the main screen, ready for the next training (date and coach stay)
+function doneHome(){
+  const ov=$("doneOv"); if(ov) ov.remove();
+  selected.clear(); trials=[]; guests=guests.filter(g=>g.regOnly); regApplied="";
+  $("resultCard").hidden=true; renderRoster(); updateCount();
+  window.scrollTo({top:0,behavior:"smooth"});
+}
+function doneClose(){
+  try{ window.close(); }catch(e){}
+  setTimeout(()=>{ if(document.visibilityState!=="visible") return;
+    const ov=$("doneOv"); if(!ov) return;
+    ov.querySelector(".done-in").innerHTML=`<svg class="done-art" viewBox="0 0 160 160" aria-hidden="true"><circle class="ring" cx="80" cy="80" r="50" fill="none" stroke-width="9"/><text x="80" y="96" text-anchor="middle" font-size="46">👋</text></svg>
+      <h2>להתראות!</h2><p class="done-p">הדוח נשמר. אפשר לסגור את האפליקציה עכשיו${/iPhone|iPad/.test(navigator.userAgent)?" – החלקה למעלה מתחתית המסך":""}.</p>
+      <button type="button" class="btn big" id="doneBack">חזרה לאפליקציה</button>`;
+    $("doneBack").onclick=doneHome;
+  },300);
+}
+(function doneWire(){
+  const _aa=answerAsk; answerAsk=function(yes){ _aa(yes); setTimeout(()=>doneShow(yes),200); };
+  const _sy=sync; sync=function(t,cls,retry){ _sy(t,cls,retry); if(answer===true) doneSync(t,cls); };
 })();
 
 </script>
