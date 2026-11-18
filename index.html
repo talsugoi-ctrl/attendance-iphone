@@ -628,7 +628,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · הרשמה נפתחת באזורים שלי</div>
+  <div class="ver">גרסה 18/11/2026 · מרחב נתניה/פולג</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1007,7 +1007,10 @@ const DEFAULTS = {
     {branch:"מרכז", name:"תל אביב", tab:"תל אביב", filter:""},
     {branch:"מרכז", name:"כוכב יאיר", tab:"כוכב יאיר", filter:""},
     {branch:"מרכז", name:"רמת גן", tab:"רמת גן", filter:""},
-    {branch:"מרכז", name:"נתניה/פולג", tab:"", filter:""},
+    {branch:"נתניה/פולג", name:"ספורטק פולג", tab:"", filter:""},
+    {branch:"נתניה/פולג", name:"בריכת החוף הירוק", tab:"", filter:""},
+    {branch:"נתניה/פולג", name:"פארק השלולית", tab:"", filter:""},
+    {branch:"נתניה/פולג", name:"הכביש הנטוש", tab:"", filter:""},
     {branch:"יקנעם", name:"טריאתלון נוער יקנעם", tab:"יקנעם", filter:""},
     {branch:"C3US", name:"שחייה חדרה", tab:"", filter:""},
     {branch:"C3US", name:"קריטריום קיסריה", tab:"", filter:""},
@@ -1051,6 +1054,13 @@ if(String(cfg.waPhone||"").replace(/\D/g,"").replace(/^0/,"972")==="972509015006
   if(cfg.locations.some(x=>x.name===R)){ cfg.locations=cfg.locations.filter(x=>x.name!==R); ch=true; }
   if(ch&&savedCfg) store.set(KEY,cfg);
   const seen=store.get("seen-locs",null); if(seen&&seen.includes(O)&&!seen.includes(N)){ seen.push(N); store.set("seen-locs",seen); } })();
+// "נתניה/פולג" became a region of its own with four training areas (18/11/2026) – phones that hold the old single place get the four
+(function(){ const O="נתניה/פולג", NEW=DEFAULTS.locations.filter(l=>l.branch===O);
+  const i=cfg.locations.findIndex(l=>l.name===O&&(l.branch||"")!==O);
+  if(i>=0){ cfg.locations.splice(i,1,...NEW.filter(n=>!cfg.locations.some(x=>x.name===n.name)).map(n=>Object.assign({},n)));
+    (cfg.waRules||[]).forEach(r=>{ if(r.who&&r.who.includes(O)) r.who=r.who.split(",").map(s=>s.trim()).flatMap(s=>s===O?NEW.map(n=>n.name):[s]).join(", "); });
+    if(savedCfg) store.set(KEY,cfg); }
+  const seen=store.get("seen-locs",null); if(seen&&i>=0){ NEW.forEach(n=>{ if(!seen.includes(n.name)) seen.push(n.name); }); store.set("seen-locs",seen); } })();
 // A new built-in place reaches each coach once. Anything a coach changed or deleted in Settings stays that way.
 (function(){
   if(!store.get("hb-v2",false)){ cfg.hiddenBranches=[]; store.set("hb-v2",true); if(savedCfg) store.set(KEY,cfg); }   // 15/11/2026: hiding a branch is back (Settings → "הצג במסך ראשי"); old hidden marks are cleared once
@@ -3169,8 +3179,9 @@ function arbRender(){
 // "איזור אימון" (Arbox custom field): one or more training places, saved to Arbox comma-separated ("נופית, רכיבת שבת C3US").
 // Add a place from the list, remove one with its ✕ – every change is written straight to Arbox (Arbox access code needed).
 // places renamed after athletes were already tagged with them in Arbox (15/11/2026: "ספורטן שחייה" + "ספורטן ריצה" → "ספורטן")
-function areaList(v){ const R={"ספורטן שחייה":"ספורטן","ספורטן ריצה":"ספורטן"};
-  return [...new Set(String(v||"").split(",").map(x=>x.trim()).filter(Boolean).map(x=>R[x]||x))]; }
+function areaList(v){ const P=["ספורטק פולג","בריכת החוף הירוק","פארק השלולית","הכביש הנטוש"];   // "נתניה/פולג" in Arbox / the sheet = all four Polag areas
+  const R={"ספורטן שחייה":"ספורטן","ספורטן ריצה":"ספורטן","נתניה/פולג":P,"פולג":P};
+  return [...new Set(String(v||"").split(",").map(x=>x.trim()).filter(Boolean).flatMap(x=>R[x]||x))]; }
 function areaChips(u){
   const names=cfg.locations.map(l=>l.name), L=areaList(u.area);
   return L.length?L.map(a=>{ const known=names.includes(a);
