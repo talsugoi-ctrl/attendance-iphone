@@ -628,7 +628,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · שם חדש: מרחב</div>
+  <div class="ver">גרסה 18/11/2026 · הרשמה נפתחת באזורים שלי</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -3521,6 +3521,7 @@ async function athLoad(force){
   athRender();
 }
 function athTab(t){
+  if(t==="sign"&&ATH.tab!=="sign"){ ATH.more=false; ATH.area=""; }   // every visit to sign-up starts with the athlete's own areas only
   ATH.tab=t; document.querySelectorAll("#athTabs button").forEach(b=>b.classList.toggle("on",b.dataset.t===t));
   $("athMine").hidden=t!=="mine"; $("athSign").hidden=t!=="sign"; $("athRep").hidden=t!=="rep"; $("ath").scrollTop=0;
   if(t==="rep"){ ATH.rep=null; athRepRender(); } else athRender();
