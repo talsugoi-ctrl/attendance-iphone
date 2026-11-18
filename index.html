@@ -628,7 +628,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · רישום לאימון · דוח היסטוריה למתאמן</div>
+  <div class="ver">גרסה 18/11/2026 · מרחבים במקום מרחבים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -725,13 +725,13 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
       <button class="icon-btn" id="schedReload" aria-label="טען מחדש">↻</button>
     </div>
     <div class="card">
-      <span class="lbl">סניף</span>
+      <span class="lbl">מרחב</span>
       <div class="seg" id="schedBranches" role="tablist"></div>
     </div>
     <button type="button" class="btn" id="schedEdit">✏️ עריכת מערכת האימונים</button>
     <div class="status" id="schedStatus"></div>
     <div id="schedOut"></div>
-    <p class="hint">האימונים הקבועים נשמרים בלשונית "מערכת אימונים" בגיליון של מורן – שם מוסיפים סניפים, אזורים ואימונים. אימונים שמסומנים Arbox נקראים ממערכת השעות של Arbox. "סמן נוכחות" ממלא מקום, סוג אימון, מאמן וזמן במסך הראשי.</p>
+    <p class="hint">האימונים הקבועים נשמרים בלשונית "מערכת אימונים" בגיליון של מורן – שם מוסיפים מרחבים, אזורים ואימונים. אימונים שמסומנים Arbox נקראים ממערכת השעות של Arbox. "סמן נוכחות" ממלא מקום, סוג אימון, מאמן וזמן במסך הראשי.</p>
   </div>
 </section>
 
@@ -739,7 +739,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
   <div class="rep-in">
     <div class="rep-head"><button class="icon-btn" id="edBack" aria-label="חזרה">→</button><h1 id="edTitle">עריכת מערכת אימונים</h1><button class="icon-btn" id="edReload" aria-label="טען מחדש">↻</button></div>
     <div class="hint">השינויים נשמרים בלשונית "מערכת אימונים" בגיליון, ומופיעים מיד אצל המאמנים והמתאמנים. אימונים שמנוהלים ב-Arbox עורכים ב-Arbox.</div>
-    <div class="card"><span class="lbl">סניף</span><div class="seg" id="edBranches"></div><span class="lbl">יום</span><div class="ed-days" id="edDays"></div></div>
+    <div class="card"><span class="lbl">מרחב</span><div class="seg" id="edBranches"></div><span class="lbl">יום</span><div class="ed-days" id="edDays"></div></div>
     <div class="status" id="edStatus"></div>
     <div id="edOut" style="display:flex;flex-direction:column;gap:8px"></div>
   </div>
@@ -849,7 +849,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
       <input type="search" id="arbSearch" placeholder="חיפוש שם / טלפון / מנוי…" autocomplete="off">
       <div class="row" style="margin-top:8px">
         <select id="arbFilter" class="tsel" style="flex:1"><option value="1">פעילים</option><option value="0">לא פעילים</option><option value="all">כולם</option></select>
-        <select id="arbLoc" class="tsel" style="flex:1"><option value="">כל הסניפים</option></select>
+        <select id="arbLoc" class="tsel" style="flex:1"><option value="">כל המרחבים</option></select>
       </div>
       <div class="chips" id="arbChips" style="margin-top:8px"></div>
       <div class="mg-list" id="arbList"></div>
@@ -858,10 +858,10 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div id="arbRep" hidden>
       <div class="card">
         <div class="seg" role="tablist">
-          <button type="button" class="on" data-r="loc">🏢 ספורטאים לפי סניף</button>
+          <button type="button" class="on" data-r="loc">🏢 ספורטאים לפי מרחב</button>
           <button type="button" data-r="prog">📋 ספורטאים לפי תוכנית</button>
         </div>
-        <div id="arbRepLocBox" hidden><label class="lbl" for="arbRepLoc">סניף</label><select id="arbRepLoc" class="tsel"></select></div>
+        <div id="arbRepLocBox" hidden><label class="lbl" for="arbRepLoc">מרחב</label><select id="arbRepLoc" class="tsel"></select></div>
       </div>
       <div id="arbRepOut" class="rep-out"></div>
       <a class="btn wa rep-fab" id="arbRepWa" target="_blank" rel="noopener">📤 שלח את הדוח בוואטסאפ</a>
@@ -914,10 +914,10 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
       </div>
     </div>
     </div></details>
-    <details class="sg" data-g="branches"><summary><span class="sg-ic" aria-hidden="true">🏟️</span><span class="sg-tt"><b>סניפים ומקומות אימון</b><small id="sgSum_branches"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
-      <div class="hint">המתג ליד כל סניף קובע אם הוא מוצג במסך הראשי. לחיצה על מספר המקומות פותחת אותם לעריכה.</div>
+    <details class="sg" data-g="branches"><summary><span class="sg-ic" aria-hidden="true">🏟️</span><span class="sg-tt"><b>מרחבים ומקומות אימון</b><small id="sgSum_branches"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
+      <div class="hint">המתג ליד כל מרחב קובע אם הוא מוצג במסך הראשי. לחיצה על מספר המקומות פותחת אותם לעריכה.</div>
       <div class="brcards" id="branchEditor"></div>
-      <button type="button" class="btn add-branch" id="addBranch">+ הוסף סניף</button>
+      <button type="button" class="btn add-branch" id="addBranch">+ הוסף מרחב</button>
     </div></details>
     <details class="sg" data-g="wa"><summary><span class="sg-ic" aria-hidden="true">💬</span><span class="sg-tt"><b>וואטסאפ ודיווחים</b><small id="sgSum_wa"></small></span><span class="sg-ch" aria-hidden="true">‹</span></summary><div class="sg-in">
       <div class="hint">לאן נשלחים דוח הנוכחות והדוחות. ב"חל על" כותבים שמות מאמנים ו/או מקומות אימון, מופרדים בפסיק. מאמן או מקום שלא מופיעים כאן – נשלח לברירת המחדל.</div>
@@ -1129,11 +1129,11 @@ function renderLocs(){
   const groups=new Map();
   const hidden=cfg.hiddenBranches||[];
   cfg.locations.forEach((l,i)=>{const k=l.branch||"";if(hidden.includes(k))return;if(!groups.has(k))groups.set(k,[]);groups.get(k).push(i);});
-  if(!groups.size){ const e=document.createElement("div"); e.className="hint"; e.textContent="לא נבחר אף סניף. סמן סניפים בהגדרות (⚙)."; box.appendChild(e); return; }
+  if(!groups.size){ const e=document.createElement("div"); e.className="hint"; e.textContent="לא נבחר אף מרחב. סמן מרחבים בהגדרות (⚙)."; box.appendChild(e); return; }
   groups.forEach((idxs,br)=>{
     const g=document.createElement("section"); g.className="branch";
     const active=idxs.includes(current); if(active) g.classList.add("active");
-    const h=document.createElement("h2"); h.className="branch-name"; h.textContent=br?"סניף "+br:"מקומות נוספים"; g.appendChild(h);
+    const h=document.createElement("h2"); h.className="branch-name"; h.textContent=br?"מרחב "+br:"מקומות נוספים"; g.appendChild(h);
     const row=document.createElement("div"); row.className="locs";
     idxs.forEach(i=>{
       const l=cfg.locations[i];
@@ -1648,7 +1648,7 @@ $("shareBtn").onclick=async()=>{
   catch(e){ if(e&&e.name!=="AbortError"){ $("shareHint").textContent="השיתוף לא זמין כאן – השתמש בכפתורי השליחה."; } }
 };
 function buildMessage(){
-  const L=cfg.locations[current], loc=L.name+(L.branch?` (סניף ${L.branch})`:"");
+  const L=cfg.locations[current], loc=L.name+(L.branch?` (מרחב ${L.branch})`:"");
   const chosen=allPeople().filter(p=>selected.has(p.name));
   const lines=chosen.map((p,i)=>`${i+1}. ${overInfo(p)?"📍 ":""}${p.name}${p.trial?" (ניסיון)":""}`);
   const nTrial=chosen.filter(p=>p.trial).length;
@@ -1816,9 +1816,9 @@ function renderBranchEditor(focus){
   draft.forEach((br,bi)=>{
     const card=el("section","brcard"+(br.show?"":" off"));
     const head=el("div","brhead");
-    const name=el("input","bname"); name.type="text"; name.value=br.name; name.placeholder="שם הסניף"; name.setAttribute("aria-label","שם הסניף");
+    const name=el("input","bname"); name.type="text"; name.value=br.name; name.placeholder="שם המרחב"; name.setAttribute("aria-label","שם המרחב");
     name.oninput=()=>{ br.name=name.value; };
-    const show=el("label","show"); const sc=el("input"); sc.type="checkbox"; sc.checked=br.show!==false; sc.setAttribute("aria-label","הצג את סניף "+(br.name||"")+" במסך הראשי");
+    const show=el("label","show"); const sc=el("input"); sc.type="checkbox"; sc.checked=br.show!==false; sc.setAttribute("aria-label","הצג את מרחב "+(br.name||"")+" במסך הראשי");
     sc.onchange=()=>{ br.show=sc.checked; card.classList.toggle("off",!sc.checked); }; show.append(sc,document.createTextNode("הצג במסך ראשי"));
     const cnt=el("button","brcount",`${br.locs.length} ${br.locs.length===1?"מקום":"מקומות"} ${br._open?"▴":"▾"}`); cnt.type="button"; cnt.setAttribute("aria-expanded",String(!!br._open));
     cnt.onclick=()=>{ br._open=!br._open; renderBranchEditor(); };
@@ -1826,7 +1826,7 @@ function renderBranchEditor(focus){
     head.append(name,show,cnt);
     card.appendChild(head);
     const list=el("div","brlocs");
-    if(!br.locs.length) list.appendChild(el("div","brempty","אין עדיין מקומות בסניף הזה."));
+    if(!br.locs.length) list.appendChild(el("div","brempty","אין עדיין מקומות במרחב הזה."));
     br.locs.forEach((l,li)=>{
       const row=el("div","lrow");
       const top=el("div","top");
@@ -1846,10 +1846,10 @@ function renderBranchEditor(focus){
     });
     card.appendChild(list);
     const foot=el("div","brfoot");
-    const add=el("button","addloc","+ הוסף מקום לסניף"); add.type="button";
+    const add=el("button","addloc","+ הוסף מקום למרחב"); add.type="button";
     add.onclick=()=>{ br._open=true; br.locs.push({name:"",tab:"",filter:""}); renderBranchEditor({b:bi,l:br.locs.length-1}); };
-    const delb=el("button","delbr","מחק סניף"); delb.type="button";
-    delb.onclick=()=>{ if(!delb.classList.contains("sure")){ delb.classList.add("sure"); delb.textContent="לחץ שוב למחיקה"; setTimeout(()=>{delb.classList.remove("sure");delb.textContent="מחק סניף";},3000); return; } draft.splice(bi,1); renderBranchEditor(); };
+    const delb=el("button","delbr","מחק מרחב"); delb.type="button";
+    delb.onclick=()=>{ if(!delb.classList.contains("sure")){ delb.classList.add("sure"); delb.textContent="לחץ שוב למחיקה"; setTimeout(()=>{delb.classList.remove("sure");delb.textContent="מחק מרחב";},3000); return; } draft.splice(bi,1); renderBranchEditor(); };
     foot.append(add,delb); card.appendChild(foot);
     box.appendChild(card);
     if(focus&&focus.b===bi&&focus.branch) setTimeout(()=>name.focus(),0);
@@ -1892,7 +1892,7 @@ function setupSums(){
   const sum=(k,t)=>{ const e=$("sgSum_"+k); if(e) e.textContent=t; };
   const nb=draft.length, nl=draft.reduce((a,b)=>a+b.locs.length,0), hid=draft.filter(b=>b.show===false).length;
   sum("tools","ספורטאים · Arbox · גיליון · עדכון · התקנה · רישום לאימון");
-  sum("branches",`${nb} סניפים · ${nl} מקומות${hid?` · ${hid} מוסתרים`:""}`);
+  sum("branches",`${nb} מרחבים · ${nl} מקומות${hid?` · ${hid} מוסתרים`:""}`);
   const rn=waRulesRead().length; sum("wa",`ברירת מחדל: ${$("waName").value.trim()||fmtPhone($("waPhone").value)}${rn?` · ${rn===1?"עוד כלל אחד":rn+" כללים"}`:""}`);
   sum("emg",`איש קשר: ${$("emgClubNameIn").value.trim()||"—"} · חוף: ${waDigits($("emgBeachPhoneIn").value).length>=9?($("emgBeachNameIn").value.trim()||"הוגדר"):"לא הוגדר"}`);
   sum("coaches",`${coachList().length} מאמנים ברשימה`);
@@ -2156,10 +2156,10 @@ const REPORTS=[
   {id:"exc",icon:"⚠️",title:"דוח חריגים",desc:"מעבר למכסה, אימון ניסיון, ואימונים שלא כלולים במנוי",period:"week",extra:"exc"},
   {id:"ath",icon:"🏅",title:"דוח ספורטאי",desc:"לאילו אימונים ספורטאי הגיע ועל מה הוא משלם",period:"month",extra:"athlete"},
   {id:"map",icon:"🗺️",title:"מפת מיקומי אימון",desc:"מפת ישראל עם נקודה אדומה בכל מקום אימון שנשמר לו מיקום",period:null,extra:"locs"},
-  {id:"locs",icon:"📍",title:"שמור / הגדר מיקום אימון (גאוגרפי)",desc:"מיקום כל מקום אימון לפי סניף – שמירה מה-GPS, ניווט ושליחה בוואטסאפ",period:null,extra:"locs"},
+  {id:"locs",icon:"📍",title:"שמור / הגדר מיקום אימון (גאוגרפי)",desc:"מיקום כל מקום אימון לפי מרחב – שמירה מה-GPS, ניווט ושליחה בוואטסאפ",period:null,extra:"locs"},
   {id:"ses",icon:"📋",title:"דוח אימון",desc:"אימון אחד לפי תאריך ומקום – מאמן, מי נכח, מי לא הגיע וחריגים",period:null,extra:"ses"},
-  {id:"pie",icon:"🥧",title:"נוכחות לפי מקום",desc:"כמה מהרשומים הגיעו – לפי מקום או סניף, ומי לא הגיע",period:"month",extra:"branch"},
-  {id:"bday",icon:"🎂",title:"ימי הולדת",desc:"ימי הולדת החודש – לפי סניף או כל המועדון, וחיפוש ספורטאי",period:null,extra:"bday"}
+  {id:"pie",icon:"🥧",title:"נוכחות לפי מקום",desc:"כמה מהרשומים הגיעו – לפי מקום או מרחב, ומי לא הגיע",period:"month",extra:"branch"},
+  {id:"bday",icon:"🎂",title:"ימי הולדת",desc:"ימי הולדת החודש – לפי מרחב או כל המועדון, וחיפוש ספורטאי",period:null,extra:"bday"}
 ];
 
 function openReports(){
@@ -2185,22 +2185,22 @@ function openReport(id){
   const ex=$("repExtra"); ex.innerHTML="";
   if(r.extra==="branch"){
     const branches=[...new Set(cfg.locations.map(l=>l.branch||""))];
-    ex.innerHTML=`<label class="lbl" for="repBranch">מקום</label><select id="repBranch" class="tsel">${branches.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${
+    ex.innerHTML=`<label class="lbl" for="repBranch">מקום</label><select id="repBranch" class="tsel">${branches.map(b=>`<optgroup label="${esc(b?"מרחב "+b:"ללא מרחב")}">${
       cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option value="l:${esc(l.name)}">${esc(l.name)}</option>`).join("")
-    }<option value="b:${esc(b)}">כל ${esc(b?"סניף "+b:"המקומות")}</option></optgroup>`).join("")}</select>`;
+    }<option value="b:${esc(b)}">כל ${esc(b?"מרחב "+b:"המקומות")}</option></optgroup>`).join("")}</select>`;
   } else if(r.extra==="athlete"){
     ex.innerHTML=`<label class="lbl" for="repAth">ספורטאי</label><input id="repAth" class="tsel" list="repAthList" placeholder="הקלד שם…" autocomplete="off"><datalist id="repAthList"></datalist>`;
   } else if(r.extra==="coach"){
     ex.innerHTML=`<label class="lbl" for="repCoach">מאמן</label><select id="repCoach" class="tsel"></select>`;
   } else if(r.extra==="locs"){
     const brs=[...new Set(cfg.locations.map(l=>l.branch||""))].filter(Boolean), myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
-    ex.innerHTML=`<label class="lbl" for="locBr">סניף</label><select id="locBr" class="tsel"><option value="">כל הסניפים</option>${brs.map(b=>`<option${b===myBr&&r.id!=="map"?" selected":""}>${esc(b)}</option>`).join("")}</select>`;   // the map opens on all of Israel
+    ex.innerHTML=`<label class="lbl" for="locBr">מרחב</label><select id="locBr" class="tsel"><option value="">כל המרחבים</option>${brs.map(b=>`<option${b===myBr&&r.id!=="map"?" selected":""}>${esc(b)}</option>`).join("")}</select>`;   // the map opens on all of Israel
   } else if(r.extra==="ses"){
     const pre=REP.sesPreset||{}; REP.sesPreset=null; REP.sesId=pre.id||null;
     const curL=(cfg.locations[current!=null?current:0]||{}).name||"", L0=pre.loc||curL;
     const brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
     ex.innerHTML=`<label class="lbl" for="sesDate">תאריך האימון</label><input type="date" id="sesDate" value="${esc(pre.iso||todayISO())}">
-      <label class="lbl" for="sesLoc" style="margin-top:8px">מקום</label><select id="sesLoc" class="tsel">${brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option${l.name===L0?" selected":""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("")}</select>
+      <label class="lbl" for="sesLoc" style="margin-top:8px">מקום</label><select id="sesLoc" class="tsel">${brs.map(b=>`<optgroup label="${esc(b?"מרחב "+b:"ללא מרחב")}">${cfg.locations.filter(l=>(l.branch||"")===b).map(l=>`<option${l.name===L0?" selected":""}>${esc(l.name)}</option>`).join("")}</optgroup>`).join("")}</select>
       <div id="sesPickBox" hidden><label class="lbl" for="sesPick" style="margin-top:8px">אימון</label><select id="sesPick" class="tsel"></select></div>`;
     $("sesPick").addEventListener("change",()=>{ REP.sesId=$("sesPick").value; });
   } else if(r.extra==="exc"){
@@ -2210,7 +2210,7 @@ function openReport(id){
     const m0=new Date().getMonth()+1, myBr=(cfg.locations[current!=null?current:0]||{}).branch||"";
     ex.innerHTML=`<label class="lbl" for="bdMonth">חודש</label><select id="bdMonth" class="tsel">${HEB_M.map((m,i)=>`<option value="${i+1}"${i+1===m0?" selected":""}>${m}</option>`).join("")}</select>
       <div class="bd-scope" role="radiogroup" aria-label="היקף">
-        <label><input type="radio" name="bdScope" value="br" checked> לפי סניף</label>
+        <label><input type="radio" name="bdScope" value="br" checked> לפי מרחב</label>
         <label><input type="radio" name="bdScope" value="all"> כל המועדון</label>
         <label><input type="radio" name="bdScope" value="staff"> מאמנים</label>
       </div>
@@ -2288,11 +2288,11 @@ function repExceptions(){
   if(!list.length){ RT.push("אין חריגים בתקופה הזו ✓"); return `<div class="rep-empty">אין חריגים בתקופה הזו ✓</div>`; }
   RT.push(`${list.length} ספורטאים · ${cnt("over")} מעבר למכסה · ${cnt("unpaid")} לא כלול / לא רשום · ${cnt("trial")} ניסיון`);
   list.forEach(a=>{ const ph=phoneOf(a.name), br=[...a.branches].filter(Boolean);
-    RT.push("",`*${a.name}*${ph?" – "+ph:""}${br.length?" (סניף "+br.join(", ")+")":""}`);
+    RT.push("",`*${a.name}*${ph?" – "+ph:""}${br.length?" (מרחב "+br.join(", ")+")":""}`);
     a.items.slice().sort((x,y)=>x.r.key-y.r.key).forEach(i=>RT.push(`• ${i.r.date.slice(0,5)} ${i.r.loc}${i.r.type?" · "+i.r.type:""} – ${i.why.map(w=>w.t).join(", ")}`)); });
   return `<div class="chips"><span class="chip">${list.length} ספורטאים</span><span class="chip red">${cnt("over")} מעבר למכסה</span><span class="chip amber">${cnt("unpaid")} לא כלול / לא רשום</span><span class="chip blue">${cnt("trial")} ניסיון</span></div>`+
     list.map(a=>`<section class="rep-card"><div class="rc-head"><b>${esc(a.name)}</b><span>${telLink(phoneOf(a.name))}</span></div>
-      <div class="rc-sub">${[...a.branches].filter(Boolean).map(b=>"סניף "+esc(b)).join(", ")}</div>
+      <div class="rc-sub">${[...a.branches].filter(Boolean).map(b=>"מרחב "+esc(b)).join(", ")}</div>
       <ul class="rc-list">${a.items.sort((x,y)=>x.r.key-y.r.key).map(i=>`<li><span class="d">${dayName(i.r.date)} ${esc(i.r.date.slice(0,5))}</span> ${esc(i.r.loc)}${i.r.type?" · "+esc(i.r.type):""}
         <div class="tags">${i.why.map(w=>`<span class="tag ${w.k}">${esc(w.t)}</span>`).join("")}</div></li>`).join("")}</ul></section>`).join("")+
     `<p class="hint">"לא כלול במנוי" – סוג האימון לא מופיע בטקסט המנוי (למשל מנוי שחייה שהגיע לריצה). "אין מנוי פעיל" – במנוי כתוב לא רשום / עזב / הקפאה. מנוי טריאתלון / תכנית אישית / מנוי בלי סוג – לא מסומן.</p>`;
@@ -2317,7 +2317,7 @@ function repPie(){
   const locs=isB?cfg.locations.filter(l=>(l.branch||"")===br).map(l=>l.name):[br];
   const rows=inPeriod(REP.log).filter(r=>locs.includes(r.loc));
   const held=locs.filter(l=>rows.some(r=>r.loc===l));            // only places where a training actually took place
-  if(!held.length){ RT.push(`לא התקיימו אימונים מדווחים ${isB?"בסניף "+br:"ב"+br} בתקופה הזו.`); return `<div class="rep-empty">לא התקיימו אימונים מדווחים ${isB?"בסניף "+esc(br):"ב"+esc(br)} בתקופה הזו.</div>`; }
+  if(!held.length){ RT.push(`לא התקיימו אימונים מדווחים ${isB?"במרחב "+br:"ב"+br} בתקופה הזו.`); return `<div class="rep-empty">לא התקיימו אימונים מדווחים ${isB?"במרחב "+esc(br):"ב"+esc(br)} בתקופה הזו.</div>`; }
   const pt=[], mt=[];
   let a=0, tot=0, visitors=0;
   const per=[], missing=[];
@@ -2335,7 +2335,7 @@ function repPie(){
     if(ms.length) missing.push(`<h3 class="rep-h3">${esc(l)} (${ms.length})</h3><ul class="rc-list miss">${ms.map(p=>`<li>${esc(p.name)} <span>${telLink(p.phone)}</span></li>`).join("")}</ul>`);
   });
   const b=tot-a, pct=n=>tot?Math.round(n/tot*100)+"%":"—";
-  RT.push(`מקום: ${isB?"כל סניף "+br:br}`,`✅ הגיעו לפחות פעם אחת: ${a} מתוך ${tot} (${pct(a)})`,`❌ לא הגיעו: ${b} (${pct(b)})`,"",...pt);
+  RT.push(`מקום: ${isB?"כל מרחב "+br:br}`,`✅ הגיעו לפחות פעם אחת: ${a} מתוך ${tot} (${pct(a)})`,`❌ לא הגיעו: ${b} (${pct(b)})`,"",...pt);
   if(mt.length) RT.push("",`*לא הגיעו בתקופה (${b}):*`,...mt);
   return `<div class="pie-wrap">${pieSVG(a,b)}<div class="legend">
       <div><i style="background:var(--ok)"></i>הגיעו לפחות פעם אחת: <b>${a}</b> (${pct(a)})</div>
@@ -2351,7 +2351,7 @@ function repAthlete(){
   if(!n) return `<p class="hint">בחר ספורטאי מהרשימה (הקלד כמה אותיות).</p>`;
   const subs=REP.roster.filter(p=>p.name===n), rows=inPeriod(REP.log).filter(r=>r.name===n).sort((a,b)=>a.key-b.key);
   if(!subs.length&&!REP.log.some(r=>r.name===n)) return `<p class="hint">לא נמצא ספורטאי בשם "${esc(n)}".</p>`;
-  const subHtml=subs.length?subs.map(p=>`<li><b>${esc(p.loc)}</b>${p.branch?` (סניף ${esc(p.branch)})`:""}: ${esc(p.sub||"—")}${quotaOf(p.sub)?` · מכסה: ${quotaWords(quotaOf(p.sub))}`:""}</li>`).join(""):`<li>לא רשום באף מקום (הגיע לניסיון או שם שונה ברישום)</li>`;
+  const subHtml=subs.length?subs.map(p=>`<li><b>${esc(p.loc)}</b>${p.branch?` (מרחב ${esc(p.branch)})`:""}: ${esc(p.sub||"—")}${quotaOf(p.sub)?` · מכסה: ${quotaWords(quotaOf(p.sub))}`:""}</li>`).join(""):`<li>לא רשום באף מקום (הגיע לניסיון או שם שונה ברישום)</li>`;
   const weeks=new Map(); rows.forEach(r=>{ const w=r.week||""; if(!weeks.has(w)) weeks.set(w,[]); weeks.get(w).push(r); });
   const q=Math.max(0,...subs.map(p=>quotaOf(p.sub)));
   RT.push(`*${n}*${phoneOf(n)?" – "+phoneOf(n):""}`,...(subs.length?subs.map(p=>`מנוי ב${p.loc}: ${p.sub||"—"}${quotaOf(p.sub)?` (מכסה: ${quotaWords(quotaOf(p.sub))})`:""}`):["לא רשום באף מקום"]),
@@ -2371,7 +2371,7 @@ function bdBranches(u){
   const names=arbSplit(u.name), bs=new Set();
   cfg.locations.forEach(l=>{ if(SHEET_ONLY.test(l.name)) return;
     if(arbInLoc(u,l)||names.some(n=>ARB_PIN_LOC[n]===l.name||(ARB_EXTRA_LOC[l.name]||[]).includes(n))) bs.add(l.branch||""); });
-  if(!bs.size) bs.add(u.location||"ללא סניף");
+  if(!bs.size) bs.add(u.location||"ללא מרחב");
   return [...bs];
 }
 function repBday(){
@@ -2397,7 +2397,7 @@ function repBday(){
   const isStaff=mode==="staff"&&!q, showBr=(mode==="all"&&!q)||!!q;
   if(q){ list=people.filter(p=>p.name.includes(q)); REP.bdLabel=`חיפוש: ${q}`; }
   else { list=(isStaff?staffBd:athletes).filter(p=>+p.bd.slice(0,2)===mon&&(mode!=="br"||p.br.includes(br)));
-    REP.bdLabel=`${HEB_M[mon-1]} ${yr} · ${isStaff?"מאמנים":mode==="all"?"כל המועדון":"סניף "+br}`; }
+    REP.bdLabel=`${HEB_M[mon-1]} ${yr} · ${isStaff?"מאמנים":mode==="all"?"כל המועדון":"מרחב "+br}`; }
   list.sort((a,b)=>a.bd.localeCompare(b.bd)||a.name.localeCompare(b.name,"he"));
   const dm=bd=>`${bd.slice(3,5)}/${bd.slice(0,2)}`, wd=bd=>dayName(`${bd.slice(3,5)}/${bd.slice(0,2)}/${yr}`);
   const brTxt=p=>p.staff?"צוות":p.br.join(", ");
@@ -2408,7 +2408,7 @@ function repBday(){
   RT.push(...list.map(p=>`• ${dm(p.bd)}${p.bd===todayMD?" 🎉 היום":""} – ${p.name}${p.age?` (${p.age})`:""}${p.staff&&!isStaff&&!showBr?" · צוות":""}${showBr?" · "+brTxt(p):""}`));
   const today=list.filter(p=>p.bd===todayMD).length;
   return `<div class="chips"><span class="chip">🎂 ${list.length} ימי הולדת</span>${today?`<span class="chip blue">🎉 ${today} היום</span>`:""}</div>
-    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${showBr?"<th>סניף</th>":""}<th>טלפון</th></tr></thead><tbody>
+    <div class="tw"><table class="rtable"><thead><tr><th>תאריך</th><th>שם</th>${showBr?"<th>מרחב</th>":""}<th>טלפון</th></tr></thead><tbody>
     ${list.map(p=>`<tr${p.bd===todayMD?' class="bd-today"':""}><td>${esc(dm(p.bd))} <small style="color:var(--muted)">${esc(wd(p.bd))}</small>${p.bd===todayMD?" 🎉":""}</td><td>${esc(p.name)}${p.age?` <small style="color:var(--muted)">(${p.age})</small>`:""}${p.staff&&!isStaff&&!showBr?' <small style="color:var(--muted)">· צוות</small>':""}</td>${showBr?`<td>${esc(brTxt(p))}</td>`:""}<td>${p.phone?telLink(p.phone):""}</td></tr>`).join("")}</tbody></table></div>
     <p class="hint">מתוך Arbox · בסוגריים – הגיל שחוגגים השנה. ${missTxt}${isStaff?"":" חשבון משפחתי מופיע בשם החשבון."} 🔒 הדוח זמין רק עם קוד הגישה ל-Arbox.</p>`;
 }
@@ -2439,7 +2439,7 @@ function repSession(){
     return {r,ent,tags,phone:(ent&&ent.phone)||phoneOf(r.name)}; });
   const attNames=new Set(rs.map(r=>r.name)), came=reg.filter(p=>attNames.has(p.name)).length, miss=reg.filter(p=>!attNames.has(p.name));
   const trials=att.filter(a=>a.r.trial).length, exc=att.filter(a=>a.tags.some(t=>t.k!=="trial")).length;
-  const info=[r0.type?`${TYPE_ICON[r0.type]||"🏅"} ${r0.type}`:"",r0.coach?`מאמן: ${r0.coach}`:"",r0.dur?durWords(r0.dur):"",loc.branch?`סניף ${loc.branch}`:""].filter(Boolean);
+  const info=[r0.type?`${TYPE_ICON[r0.type]||"🏅"} ${r0.type}`:"",r0.coach?`מאמן: ${r0.coach}`:"",r0.dur?durWords(r0.dur):"",loc.branch?`מרחב ${loc.branch}`:""].filter(Boolean);
   RT.push(info.join(" · "),`✅ נכחו: ${rs.length}${trials?` (מהם ${trials} ניסיון)`:""} · הגיעו ${ofTxt(came,reg.length)} מהרשומים`,"",`*נכחו (${rs.length}):*`,
     ...att.map((a,i)=>`${i+1}. ${a.r.name}${a.tags.length?" – "+a.tags.map(t=>t.t).join(", "):""}`));
   if(miss.length) RT.push("",`*לא הגיעו (${miss.length}):*`,...miss.map((p,i)=>`${i+1}. ${p.name}${p.phone?" – "+p.phone:""}`));
@@ -2488,16 +2488,16 @@ async function locsLoad(force){
   return LOCS.loading;
 }
 function locOf(name){ const r=(LOCS.rows||[]).find(x=>x.place===name); return r&&isFinite(r.lat)&&isFinite(r.lng)?r:null; }
-function locMsg(l,p){ return `📍 *${l.name}*${l.branch?` (סניף ${l.branch})`:""}${p.note?`\n${p.note}`:""}\nGoogle Maps: ${gmaps(p)}\nWaze: ${waze(p)}`; }
+function locMsg(l,p){ return `📍 *${l.name}*${l.branch?` (מרחב ${l.branch})`:""}${p.note?`\n${p.note}`:""}\nGoogle Maps: ${gmaps(p)}\nWaze: ${waze(p)}`; }
 function repLocs(){
   if(!LOCS.rows){ locsLoad(false).then(()=>{ if(REP.cur&&REP.cur.id==="locs") runReport(); }); REP.locLabel=""; return `<p class="hint">טוען מיקומים…</p>`; }
   const br=$("locBr").value, locs=cfg.locations.filter(l=>!br||(l.branch||"")===br), brs=[...new Set(locs.map(l=>l.branch||""))];
-  REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
+  REP.locLabel=br?`מרחב ${br}`:"כל המרחבים";
   const saved=locs.filter(l=>locOf(l.name)).length;
   RT.push(...locs.filter(l=>locOf(l.name)).map(l=>locMsg(l,locOf(l.name))+"\n"));
   if(!saved) RT.length=0;
   let html=`<div class="chips"><span class="chip">📍 ${saved} מתוך ${locs.length} מקומות עם מיקום שמור</span></div>`;
-  brs.forEach(b=>{ html+=`<h2 class="rep-h2">${esc(b?"סניף "+b:"ללא סניף")}</h2>`;
+  brs.forEach(b=>{ html+=`<h2 class="rep-h2">${esc(b?"מרחב "+b:"ללא מרחב")}</h2>`;
     locs.filter(l=>(l.branch||"")===b).forEach(l=>{ const p=locOf(l.name), i=cfg.locations.indexOf(l);
       html+=`<section class="rep-card loc-card"><div class="rc-head"><b>${esc(l.name)}</b><span>${p?"✅ שמור":"— אין מיקום"}</span></div>
         ${p?`<div class="rc-sub">${p.acc?`דיוק ${distTxt(Math.round(p.acc))} · `:""}${p.at?`עודכן ${esc(p.at)}`:""}${p.by?` ע"י ${esc(p.by)}`:""}</div>${p.note?`<div class="rc-sub">📝 ${esc(p.note)}</div>`:""}`:""}
@@ -2508,7 +2508,7 @@ function repLocs(){
         </div></section>`; }); });
   setTimeout(()=>{ document.querySelectorAll("#repOut [data-save]").forEach(b=>b.onclick=()=>locSaveStart(cfg.locations[+b.dataset.save]));
     document.querySelectorAll("#repOut [data-note]").forEach(b=>b.onclick=()=>locNoteStart(cfg.locations[+b.dataset.note])); },0);
-  return html+`<p class="hint">"שמור מיקום כאן" לוקח את המיקום הנוכחי של הטלפון (GPS) – עומדים במקום האימון. לפני כל שמירה או החלפה מופיע מסך אישור. "שלח את הדוח בוואטסאפ" שולח את כל המקומות השמורים בסניף.</p>`;
+  return html+`<p class="hint">"שמור מיקום כאן" לוקח את המיקום הנוכחי של הטלפון (GPS) – עומדים במקום האימון. לפני כל שמירה או החלפה מופיע מסך אישור. "שלח את הדוח בוואטסאפ" שולח את כל המקומות השמורים במרחב.</p>`;
 }
 // 7b) map of the saved training locations (Leaflet + OpenStreetMap, loaded only when the report opens)
 let LEAF=null, LMAP=null;
@@ -2541,7 +2541,7 @@ const kindDot=k=>`<span class="map-dot" style="background:${MAP_KINDS[k].c}" ari
 function repMap(){
   if(!LOCS.rows){ locsLoad(false).then(()=>{ if(REP.cur&&REP.cur.id==="map") runReport(); }); REP.locLabel=""; return `<p class="hint">טוען מיקומים…</p>`; }
   const br=$("locBr").value, locs=cfg.locations.filter(l=>!br||(l.branch||"")===br);
-  REP.locLabel=br?`סניף ${br}`:"כל הסניפים";
+  REP.locLabel=br?`מרחב ${br}`:"כל המרחבים";
   const pts=locs.map(l=>({l,p:locOf(l.name),k:placeKind(l)})).filter(x=>x.p), miss=locs.filter(l=>!locOf(l.name));
   const kc={}; pts.forEach(x=>{ kc[x.k]=(kc[x.k]||0)+1; });
   RT.push(...pts.map(x=>locMsg(x.l,x.p)+"\n"));
@@ -2553,7 +2553,7 @@ function repMap(){
     <div class="map-add"><button type="button" class="btn${REP.mapAdd?" primary":""}" id="mapAddBtn">${REP.mapAdd?"✕ ביטול הוספה":"📍 הוספת מיקום על המפה"}</button>
       ${REP.mapAdd?`<span class="map-add-hint">הקש על המפה בנקודה של מקום האימון (אפשר להגדיל קודם עם +)</span>`:""}</div>
     <div id="locMap" class="loc-map${REP.mapAdd?" adding":""}" dir="ltr" role="region" aria-label="מפת מקומות האימון"><p class="hint" style="padding:12px">טוען מפה…</p></div>
-    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<div class="map-row"><button type="button" class="map-li" data-i="${i}">${kindDot(x.k)}<b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"סניף "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button><select class="map-kind" data-i="${i}" aria-label="סוג אימון ב${esc(x.l.name)}"><option value=""${x.p.kind?"":" selected"}>סוג: אוטומטי</option>${Object.keys(KIND_HE).map(t=>`<option${x.p.kind===t?" selected":""}>${t}</option>`).join("")}</select><a class="waze-go" href="${esc(waze(x.p))}" target="_blank" rel="noopener" aria-label="נווט ב-Waze אל ${esc(x.l.name)}">🚗 נווט ב-Waze</a></div>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום בסניף הזה":"לאף מקום אימון"}.</p>`}
+    ${pts.length?`<div class="map-list">${pts.map((x,i)=>`<div class="map-row"><button type="button" class="map-li" data-i="${i}">${kindDot(x.k)}<b>${esc(x.l.name)}</b><small>${esc(x.l.branch?"מרחב "+x.l.branch:"")}${x.p.note?" · "+esc(x.p.note):""}</small></button><select class="map-kind" data-i="${i}" aria-label="סוג אימון ב${esc(x.l.name)}"><option value=""${x.p.kind?"":" selected"}>סוג: אוטומטי</option>${Object.keys(KIND_HE).map(t=>`<option${x.p.kind===t?" selected":""}>${t}</option>`).join("")}</select><a class="waze-go" href="${esc(waze(x.p))}" target="_blank" rel="noopener" aria-label="נווט ב-Waze אל ${esc(x.l.name)}">🚗 נווט ב-Waze</a></div>`).join("")}</div>`:`<p class="hint">עדיין לא נשמר מיקום ${br?"לאף מקום במרחב הזה":"לאף מקום אימון"}.</p>`}
     ${miss.length?`<p class="hint">בלי מיקום: ${miss.map(l=>esc(l.name)).join(", ")}. שומרים מיקום בדוח "📍 שמור / הגדר מיקום אימון" ← "שמור מיקום כאן" (עומדים במקום האימון).</p>`:""}`;
 }
 async function mapDraw(pts,zoomIn){
@@ -2567,7 +2567,7 @@ async function mapDraw(pts,zoomIn){
   const marks=pts.map(x=>{
     const mk=L.circleMarker([x.p.lat,x.p.lng],{radius:9,color:"#ffffff",weight:2,fillColor:MAP_KINDS[x.k||"pool"].c,fillOpacity:1}).addTo(m);
     mk.bindTooltip(x.l.name,{direction:"top",offset:[0,-8],className:"map-tip"});
-    mk.bindPopup(`<div dir="rtl" style="text-align:right"><b>${esc(x.l.name)}</b>${x.l.branch?`<br>סניף ${esc(x.l.branch)}`:""}${x.p.note?`<br>📝 ${esc(x.p.note)}`:""}<br><a href="${esc(gmaps(x.p))}" target="_blank" rel="noopener">Google Maps</a> · <a href="${esc(waze(x.p))}" target="_blank" rel="noopener">Waze</a></div>`);
+    mk.bindPopup(`<div dir="rtl" style="text-align:right"><b>${esc(x.l.name)}</b>${x.l.branch?`<br>מרחב ${esc(x.l.branch)}`:""}${x.p.note?`<br>📝 ${esc(x.p.note)}`:""}<br><a href="${esc(gmaps(x.p))}" target="_blank" rel="noopener">Google Maps</a> · <a href="${esc(waze(x.p))}" target="_blank" rel="noopener">Waze</a></div>`);
     return mk; });
   const fit=()=>{ if(pts.length>1) m.fitBounds(L.latLngBounds(pts.map(x=>[x.p.lat,x.p.lng])),{padding:[28,28],maxZoom:15});   // tightest view that still shows every dot
     else if(pts.length) m.setView([pts[0].p.lat,pts[0].p.lng],14); else m.fitBounds(ISRAEL); };
@@ -2619,7 +2619,7 @@ function mapAddAt(m,ll){
   if(MAPTMP){ try{ MAPTMP.remove(); }catch(_){} }
   MAPTMP=L.circleMarker([p.lat,p.lng],{radius:10,color:"#ffffff",weight:3,fillColor:"#2f6fdb",fillOpacity:1}).addTo(m);
   const brs=[...new Set(cfg.locations.map(l=>l.branch||""))], myBr=$("locBr").value;
-  const opts=brs.sort((a,b)=>(b===myBr)-(a===myBr)).map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.map((l,i)=>[l,i]).filter(([l])=>(l.branch||"")===b)
+  const opts=brs.sort((a,b)=>(b===myBr)-(a===myBr)).map(b=>`<optgroup label="${esc(b?"מרחב "+b:"ללא מרחב")}">${cfg.locations.map((l,i)=>[l,i]).filter(([l])=>(l.branch||"")===b)
     .map(([l,i])=>`<option value="${i}">${esc(l.name)}${locOf(l.name)?" (יש מיקום – יוחלף)":""}</option>`).join("")}</optgroup>`).join("");
   locDialog({title:"מיקום חדש על המפה", ok:"שמור מיקום", done:"המיקום נשמר ✓", note:"",
     payload:{lat:p.lat,lng:p.lng,acc:0},
@@ -2758,7 +2758,7 @@ function schRender(){
   // Arbox sessions: this coming week (today … +6), by weekday
   const arb=(SCH.arb||[]).filter(s=>s.branch===SCH.br).map(s=>{ const d=new Date(s.date+"T00:00"); return Object.assign({},s,{day:d.getDay(),arbox:true}); });
   const all=fixed.concat(arb);
-  if(!all.length){ $("schedOut").innerHTML=`<div class="rep-empty">אין עדיין אימונים לסניף ${esc(SCH.br)}.<br><small>מוסיפים שורות בלשונית "${SCH_TAB}" בגיליון.</small></div>`; return; }
+  if(!all.length){ $("schedOut").innerHTML=`<div class="rep-empty">אין עדיין אימונים למרחב ${esc(SCH.br)}.<br><small>מוסיפים שורות בלשונית "${SCH_TAB}" בגיליון.</small></div>`; return; }
   let html="";
   for(let k=0;k<7;k++){ const day=(td+k)%7;            // the week starting today
     const date=new Date(today); date.setDate(today.getDate()+k);
@@ -2949,7 +2949,7 @@ async function mgLoad(force){
 }
 function locOptions(sel,selected){
   const brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
-  sel.innerHTML=brs.map(b=>`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${cfg.locations.map((l,i)=>[l,i]).filter(([l])=>(l.branch||"")===b).map(([l,i])=>`<option value="${i}">${esc(l.name)}</option>`).join("")}</optgroup>`).join("");
+  sel.innerHTML=brs.map(b=>`<optgroup label="${esc(b?"מרחב "+b:"ללא מרחב")}">${cfg.locations.map((l,i)=>[l,i]).filter(([l])=>(l.branch||"")===b).map(([l,i])=>`<option value="${i}">${esc(l.name)}</option>`).join("")}</optgroup>`).join("");
   sel.value=String(selected);
 }
 function openMgr(){
@@ -3150,7 +3150,7 @@ function arbRender(){
   const act=all.filter(u=>u.active).length;
   arbStatus(`${all.length} ספורטאים ב-Arbox · ${act} פעילים · ${all.length-act} לא פעילים`);
   const lsel=$("arbLoc"), lv=lsel.value, locs=[...new Set(all.map(arbBranch).filter(Boolean))].sort();
-  if(lsel.options.length!==locs.length+1){ lsel.innerHTML=`<option value="">כל הסניפים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); lsel.value=lv; }
+  if(lsel.options.length!==locs.length+1){ lsel.innerHTML=`<option value="">כל המרחבים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); lsel.value=lv; }
   let list=all.filter(u=>(f==="all"||(f==="1")===u.active)&&(!lsel.value||arbBranch(u)===lsel.value));
   if(q) list=list.filter(u=>u.name.includes(q)||(qd&&(u.phone+u.phone2).replace(/\D/g,"").includes(qd))||u.memberships.some(m=>m.name.includes(q))||(u.notes||"").includes(q)||(u.area||"").includes(q));
   list.sort((a,b)=>a.name.localeCompare(b.name,"he"));
@@ -3181,7 +3181,7 @@ function areaOptions(cur){
   const L=areaList(cur), brs=[...new Set(cfg.locations.map(l=>l.branch||""))];
   return `<option value="" selected>${L.length?"+ הוסף מקום נוסף…":"+ בחר מקום אימון…"}</option>`+brs.map(b=>{
     const ls=cfg.locations.filter(l=>(l.branch||"")===b&&!L.includes(l.name));
-    return ls.length?`<optgroup label="${esc(b?"סניף "+b:"ללא סניף")}">${ls.map(l=>`<option value="${esc(l.name)}">${esc(l.name)}</option>`).join("")}</optgroup>`:""; }).join("");
+    return ls.length?`<optgroup label="${esc(b?"מרחב "+b:"ללא מרחב")}">${ls.map(l=>`<option value="${esc(l.name)}">${esc(l.name)}</option>`).join("")}</optgroup>`:""; }).join("");
 }
 // where the athlete shows up in the app, and where that comes from: the Arbox "איזור אימון" field, the Arbox membership
 // (program name), a hand pin in the app, or a registration tab in Moran's sheet
@@ -3281,21 +3281,21 @@ function arbRepRender(){
   const out=$("arbRepOut"), today=new Date().toLocaleDateString("he-IL");
   if(arbRepKind==="loc"){
     $("arbRepLocBox").hidden=true;
-    const c={}; act.forEach(u=>{ const k=arbBranch(u)||"ללא סניף"; c[k]=(c[k]||0)+1; });
+    const c={}; act.forEach(u=>{ const k=arbBranch(u)||"ללא מרחב"; c[k]=(c[k]||0)+1; });
     const rows=Object.entries(c).sort((a,b)=>b[1]-a[1]);
-    out.innerHTML=`<p class="rep-period">נכון ל־${today} · ספורטאים פעילים ב-Arbox</p><div class="rep-total">סה״כ ${act.length} ספורטאים פעילים ב־${rows.length} סניפים</div>`+hbars(rows,act.length)+`<p class="hint">עמק יזרעאל לא מוגדר כסניף ב-Arbox (רשום שם תחת "נתניה והשרון הצפוני"). האפליקציה משייכת לעמק יזרעאל לפי שם התוכנית: ציפורי, נופית, שמשית או קריטריום.</p>`+
-      `<div class="tw"><table class="rtable"><thead><tr><th>סניף</th><th>פעילים</th><th>%</th></tr></thead><tbody>${rows.map(([l,n])=>`<tr><td>${esc(l)}</td><td>${n}</td><td>${Math.round(n/act.length*100)}%</td></tr>`).join("")}<tr><td><b>סה״כ</b></td><td><b>${act.length}</b></td><td>100%</td></tr></tbody></table></div>`;
-    arbRepText=`🏢 *ספורטאים פעילים לפי סניף (Arbox)*\nנכון ל־${today}\n\n`+rows.map(([l,n])=>`• ${l}: ${n} (${Math.round(n/act.length*100)}%)`).join("\n")+`\n\n*סה״כ: ${act.length}*`;
+    out.innerHTML=`<p class="rep-period">נכון ל־${today} · ספורטאים פעילים ב-Arbox</p><div class="rep-total">סה״כ ${act.length} ספורטאים פעילים ב־${rows.length} מרחבים</div>`+hbars(rows,act.length)+`<p class="hint">עמק יזרעאל לא מוגדר כמרחב ב-Arbox (רשום שם תחת "נתניה והשרון הצפוני"). האפליקציה משייכת לעמק יזרעאל לפי שם התוכנית: ציפורי, נופית, שמשית או קריטריום.</p>`+
+      `<div class="tw"><table class="rtable"><thead><tr><th>מרחב</th><th>פעילים</th><th>%</th></tr></thead><tbody>${rows.map(([l,n])=>`<tr><td>${esc(l)}</td><td>${n}</td><td>${Math.round(n/act.length*100)}%</td></tr>`).join("")}<tr><td><b>סה״כ</b></td><td><b>${act.length}</b></td><td>100%</td></tr></tbody></table></div>`;
+    arbRepText=`🏢 *ספורטאים פעילים לפי מרחב (Arbox)*\nנכון ל־${today}\n\n`+rows.map(([l,n])=>`• ${l}: ${n} (${Math.round(n/act.length*100)}%)`).join("\n")+`\n\n*סה״כ: ${act.length}*`;
   } else {
     const box=$("arbRepLocBox"), sel=$("arbRepLoc"), keep=sel.value, locs=[...new Set(act.map(arbBranch).filter(Boolean))].sort();
-    box.hidden=false; sel.innerHTML=`<option value="">כל הסניפים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); sel.value=keep;
+    box.hidden=false; sel.innerHTML=`<option value="">כל המרחבים</option>`+locs.map(l=>`<option>${esc(l)}</option>`).join(""); sel.value=keep;
     const list=act.filter(u=>!sel.value||arbBranch(u)===sel.value), c={}; let none=0;
     list.forEach(u=>{ const ps=arbProgs(u); if(!ps.length){ none++; return; } new Set(ps).forEach(k=>{ c[k]=(c[k]||0)+1; }); });
     const rows=Object.entries(c).sort((a,b)=>b[1]-a[1]||a[0].localeCompare(b[0],"he"));
     if(none) rows.push(["ללא מנוי פעיל",none]);
-    out.innerHTML=`<p class="rep-period">נכון ל־${today} · ${sel.value?"סניף "+esc(sel.value):"כל הסניפים"}</p><div class="rep-total">${list.length} ספורטאים פעילים · ${rows.length} סוגי תוכניות</div>`+hbars(rows,list.length)+
+    out.innerHTML=`<p class="rep-period">נכון ל־${today} · ${sel.value?"מרחב "+esc(sel.value):"כל המרחבים"}</p><div class="rep-total">${list.length} ספורטאים פעילים · ${rows.length} סוגי תוכניות</div>`+hbars(rows,list.length)+
       `<p class="hint">ספורטאי עם יותר ממנוי אחד נספר בכל אחת מהתוכניות שלו.</p>`;
-    arbRepText=`📋 *ספורטאים לפי תוכנית (Arbox)*\n${sel.value?"סניף "+sel.value:"כל הסניפים"} · נכון ל־${today}\n\n`+rows.map(([l,n])=>`• ${l}: ${n}`).join("\n")+`\n\n*סה״כ ספורטאים פעילים: ${list.length}*`;
+    arbRepText=`📋 *ספורטאים לפי תוכנית (Arbox)*\n${sel.value?"מרחב "+sel.value:"כל המרחבים"} · נכון ל־${today}\n\n`+rows.map(([l,n])=>`• ${l}: ${n}`).join("\n")+`\n\n*סה״כ ספורטאים פעילים: ${list.length}*`;
   }
   $("arbRepWa").href="https://wa.me/?text="+encodeURIComponent(arbRepText);
 }
@@ -3596,7 +3596,7 @@ function athRenderSign(){
   if(ATH.area&&!areas.includes(ATH.area)) ATH.area="";
   const list=inBr.filter(s=>!ATH.area||s.loc===ATH.area);
   let h=ATH.more?`<div class="warnbox">⚠ אלה כל אזורי האימון במועדון. באזור שאינך רשום/ה אליו צריך לתאם את האימון עם המאמן לפני ההגעה.</div>`:"";
-  h+=`<div class="card"><span class="lbl">סניף</span><div class="chips" id="athBr">${brs.map(b=>`<button type="button" class="chipb${b===ATH.br?" on":""}" data-b="${esc(b)}">${esc(b)}</button>`).join("")||`<span class="hint">אין אימונים בשבוע הקרוב.</span>`}</div>
+  h+=`<div class="card"><span class="lbl">מרחב</span><div class="chips" id="athBr">${brs.map(b=>`<button type="button" class="chipb${b===ATH.br?" on":""}" data-b="${esc(b)}">${esc(b)}</button>`).join("")||`<span class="hint">אין אימונים בשבוע הקרוב.</span>`}</div>
     <span class="lbl" style="margin-top:6px">אזור אימון</span><div class="chips" id="athAr"><button type="button" class="chipb${!ATH.area?" on":""}" data-a="">הכל</button>${areas.map(a=>`<button type="button" class="chipb${a===ATH.area?" on":""}" data-a="${esc(a)}">${esc(a)}</button>`).join("")}
     <button type="button" class="chipb more" id="athMore">${ATH.more?"↩ רק האזורים שלי":"➕ אזורי אימון נוספים"}</button></div></div>`;
   let lastK=-1;
@@ -3906,7 +3906,7 @@ function edForm(r){
   const places=cfg.locations.filter(l=>(l.branch||"")===br).map(l=>l.name);
   const types=["שחייה","רכיבת כביש","רכיבת שטח","ריצה","משולב"]; const days=new Set([r?DAYS_FULL.findIndex(n=>String(r.day).includes(n)):ED.day]);
   const v=r||{start:"",end:"",name:"",type:"",area:"",place:"",coach:"",cap:"",open:true,note:""};
-  const ov=sheetOpen(`<h2>${isNew?"אימון חדש":"עריכת אימון"} · סניף ${esc(br)}</h2>
+  const ov=sheetOpen(`<h2>${isNew?"אימון חדש":"עריכת אימון"} · מרחב ${esc(br)}</h2>
     <div class="ff"><span class="lbl">${isNew?"ימים (אפשר לבחור כמה)":"יום"}</span><div class="wk7" id="efDays">${DAY_SH.map((d,i)=>`<button type="button" data-d="${i}" class="${days.has(i)?"on":""}">${d}</button>`).join("")}</div></div>
     <div class="f2"><label class="ff"><span class="lbl">התחלה</span><input type="time" id="efS" value="${esc(v.start)}"></label><label class="ff"><span class="lbl">סיום</span><input type="time" id="efE" value="${esc(v.end)}"></label></div>
     <label class="ff"><span class="lbl">שם האימון</span><input type="text" id="efN" value="${esc(v.name)}" placeholder="למשל: שחייה בספורטן"></label>
@@ -4029,7 +4029,7 @@ function coachPwOpen(){
   const _bm=buildMessage; buildMessage=function(){ const t=_bm(), no=regNoShowNow(); return no.length?`${t}\n\n*נרשמו ולא הגיעו (${no.length}):*\n${no.map((n,i)=>`${i+1}. ${n}`).join("\n")}`:t; };
   const _or=openReport; openReport=function(id){ _or(id);
     if(id!=="noshow") return; const brs=[...new Set(cfg.locations.map(l=>l.branch||""))].filter(Boolean);
-    $("repExtra").innerHTML=`<label class="lbl" for="nsBranch">סניף</label><select id="nsBranch" class="tsel"><option value="">כל הסניפים</option>${brs.map(b=>`<option>${esc(b)}</option>`).join("")}</select>`;
+    $("repExtra").innerHTML=`<label class="lbl" for="nsBranch">מרחב</label><select id="nsBranch" class="tsel"><option value="">כל המרחבים</option>${brs.map(b=>`<option>${esc(b)}</option>`).join("")}</select>`;
     $("nsBranch").addEventListener("change",runReport); NS.key=""; runReport(); };
   const _ss=setupSums; setupSums=function(){ _ss(); const c=store.get(COACH_KEY,null), e=$("sgSum_profile"); if(e) e.textContent=[gateOn()?"מסך פתיחה: פעיל":"מסך פתיחה: כבוי",c&&c.token?`מאמן: ${c.name}`:""].filter(Boolean).join(" · ")+" · גיליון הרשמות"; };
   const _rs=repSession; repSession=function(){ return _rs()+regSesExtra(); };
