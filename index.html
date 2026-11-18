@@ -476,6 +476,12 @@ body.gated .wrap,body.gated .bar,body.ath-mode .wrap,body.ath-mode .bar{display:
 .bye{position:fixed;inset:0;z-index:95;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
 .bye-in{max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center}
 .bye-in h2{margin:0;font:800 1.5rem var(--display)}.bye-in p{margin:0}.bye-in .muted{color:var(--muted);font-size:.92rem}
+ul.roster li.reg label{background:color-mix(in srgb,var(--ok) 15%,var(--surface));border-radius:12px;padding-inline:10px;box-shadow:inset 0 0 0 2px var(--ok);border-bottom-color:transparent}
+ul.roster li.reg{margin-block:3px}
+ul.roster li.reg .nm{color:var(--fg)}
+ul.roster li.reg.miss label{background:color-mix(in srgb,var(--accent-2) 13%,var(--surface));box-shadow:inset 0 0 0 2px var(--accent-2)}
+.regtag{flex:none;margin-inline-start:auto;font:800 .78rem var(--body);color:#fff;background:var(--ok);border-radius:999px;padding:5px 11px;white-space:nowrap}
+ul.roster li.reg.miss .regtag{background:var(--accent-2)}
 
 #athMine,#athSign{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -619,7 +625,7 @@ document.body.classList.add(_r&&_r.role==="athlete"&&_a&&_a.token?"ath-mode":(_r
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · רישום לאימון · כפתור יציאה</div>
+  <div class="ver">גרסה 18/11/2026 · רישום לאימון · סימון נרשמים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -3736,6 +3742,18 @@ function regBar(){
   el.innerHTML=`<span>📝 ${REG_HERE.length===1?"נרשם/ה מראש: 1":`נרשמו מראש: ${REG_HERE.length}`}${miss.length?` · ${miss.length} לא מסומנים (ידווחו "נרשם ולא הגיע")`:""}</span>${miss.length?`<button type="button" class="btn" id="regAll">סמן את כל הנרשמים</button>`:""}`;
   const b=$("regAll"); if(b) b.onclick=()=>{ REG_HERE.forEach(n=>selected.add(n)); renderRoster(); };
 }
+// a signed-up athlete's whole row stands out; the badge sits at the far (left) end of the row
+function regPaint(){
+  document.querySelectorAll("#roster li").forEach(li=>{
+    const nm=li.querySelector(".nm"), lab=li.querySelector("label"), cb=li.querySelector("input[type=checkbox]"); if(!nm||!lab) return;
+    const n=(nm.firstChild&&nm.firstChild.textContent||"").trim(), on=REG_HERE.includes(n);
+    li.classList.toggle("reg",on); li.classList.toggle("miss",on&&cb&&!cb.checked);
+    let t=lab.querySelector(".regtag");
+    if(!on){ if(t) t.remove(); return; }
+    if(!t){ t=document.createElement("span"); t.className="regtag"; lab.insertBefore(t,lab.querySelector(".rm")); }
+    t.textContent=cb&&!cb.checked?"נרשם · לא הגיע":"✓ נרשם/ה";
+  });
+}
 function regNoShowNow(){ return REG_HERE.filter(n=>!selected.has(n)); }
 
 // ---------- reports: registered and did not come ----------
@@ -3944,9 +3962,8 @@ function coachPwOpen(){
   const _rr=renderRoster;
   renderRoster=function(){ _rr();
     if(!REG_HERE.length) return;
-    document.querySelectorAll("#roster li").forEach(li=>{ const nm=li.querySelector(".nm"); if(!nm) return; const n=(nm.firstChild&&nm.firstChild.textContent||"").trim();
-      if(REG_HERE.includes(n)&&!nm.querySelector(".tag.reg")){ const t=document.createElement("span"); t.className="tag reg"; t.textContent="נרשם/ה"; nm.insertBefore(t,nm.childNodes[1]||null); } });
-    regBar(); };
+    regPaint(); regBar(); };
+  $("roster").addEventListener("change",()=>{ if(REG_HERE.length){ regPaint(); regBar(); } });
   const _lp=loadPeople; loadPeople=async function(){ await _lp(); regApply(); };
   const _mr=makeReport; makeReport=function(){ const r=_mr(); const no=regNoShowNow(); if(REG_HERE.length) r.reg={registered:REG_HERE.slice(),noShow:no}; return r; };
   const _bm=buildMessage; buildMessage=function(){ const t=_bm(), no=regNoShowNow(); return no.length?`${t}\n\n*נרשמו ולא הגיעו (${no.length}):*\n${no.map((n,i)=>`${i+1}. ${n}`).join("\n")}`:t; };
