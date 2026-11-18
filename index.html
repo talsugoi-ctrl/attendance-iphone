@@ -472,6 +472,10 @@ body.gated .wrap,body.gated .bar,body.ath-mode .wrap,body.ath-mode .bar{display:
 .btn.danger{background:var(--danger);border-color:var(--danger);color:#fff}
 .prof-row{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
 .prof-row > *{flex:1;min-width:120px}
+.ok-ic{width:62px;height:62px;border-radius:50%;background:color-mix(in srgb,var(--ok) 15%,var(--surface));color:var(--ok);display:grid;place-items:center;font-size:30px;margin:0 auto}
+.bye{position:fixed;inset:0;z-index:95;background:var(--bg);display:flex;align-items:center;justify-content:center;padding:24px}
+.bye-in{max-width:420px;width:100%;display:flex;flex-direction:column;gap:12px;text-align:center}
+.bye-in h2{margin:0;font:800 1.5rem var(--display)}.bye-in p{margin:0}.bye-in .muted{color:var(--muted);font-size:.92rem}
 
 #athMine,#athSign{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -503,7 +507,7 @@ document.body.classList.add(_r&&_r.role==="athlete"&&_a&&_a.token?"ath-mode":(_r
 <section class="athv" id="ath" hidden aria-label="הרשמה לאימונים">
   <div class="rep-in">
     <div class="ath-hd"><div class="brand"><img id="athLogo" alt=""><h1><span id="athHi"></span><small id="athSub"></small></h1></div>
-      <div class="hdr-btns"><button type="button" class="icon-btn" id="athReload" aria-label="רענון">↻</button><button type="button" class="icon-btn" id="athProf" aria-label="פרופיל">👤</button></div></div>
+      <div class="hdr-btns"><button type="button" class="icon-btn" id="athReload" aria-label="רענון">↻</button><button type="button" class="icon-btn" id="athProf" aria-label="פרופיל">👤</button><button type="button" class="icon-btn" id="athExit" aria-label="יציאה" title="יציאה">⏻</button></div></div>
     <div class="status" id="athStatus"></div>
     <div id="athMine"></div>
     <div id="athSign" hidden></div>
@@ -615,7 +619,7 @@ document.body.classList.add(_r&&_r.role==="athlete"&&_a&&_a.token?"ath-mode":(_r
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · רישום לאימון (ניסיון)</div>
+  <div class="ver">גרסה 18/11/2026 · רישום לאימון · כפתור יציאה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -3640,9 +3644,37 @@ function athSignAsk(s,out){
     try{
       const x=await api("regSignup",Object.assign({date:s.dmy,row:s.row,start:s.start,title:s.title,place:s.loc,out:!!out},athCred()),30000);
       if(!x.ok){ m.textContent=x.error||"ההרשמה לא הצליחה"; b.disabled=false; b.textContent="אישור הרשמה"; return; }
-      ov.remove(); showToast(`✓ נרשמת: ${s.title} · ${whenTxt(s.dmy)} ${s.start}`,true); athLoad(true);
+      ov.remove(); athLoad(true); athDone(s);
     }catch(e){ m.textContent=e.message; b.disabled=false; b.textContent="אישור הרשמה"; }
   };
+}
+// after signing up: finish and leave, or sign up for another training
+function athDone(s){
+  const ov=sheetOpen(`<div class="ok-ic" aria-hidden="true">✓</div><h2>נרשמת לאימון!</h2>
+    <div class="muted">${TYPE_ICON[s.type]||"🏅"} ${esc(s.title)}<br>${esc(whenTxt(s.dmy))} · ${esc(s.start)}${s.end?"–"+esc(s.end):""} · ${esc(s.loc||"")}</div>
+    <button type="button" class="btn primary wide" id="dnExit">⏻ סיום ויציאה</button>
+    <button type="button" class="btn wide" id="dnMore">+ הרשמה לאימון נוסף</button>
+    <button type="button" class="btn wide" id="dnCal">📅 הוסף ליומן</button>`);
+  ov.querySelector("#dnExit").onclick=()=>{ ov.remove(); athExit(); };
+  ov.querySelector("#dnMore").onclick=()=>{ ov.remove(); athTab("sign"); };
+  ov.querySelector("#dnCal").onclick=()=>icsFor(s);
+}
+// leave the app: a web app can't always close itself (iPhone), so a goodbye screen says how
+function athExit(){
+  document.querySelectorAll(".sheetov").forEach(x=>x.remove());
+  try{ window.close(); }catch(e){}
+  setTimeout(()=>{ if(document.visibilityState!=="visible") return;
+    const up=((ATH.me||{}).mine||{}).up||[], o=up[0];
+    const ov=document.createElement("div"); ov.className="bye"; ov.id="athBye";
+    ov.innerHTML=`<div class="bye-in"><div class="ok-ic" aria-hidden="true">👋</div><h2>להתראות!</h2>
+      ${o?`<p>האימון הבא שלך: <b>${esc(whenTxt(o.date))} · ${esc(o.start)}</b><br>${esc(o.title)}</p>`:""}
+      <p class="muted">ההרשמות שלך שמורות. אפשר לסגור את האפליקציה עכשיו${/iPhone|iPad/.test(navigator.userAgent)?" – החלקה למעלה מתחתית המסך":""}.</p>
+      <button type="button" class="btn wide" id="byeBack">חזרה לאפליקציה</button>
+      ${gateOn()?"":`<button type="button" class="btn wide" id="byeCoach">↩ חזרה לרישום נוכחות (מאמן)</button>`}</div>`;
+    document.body.appendChild(ov);
+    ov.querySelector("#byeBack").onclick=()=>{ ov.remove(); athTab("mine"); };
+    const bc=ov.querySelector("#byeCoach"); if(bc) bc.onclick=()=>{ ov.remove(); gateLeave(); };
+  },300);
 }
 function athCancelAsk(o){
   if(!o) return;
@@ -3930,7 +3962,7 @@ function coachPwOpen(){
   $("gCoachPw").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); gateCoachGo(); } });
   $("gAthL4").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); gateAthGo(); } });
   document.querySelectorAll("#athTabs button").forEach(b=>b.onclick=()=>athTab(b.dataset.t));
-  $("athProf").onclick=athProfile; $("athReload").onclick=()=>athLoad(true);
+  $("athProf").onclick=athProfile; $("athExit").onclick=athExit; $("athReload").onclick=()=>athLoad(true);
   $("schedEdit").onclick=openEd; $("edBack").onclick=closeEd; $("edReload").onclick=edLoad;
   $("profRole").onchange=profRoleUi; $("profGo").onclick=profApply; $("regUrlGo").onclick=regUrlSave; $("coachOut").onclick=coachLogout;
   $("regUrlOpen").onclick=()=>{ const u=$("regUrl").value.trim()||regUrl(); if(u) window.open(u,"_blank","noopener"); };
