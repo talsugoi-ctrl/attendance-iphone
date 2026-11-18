@@ -488,8 +488,10 @@ ul.roster li.reg.miss .regtag{background:var(--accent-2)}
 </style>
 </head>
 <body>
-<script>try{if(JSON.parse(localStorage.getItem("reg-gate")||"false")){var _r=JSON.parse(localStorage.getItem("role-v1")||"null"),_a=JSON.parse(localStorage.getItem("ath-cred")||"null"),_c=JSON.parse(localStorage.getItem("coach-cred")||"null"),_ok=false;try{_ok=sessionStorage.getItem("coach-ok")==="1"}catch(e){}
-document.body.classList.add(_r&&_r.role==="athlete"&&_a&&_a.token?"ath-mode":(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode":"gated"));}}catch(e){}</script>
+<script>try{var _r=JSON.parse(localStorage.getItem("role-v1")||"null"),_a=JSON.parse(localStorage.getItem("ath-cred")||"null");
+if(_r&&_r.role==="athlete"&&_a&&_a.token)document.body.classList.add("ath-mode");
+else if(JSON.parse(localStorage.getItem("reg-gate")||"false")){var _c=JSON.parse(localStorage.getItem("coach-cred")||"null"),_ok=false;try{_ok=sessionStorage.getItem("coach-ok")==="1"}catch(e){}
+document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode":"gated");}}catch(e){}</script>
 <section class="gate" id="gate" hidden aria-label="כניסה">
   <div class="gate-in">
     <div class="gate-logo"><img id="gLogo" alt=""><h1>The Buttons Triathlon<small>נוכחות והרשמה לאימונים</small></h1></div>
@@ -625,7 +627,7 @@ document.body.classList.add(_r&&_r.role==="athlete"&&_a&&_a.token?"ath-mode":(_r
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · רישום לאימון · סימון נרשמים</div>
+  <div class="ver">גרסה 18/11/2026 · רישום לאימון · מתאמן נשאר מחובר</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -3440,14 +3442,18 @@ async function gateAthGo(){
 }
 function athEnter(x){
   store.set(ATH_KEY,{name:x.name,token:x.token,user:x.user||null,sheet:x.sheet||[],at:Date.now()});
-  if(gateOn()) roleSet({role:"athlete",name:x.name});
+  roleSet({role:"athlete",name:x.name});            // from now on this device opens in the athlete's sign-up area
   $("gAthL4").value=""; $("gate").hidden=true;
   athStart();
 }
 function gateLeave(){ $("gate").hidden=true; $("ath").hidden=true; document.body.classList.remove("gated","ath-mode"); }
-function regTool(){ $("setup").close(); if(athCred()) athStart(); else gateShow("athlete"); }
+// back to attendance (coach): the device stops opening in the athlete area
+function athToCoach(){ const c=store.get(COACH_KEY,null); roleSet({role:"coach",name:(c&&c.name)||store.get("coach","")}); try{ sessionStorage.removeItem("ath-trial"); }catch(e){} gateLeave(); }
+const coachBackOk=()=>{ let t=false; try{ t=sessionStorage.getItem("ath-trial")==="1"; }catch(e){} return t||!!coachCred(); };
+function regTool(){ $("setup").close(); try{ sessionStorage.setItem("ath-trial","1"); }catch(e){} if(athCred()) athStart(); else gateShow("athlete"); }
 function gateStart(){
   $("gLogo").src=(document.querySelector("header .brand img")||{}).src||"";
+  { const r0=roleGet(); if(r0&&r0.role==="athlete"&&athCred()){ athStart(); return; } }   // an athlete who logged in here always lands in sign-up
   if(!gateOn()){ gateLeave(); if(coachCred()){ regApply(); coachVerify(); } return; }   // opening screen off: the app opens as before
   const r=roleGet();
   if(!r){ gateShow(); return; }
@@ -3676,10 +3682,10 @@ function athExit(){
       ${o?`<p>האימון הבא שלך: <b>${esc(whenTxt(o.date))} · ${esc(o.start)}</b><br>${esc(o.title)}</p>`:""}
       <p class="muted">ההרשמות שלך שמורות. אפשר לסגור את האפליקציה עכשיו${/iPhone|iPad/.test(navigator.userAgent)?" – החלקה למעלה מתחתית המסך":""}.</p>
       <button type="button" class="btn wide" id="byeBack">חזרה לאפליקציה</button>
-      ${gateOn()?"":`<button type="button" class="btn wide" id="byeCoach">↩ חזרה לרישום נוכחות (מאמן)</button>`}</div>`;
+      ${coachBackOk()?`<button type="button" class="btn wide" id="byeCoach">↩ חזרה לרישום נוכחות (מאמן)</button>`:""}</div>`;
     document.body.appendChild(ov);
     ov.querySelector("#byeBack").onclick=()=>{ ov.remove(); athTab("mine"); };
-    const bc=ov.querySelector("#byeCoach"); if(bc) bc.onclick=()=>{ ov.remove(); gateLeave(); };
+    const bc=ov.querySelector("#byeCoach"); if(bc) bc.onclick=()=>{ ov.remove(); athToCoach(); };
   },300);
 }
 function athCancelAsk(o){
@@ -3702,12 +3708,12 @@ function athProfile(){
     <div class="hint" style="text-align:center">אזור אימון חסר או שגוי? מעדכנים אצל המאמן.</div>
     <button type="button" class="btn wide" id="apRe">↻ רענון</button>
     <button type="button" class="btn wide" id="apOut">החלפת משתמש / יציאה</button>
-    ${gateOn()?"":`<button type="button" class="btn primary wide" id="apCoach">↩ חזרה לרישום נוכחות (מאמן)</button>`}
+    ${coachBackOk()?`<button type="button" class="btn primary wide" id="apCoach">↩ חזרה לרישום נוכחות (מאמן)</button>`:""}
     <button type="button" class="linkbtn c" id="apBack">סגירה</button>`);
   ov.querySelector("#apBack").onclick=()=>ov.remove();
   ov.querySelector("#apRe").onclick=()=>{ ov.remove(); athRefreshProfile(); athLoad(true); };
   ov.querySelector("#apOut").onclick=()=>{ ov.remove(); store.set("ath-me",null); store.set(ATH_KEY,null); if(gateOn()) roleSet(null); gateShow("athlete"); };
-  const bc=ov.querySelector("#apCoach"); if(bc) bc.onclick=()=>{ ov.remove(); gateLeave(); };
+  const bc=ov.querySelector("#apCoach"); if(bc) bc.onclick=()=>{ ov.remove(); athToCoach(); };
 }
 
 // ---------- coach: who signed up for this training ----------
@@ -3984,7 +3990,7 @@ function coachPwOpen(){
   $("profRole").onchange=profRoleUi; $("profGo").onclick=profApply; $("regUrlGo").onclick=regUrlSave; $("coachOut").onclick=coachLogout;
   $("regUrlOpen").onclick=()=>{ const u=$("regUrl").value.trim()||regUrl(); if(u) window.open(u,"_blank","noopener"); };
   $("regGateChk").onchange=()=>{ store.set("reg-gate",$("regGateChk").checked); setupSums(); $("profMsg").textContent=$("regGateChk").checked?"מהפתיחה הבאה האפליקציה תיפתח במסך הבחירה (בטלפון הזה).":"האפליקציה תיפתח כרגיל במסך רישום הנוכחות (בטלפון הזה)."; };
-  $("regToolBtn").onclick=regTool; $("gBack").onclick=gateLeave;
+  $("regToolBtn").onclick=regTool; $("gBack").onclick=athToCoach;
   $("coachPwBtn").onclick=()=>{ $("coachPwBox").hidden=false; setTimeout(()=>$("coachPwCode").focus(),50); };
   $("coachPwGo").onclick=coachPwOpen; $("coachPwCode").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); coachPwOpen(); } });
   document.querySelector('#setup .sg[data-g="profile"]').addEventListener("toggle",e=>{ if(e.target.open) profEdInit(); });
