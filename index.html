@@ -530,6 +530,9 @@ body.bd-open{overflow:hidden}
 .hb.sos{margin-inline-end:9px}.hb .sos-btn{margin-inline-end:0}
 .hb.sos>small{color:var(--danger)}
 .hb:has(> [hidden]){display:none}
+/* tagline in the bottom bar: centred in the space between "נבחרו" and the button */
+.bar .tagline{flex:1;min-width:0;text-align:center;margin-inline-end:0;font-size:.74rem;letter-spacing:.12em;overflow:hidden;text-overflow:ellipsis}
+.bar .in .btn{margin-inline-start:0}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -676,7 +679,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · כיתוב מתחת לאייקונים</div>
+  <div class="ver">גרסה 19/11/2026 · Push The Buttons בתחתית</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4279,6 +4282,10 @@ function hdrLabels(){
     const s=document.createElement("small"); s.textContent=t; s.setAttribute("aria-hidden","true"); s.onclick=()=>b.click(); w.appendChild(s); });
 }
 hdrLabels();
+
+// ---------- "Push The Buttons" moves to the bottom bar, centred between the count and the button (19/11/2026) ----------
+(function(){ const t=document.querySelector("header .tagline"), b=document.querySelector(".bar .in"), c=b&&b.querySelector(".count");
+  if(t&&b&&c) c.after(t); })();
 
 </script>
 </body>
