@@ -646,7 +646,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · מערכת תל אביב מהגיליון</div>
+  <div class="ver">גרסה 19/11/2026 · מאמן יניב אלון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1621,7 +1621,7 @@ $("dur").addEventListener("input",showDur);
 $("dur").addEventListener("blur",()=>{ $("dur").value=durHours(); showDur(); });
 function coachName(){ return $("coach").value.trim(); }
 // coach names – one spelling each (first + last name), so the reports count every coach once
-const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין"];
+const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין","יניב אלון"];
 const COACH_FIX={"אסף":"אסף אשכנזי","תמיר":"תמיר רבינוביץ","דרור יועץ עסקי":"דרור"};
 const coachFix=n=>COACH_FIX[normName(n)]||normName(n);
 function coachList(){ return [...new Set(COACHES.concat(store.get("coach-arbox",[]),store.get("coach-custom",[])).map(coachFix).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he")); }
