@@ -646,7 +646,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 18/11/2026 · מסך העדכון עבר בהצלחה</div>
+  <div class="ver">גרסה 19/11/2026 · מערכת תל אביב מהגיליון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2784,7 +2784,7 @@ function schRender(){
   const today=new Date(); today.setHours(0,0,0,0); const td=today.getDay();
   const fixed=(SCH.rows||[]).filter(r=>r.branch===SCH.br);
   // Arbox sessions: this coming week (today … +6), by weekday
-  const arb=(SCH.arb||[]).filter(s=>s.branch===SCH.br).map(s=>{ const d=new Date(s.date+"T00:00"); return Object.assign({},s,{day:d.getDay(),arbox:true}); });
+  const arb=(SCH.arb||[]).filter(s=>s.branch===SCH.br&&!fixed.some(f=>f.place&&String(s.name).includes(f.place))).map(s=>{ const d=new Date(s.date+"T00:00"); return Object.assign({},s,{day:d.getDay(),arbox:true}); });
   const all=fixed.concat(arb);
   if(!all.length){ $("schedOut").innerHTML=`<div class="rep-empty">אין עדיין אימונים למרחב ${esc(SCH.br)}.<br><small>מוסיפים שורות בלשונית "${SCH_TAB}" בגיליון.</small></div>`; return; }
   let html="";
@@ -3611,7 +3611,8 @@ function athSessions(days){
       out.push({d,dmy,k,row:x.row,start:x.start,end:x.end,title:x.name||x.type||"אימון",type:x.type,coach:x.coach,branch:x.branch,area:x.area,loc:rowLoc(x),note:x.note,cx,open:x.open,cap:parseInt(x.cap,10)||0,
         count:S.counts[dmy+"|"+x.start+"|"+normName(x.name)]||0});
     });
-    (S.arb||[]).forEach(s=>{ if(s.date!==`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`) return;
+    (S.arb||[]).forEach(s=>{ if(S.rows.some(x=>x.branch===arbBranchOf(s)&&x.place&&String(s.name).includes(x.place))) return;   // a place with its own fixed schedule: the sheet wins over Arbox
+      if(s.date!==`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`) return;
       out.push({d,dmy,k,arbox:true,start:hm(s.start),end:hm(s.end),title:s.name,type:arbSessionType(s.name),coach:s.coach,branch:arbBranchOf(s),area:"",loc:arbBranchOf(s),cx:!!s.cancelled}); });
   }
   return out.sort((a,b)=>a.k-b.k||String(a.start||"99").localeCompare(String(b.start||"99")));
