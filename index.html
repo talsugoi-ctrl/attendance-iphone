@@ -11,6 +11,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="נוכחות">
 <link rel="manifest" href="manifest.webmanifest">
+<script>(function(){try{var r=new URLSearchParams(location.search).get("r");if(r==="coach"||r==="ath"){document.querySelector('link[rel="manifest"]').href="manifest-"+r+".webmanifest";var t=document.querySelector('meta[name="apple-mobile-web-app-title"]');if(t)t.content=r==="coach"?"נוכחות":"רישום לאימון";}}catch(e){}})();</script>
 <title>נוכחות אימונים</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Rubik:wght@500;700&family=Assistant:wght@400;600;700&display=swap">
@@ -646,7 +647,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · רוכבי שטח מהגיליון</div>
+  <div class="ver">גרסה 19/11/2026 · לינק למאמנים ולמתאמנים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -3380,6 +3381,16 @@ const roleGet=()=>store.get(ROLE_KEY,null);
 const roleSet=r=>{ store.set(ROLE_KEY,r); };
 const COACH_KEY="coach-cred", ATH_KEY="ath-cred";   // logins are kept apart, so trying the athlete screens doesn't log the coach out
 const gateOn=()=>!!store.get("reg-gate",false);
+// a link that says who it is for: ?r=coach → coach login only (once, then straight in) · ?r=ath → athlete screen only.
+// The choice is kept on the phone, so the next opens (and the home-screen icon) stay on that side.
+const LINK_KEY="link-role";
+function linkRole(){
+  let q=""; try{ q=String(new URLSearchParams(location.search).get("r")||"").toLowerCase(); }catch(e){}
+  q=q==="coach"?"coach":(q==="ath"||q==="athlete")?"athlete":"";
+  if(q) store.set(LINK_KEY,q);
+  return q||store.get(LINK_KEY,"");
+}
+const linkCoach=()=>store.get(LINK_KEY,"")==="coach";
 const REG_URL_DEF="https://docs.google.com/spreadsheets/d/1KR7CfjtBxR4IbRRHTyjs5L3fxePtGNC7ISxjOP9AQA8/edit";
 const COACH_PW_CODE="T";
 const regUrl=()=>store.get("reg-url","")||REG_URL_DEF;
@@ -3402,7 +3413,7 @@ function authLost(msg){
   if(!$("ath").hidden){ const a=store.get(ATH_KEY,{}); store.set(ATH_KEY,{name:a.name}); gateShow("athlete","יש להתחבר מחדש"); return; }
   const c=store.get(COACH_KEY,null); if(!c) return;
   store.set(COACH_KEY,{name:c.name}); try{ sessionStorage.removeItem("coach-ok"); }catch(e){}
-  if(gateOn()) gateShow("coach",t); else showToast("צריך להתחבר מחדש כמאמן: הגדרות ← 🏃 רישום לאימון ← אני מאמן/ת");
+  if(gateOn()||linkCoach()) gateShow("coach",t); else showToast("צריך להתחבר מחדש כמאמן: הגדרות ← 🏃 רישום לאימון ← אני מאמן/ת");
 }
 
 // ---------- the gate (role chooser + login) ----------
@@ -3414,6 +3425,8 @@ function gateShow(role,msg){
   gateRole=role||(r&&r.role)||"athlete";
   $("gAthName").value=(a&&a.name)||"";
   $("gBack").hidden=gateOn();
+  const lr=store.get(LINK_KEY,"");                 // opened from a coach / athlete link: only that side, no role switch
+  $("gRole").hidden=!!lr; if(lr){ gateRole=lr; $("gBack").hidden=true; }
   gateRender(); $("gMsg").textContent=msg||""; $("gMsg").className="msg";
   gateCoaches();
 }
@@ -3483,6 +3496,9 @@ const coachBackOk=()=>{ let t=false; try{ t=sessionStorage.getItem("ath-trial")=
 function regTool(){ $("setup").close(); try{ sessionStorage.setItem("ath-trial","1"); }catch(e){} if(athCred()) athStart(); else gateShow("athlete"); }
 function gateStart(){
   $("gLogo").src=(document.querySelector("header .brand img")||{}).src||"";
+  const lr=linkRole();
+  if(lr==="athlete"){ if(athCred()) athStart(); else gateShow("athlete"); return; }
+  if(lr==="coach"){ if(coachCred()){ gateLeave(); regApply(); coachVerify(); return; } gateShow("coach"); return; }   // the password is asked once; after that the coach goes straight in
   { const r0=roleGet(); if(r0&&r0.role==="athlete"&&athCred()){ athStart(); return; } }   // an athlete who logged in here always lands in sign-up
   if(!gateOn()){ gateLeave(); if(coachCred()){ regApply(); coachVerify(); } return; }   // opening screen off: the app opens as before
   const r=roleGet();
@@ -4039,7 +4055,7 @@ async function regUrlSave(){
     store.set("reg-url",x.url); store.set("reg-coach-gid",""); $("regUrl").value=x.url; $("regName").textContent=x.name; m.textContent=x.same?"זה כבר הגיליון הנוכחי ✓":"✓ גיליון ההרשמות עודכן";
   }catch(e){ m.textContent=e.message; }
 }
-function coachLogout(){ const c=store.get(COACH_KEY,null)||{}; store.set(COACH_KEY,{name:c.name}); try{ sessionStorage.removeItem("coach-ok"); }catch(e){} REG_HERE=[]; regBar(); $("setup").close(); if(gateOn()) gateShow("coach"); else { renderRoster(); showToast("יצאת מחשבון המאמן",true); } }
+function coachLogout(){ const c=store.get(COACH_KEY,null)||{}; store.set(COACH_KEY,{name:c.name}); try{ sessionStorage.removeItem("coach-ok"); }catch(e){} REG_HERE=[]; regBar(); $("setup").close(); if(gateOn()||linkCoach()) gateShow("coach"); else { renderRoster(); showToast("יצאת מחשבון המאמן",true); } }
 function coachPwOpen(){
   if($("coachPwCode").value.trim()!==COACH_PW_CODE){ $("coachPwCode").value=""; $("profMsg").textContent="קוד גישה שגוי"; return; }
   $("coachPwCode").value=""; $("coachPwBox").hidden=true; $("profMsg").textContent="";
