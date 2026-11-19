@@ -523,6 +523,13 @@ body.bd-open{overflow:hidden}
 .bdb{margin-top:9px;border-top:1px solid var(--line);padding-top:9px;display:flex;flex-direction:column;gap:8px}
 .bdb ol{margin:0;padding-inline-start:22px;display:flex;flex-direction:column;gap:4px;font-size:.93rem}
 .bdb .btn.wa{align-self:flex-start}
+/* header: a word under each icon */
+.hdr-btns{align-items:flex-start}
+.hb{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.hb>small{font:700 .64rem/1 var(--body);color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none}
+.hb.sos{margin-inline-end:9px}.hb .sos-btn{margin-inline-end:0}
+.hb.sos>small{color:var(--danger)}
+.hb:has(> [hidden]){display:none}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -669,7 +676,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · מסך נרשמים למאמנים</div>
+  <div class="ver">גרסה 19/11/2026 · כיתוב מתחת לאייקונים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4262,6 +4269,16 @@ function bdOpen(){
 }
 function bdClose(){ const o=$("bdOv"); if(o) o.remove(); document.body.classList.remove("bd-open"); }
 bdBtn();
+
+// ---------- a small word under each header icon (19/11/2026) ----------
+function hdrLabels(){
+  const L=[["sosBtn","חירום"],["boardBtn","נרשמים"],["schedBtn","מערכת"],["repBtn","דוחות"],["setupBtn","הגדרות"]];
+  L.forEach(([id,t])=>{ const b=$(id); if(!b||b.parentNode.classList.contains("hb")) return;
+    const w=document.createElement("span"); w.className="hb"+(id==="sosBtn"?" sos":"");
+    b.parentNode.insertBefore(w,b); w.appendChild(b);
+    const s=document.createElement("small"); s.textContent=t; s.setAttribute("aria-hidden","true"); s.onclick=()=>b.click(); w.appendChild(s); });
+}
+hdrLabels();
 
 </script>
 </body>
