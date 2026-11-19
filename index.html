@@ -534,6 +534,24 @@ body.bd-open{overflow:hidden}
 .bar .tagline{flex:1;min-width:0;text-align:center;margin-inline-end:0;font-size:.74rem;letter-spacing:.12em;overflow:hidden;text-overflow:ellipsis}
 .bar .in .btn{margin-inline-start:0}
 
+/* ---------- C3US co-branding: hidden unless body.c3 ---------- */
+.c3logo,.c3sep{display:none}
+body.c3 .c3logo{display:block;width:40px;height:40px;flex:none}
+body.c3 .c3sep{display:block;width:1.5px;height:28px;background:var(--line);flex:none}
+body.c3 header .brand{gap:6px}
+body.c3 header .brand img{width:38px;height:38px}
+body.c3 header .brand h1{display:none}
+body.c3 .ath-hd .brand{gap:5px}
+body.c3 .ath-hd .brand img{width:34px;height:34px}
+body.c3 .ath-hd .brand .c3sep{height:24px}
+body.c3 .ath-hd .brand h1{margin-inline-start:4px;min-width:0}
+.c3mini{width:18px;height:18px;vertical-align:-4px;margin-inline-start:5px;display:inline-block}
+.ath-next{position:relative}
+.c3tag{position:absolute;inset-inline-end:10px;top:10px;display:flex;align-items:center;gap:4px;background:#fff;color:#0f2a4a;border-radius:999px;padding:2px 9px 2px 3px;font:800 .7rem var(--body)}
+.c3tag img{width:20px;height:20px}
+.c3two{display:flex;justify-content:center;gap:14px}.c3two img{width:58px;height:58px}
+body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
+
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
 </style>
@@ -679,7 +697,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · Push The Buttons בתחתית</div>
+  <div class="ver">גרסה 19/11/2026 · לוגו C3US</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1654,7 +1672,7 @@ $("dur").addEventListener("input",showDur);
 $("dur").addEventListener("blur",()=>{ $("dur").value=durHours(); showDur(); });
 function coachName(){ return $("coach").value.trim(); }
 // coach names – one spelling each (first + last name), so the reports count every coach once
-const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין","יניב אלון","עומר מירון"];
+const COACHES=["טל שלם","רוברט נביאליק","ג׳וש","דרור","סמי בן עטר","אסף אשכנזי","אדר כהן","ניצן נרקיס","תמיר רבינוביץ","איתן","אמנון ישראלי","שהם פדר","ליהי הראל","מורן כפתורי","גיא כפתורי","טל כפתורי","ספי בר חי","נחשון וגמיסטר","יואב לביא","צביקה לוין","יניב אלון","עומר מירון","ניר רייכמן"];
 const COACH_FIX={"אסף":"אסף אשכנזי","תמיר":"תמיר רבינוביץ","דרור יועץ עסקי":"דרור"};
 const coachFix=n=>COACH_FIX[normName(n)]||normName(n);
 function coachList(){ return [...new Set(COACHES.concat(store.get("coach-arbox",[]),store.get("coach-custom",[])).map(coachFix).filter(Boolean))].sort((a,b)=>a.localeCompare(b,"he")); }
@@ -4286,6 +4304,39 @@ hdrLabels();
 // ---------- "Push The Buttons" moves to the bottom bar, centred between the count and the button (19/11/2026) ----------
 (function(){ const t=document.querySelector("header .tagline"), b=document.querySelector(".bar .in"), c=b&&b.querySelector(".count");
   if(t&&b&&c) c.after(t); })();
+
+// ================= C3US co-branding (19/11/2026) =================
+// The C3US logo shows only to C3US people: an athlete with a C3US training area in Arbox, or coach ניר רייכמן.
+// Everyone else sees the app exactly as before.
+const C3_LOGO="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAIAAAACACAMAAAD04JH5AAABIFBMVEWgUyCYn6XVmyJWYWzZ2tqmnSFqd4f19vfabRp4hZPk5+plcYRoaGicpbFoayo5TmOWnqtRYXQBDjJunjDgz622u8RVqqoSJT8uVDh5hZS9wseRiXaOwywHamqvr+kAAGdVVap6h5ayucUAAP9ja3mwsLjGu6H4xSLGydA9UmpANCl/f/9///+xuMC8xMm6wccA//90fouEfWaq///ElEX/qv8FJkUAAAANJTr4YgMBGTgXMUQAHEP1ugjxXgH9xwz5mBEsNjT///78/PsrKzNNNi7PWROMeCZLSTBvZypUVC5qWS2KRyTUqRk4RDO1lyclOVFoPCiniiX7oxS1UxlyQyqYgyfKpyn/0gsyRFdIWGuRZy2qqqqudiw2SmIaMjlfn6BOAAAAYHRSTlP/+P/x///tKf/uUJ8CnP/pUaX/////AwT/m////wISAgNfTQFkLf//ib3/AgKISowBTP8D/wP+AP7//v7+//////8G//////////////////z///////////v7/wP/+f+UCuj8AAAV/UlEQVR42rVbCXsaSZItCpCEJUvW5Xbb7sN9Tvfs7O7M7paSpKBUqKAuKA5xCDDi//+LfRGZVRwCHW5Pfd0WkhDxMuLFkZGRxtULnvrnb9TX/TefDg/zJ11L4LG6J/nDw09v9uv8y28+11/ymcaz3/nfn7Xsw9NJt1KxNp5KZTI5PdQo3v781QEc0drrPx3mJw9Er8GY5A9/IgzfHH1VALT4+pvD++4DiWQDadOT/ah7f/qGMLz9agBI/P63+e6WFdujqtluF/t+GLlCZCgqJ4f7+g//OgD6lP88vLfsrToP+6N+p92uOo5TbY9iNwMxOX3zLAhPAaiz+O4O8VABHimFcINwNAaMth+lGLoMof6XANR/uLp6ddjdIRgEWLiuu1ikNBBBWKw61X4gNITDn66ufqh/OYDPZPuJJR7IFm4U+h2zfVulp902iyBBIhhE1AcG35WMYUJc+PyFAOrfXdVfTy25IV0kYR82v7u7I7vTg68OfdfuhwGBWIQdx+knBMG27l/XH1WC8djyX+1VWLwtGoGnpEejNgmr8pqDIIEJkiSIfb9IoAhEtAArEr/qdBL6Y1nZe/WYEozd8uv/OFGrF8NWg2HQx96phZLPkZJTctqgQ+QX6ffVEenBxXv7Lv1akBJ+fCGA+tHVfqkrlXijIUhCXMSnm37gklghifvCopgs1Dd4C7jRv4VBzHBBEBxnRnSU1t7+1VH9JQDqpH61tIbRYvFhGxb3EwFQthTd7nQvl3tfUE8uV0KYAggGHHfACtN3AaHvtANexfTVLoc0dsj/m1K/ZxgNm1YP8e0QmsVqrSkk3zx4Cu9zYCwUYUlSv1M9FrYM2o7PSrh/vQOBsd38r1n9du+Ali8D03E6CDBYZDefY+FY9d50iqzY7Va6k2k+p358me9K/KVgCO1Y2MJ32gkhqIAIn58H4Pureo7ZL4wDIp8Y4bMiAiKmLKaQm04sMruEp4mUA5aVz73Hb3NT0gKT0OkgHERVJyZMVmkrAmPL+vdzyvrNJnxPRuZdNaTVizxJz+11mXFMPyvLzfQCOLrTHADuYcEwRJ/sACjFO5/ZASp+fhrA/6Xye2VDqOV3XFI+iS+UusTCSipyTT59AYYK3lgo0duAnf9Y+HednQiMB/zbLzGXW2WY33bbTpUUKKcQfzkVTPRM9MMX9EXKSe6mkCe/JCWYkS1DZ8whAQjqjwOow/4s3ygPpQX73RVp+RUo9nICelV2iOUX2WtBf1C4JzvESAyhtAPHVAjqmwiM7fIH5R6WHToOWY+0X8hr8VtVv/JCPWBD7iYHO9jJ2HFGwk6qVUZQ2kRgrKef+uvKUr7P6pcWK1RuSHtgg83fwmqFCZQgKDMJ29UIXm8gMNYd4G8Tmckf3VXhwXJSuMlxVNhu+lX9r2MQslTYo49DSO4oBPjU7ut1IhprBng1lWx/8A/y22T+/M0N8enR9e8yDMDnQFuo8s5HYHbaZM/JK0SarQDgAAy4Rf4ntPy9m0JXVrZKqGyYfgtCKXKXFEJCM0JsChzyRjldcwXjAQFb5QGBVvKJSeJR02fmX6Nh9hNZeo+oavNn2DEUgS9rrmCsEOC/uvh1o4z4Z4dOKl9au71+U/42LznLv++mRRWWFUNE5fXKnsHYIIBXqzXg/05Vyd+TDz54K/12BwckwlyGAB5BvD55tVSBsfTAknIAEMCt8vtKN3lZ2Um/rfIrW4IDAmP2k0WVibhXz8pEY8UAggjQBAFNJ2L+78mtHywec/9tznCfT1UA3fpyzQhG5gH0pj/LZY8s5ZP/a/mPc2BN2mI7kPW9nBPY7Al/3wDwWkXAFoEsEmC48Fb3W/vwyuMM3fIIk4xgfXt1tArgs2Jgjw2gItbl+6fd7/G8uGMvFzkh4vv9K10oKwBHHAK8ZrlhSeOOCLBXENaTBN9u9sfWT4woOi7nxR+WAKAAqkEpBCFc9fGyW5g+Vng8lC8qz5RvWS5JoIj8OQNQVwqolV1LtKsLMkBOPmng3ZoRj9kAWYacHCr4OQXwP4oBLWJgfBeSBxZeIP9FHPB6FGagAhsseKsBHLELeGVWAHFUoJp5LPs8wwd2Pa3y0LJ9ZsG3V98pADoGIAlSDiAGlpQHPiXg2a638hg1pBqwgAIyZ0WDKPiPCrkAkoComhIWvKyIl5j++eu3rHkZxQ5Y4HI4/FGZoL4nVRVuh3eBrMi9knya/ssXi0fl026Oeih6Gx0c1BBrEgdMs/N1NkGdfVA0gUy0TbiTzHXFLrcWu5ctVmXb+hNsN+yb6KOYtFnV5TYJonAouDYyNAWpDEAMwA5MTkvyUSE71r+C0xbvzo9pQ5j0uX3CTRRsVrkoOagN8C9lBI7HRl1ZwCAK9tkFct2dISjLONvrMkUde3F8XvwIAFSNVpcP50FLHFDCE9URvplCuJFZoIFkHeIN3fyzcuzOF3Zy/rF4Xnxno/qorj28antWrrUs2a8CLNnAgAUqbAFhx9VJHqaxlTXFk5V4uj+lTqHbTeW/K/KTSHNDfpWcT9MQKQn+Xvn26huQsMSFCHygU5xOhQ6k6zHeegyIGxtzc5byFvLPz8+LRehft9DU//SSE7E4qEHbbtUAGviBcbWPMIxCoGGLalyqbKhVPHixJJrwGj10r4R5fX0dS1f/GrJBgeJ5ooWip+RGba0MftOsTDG/CDT2ZB8AXiHsohT1sBPNl+Q2ZxMbPgbJjZbRrJXxGLYHAA05nytHr5x/PD7+eF5cFJXMiHpptCvKANhD+AFCDsWi7hsAUBSAD4yKe3n5MKtVVv7hRQ+aZfXUarXy0HZJfv92ZisGfDxPigAhuYnqjPSKTPJGZ8wf6B7QchMnZkc06q8tlQjFONQRaCOi6aDCOJeiSTr+69mN60BCCYatXWBx/vHjuQyVAWKlFzFCYxO9XPUNHJGi/gi/O4QbIgogPDXQi8jnHlRh4s/esNXqNYROZUowEGgQ+Lt4Lue317dKlH3yDjp4J2fmiuvzuYZcnmkoEnBteF83mIPNMsJgMZ9bD4GyYaTabvYIgkFrLtdY9/wPAciL+Pb6+jZICfLunfDmt2YafJYnCJlGVTD0HYS0yb7BHKQoEBq5vZUqoCK8QaZsyGsB3KCsFcAqoH+QWCxi4fV1BkA05ubtdV/z3qmORyHam6stbxUJYidB1PvJeIWOQKMMRKPw8n5lIyZ75fKqtstDIQZaHQMjlU9ttNktAXDT5Zm39H28DD+UB4rH7hICWFjmxINQ9MYgJ0AqxrYtX+gu+wCypcUrbZM8TwyaBvjgCWlk8hfCJfHXZgpAwbl1R2tpwKE+TebGFIrQLgiJhQY5wRBkXvTzhWX0JfmpolN1I4tqGg9YLdA/JW8l0Uzz75y/vfbEZiR2OhkClZKVGxg5/kEPnc38pUxDkN1I6WYYIKLC0lLnk0p+je1Psdq8XgVgzTUe2+046xB4xSmAIYqPDgVjI8e5uGEncQ6VoOaAaKo1Gh6asV76jUpR6foHQjnqOoCVb/nwxlmiUKlAAzCwQUH5BwB7nAlcsC633Az2tEju8do9xcIBnw4QHPXLnse5hQVez+UDANTWD/gkxVmJxApATVcf9pQBNGteuhlRn9Jk8pGPUSLwFPUbFteu5SwUUS/NUhzUkTgFcDtfqQjdMKVDot5kAwCygU8lgQZQJgCFkm5FQiIHGUTXSnpoQKvFN3arnHoFx0GEZw1Ag9d4kJqWx7lruYhddQngfqkBUdD9gAp0zktsZD1HrmkVmGYWHdgP7EC5nQ76KQBD4iTTTz1P6NS42AaA9iTNslAAsu1LTQEQy8pH6BcNkqsjNKcCBSBIy25FCVMd5uolY8O5SsIVAEIB8PiNhawaNhQAd2tR1ir3UIs0lZWGGwC0Qq6rTlYEQoHH6jt/6YbrJtAwUw5UUgDesiBZyxEUKHoKQEtHvuvGWiC8vtWOl+BkzfWddSfYCSB1Q6FDj3L0xdbqtKEwtnQgTFNB6oXa6DhRJzfUcUiuADCEHLXZC0pZF7GQk8swpL1wW2XEL1IAOvRqE0htkDh0llkgLYmXXQMVB4ptDkS5rG/w/lJzYBXARhks0satDlW9NPYj9iLuxJqCwn1Ykq90LVQkNDsM4HUGIFfQyvBUrYHIp5du84EUFYRGc5gtQnmBNsG1GceGeZtGJbmWDKvq4CN7kA0pF1AvCNkQHHMb3FYu6La8p0KvIXV1BsE9TkqqDFaxkjFmcYDE3upXt7RY0XeWVqj2k9WqyGXkoupzNqSCxKVloTOKnm6lsrQvh/qKoCIyK0bLAz4S1wpoZbRbPrcqL9lRkVPRRjHCsaKs6gEEr8onLskEARD5m6kKhdq+Q1v5oKfrT10WoDLyDF0peBRVbtflz9Nwg7GOKIqShdgc/xiWqS4PECUEKiIqSq0h6x5nA+QDls5+PZv1YevayEi3As1mTSdEhpg6ol5+LDbmPNQrnOYmy2xMNaHamexzWW4NXfZDcgP0MoY6GdvLzIRsiOCn5aZfB7pAojKQn2tz5m4ul0+S7SgYjc2Rne0LEIdGZKpJXW1Meg3lBjwaZg21ghs0p9JoKn20yO61Wlqi1TL5pOxgNp/PZzTEs7J4iMKgA059w44shuafhgbgshNILohO63prRsoECSYiCzL0tHpDo5zWf9TI1DU5fzU2dL3ceODFIggjFGXjcTwGgD4AjDum3rsMtRNwTao3p4IYL7o3amfiZek20zbRzXKb5Wxj0GzsasSKpDMSnY4fnY1GMgxxYOf7Z+NwfOb3bb0xSjmIqlxvz62Wy9mgwOlIKZv3fkz+GllDHSirWNA0GmKjFYZfJpY1isQ4gLDQPHZt2Y9xatw/k6O+O45+L46TrCjHNuSYUlGXtuf1EqmFbIAzogmHW29V1/RfY3VnThuDjNzEb5EcjxIZ3UWy2nY7xx30S8xxHmVI5PZ90x8F43EkMPiS7YuIAhSIxQkaFN8xCdwWH+6QDYiGvWxPxg7obe/8i0UiFqEchZ1Rfyz7bV+Mx/2OPzoLgrHnurZvjuOgfxyRZ7GSXOqDz6jS0NuSU7RodJOKKUU2EHp4IQ1+D9TNzRHhyiSMzXEn6kisOfJ9Wro3xmkLDDAOzPE4wdiPa1srg36u01EW4J0hGtOgwFvdprOH7Ih7N1Ohwp9AD2QwMIYNsUp2Vr076oxjM4iwVjkGwzvH5tjE4WinGo3FqCP6nUS4XEWsxwSbz6LIB2CBDh0LTepXP6eNSlep4GZ5TmBnqZfVh3Ai4nlMQX7sCpzChr4fig4xPBpj6R3f7UehJRaWvWPyDpWhS81i8gH3d2WB71Sr9p52R56laVhZbRIJGtWLYzETwXw2b8wJQLufRJ1+9bgfBePI7HTcjoiiQDHykcOikA7DEliAmtIIg6LyCScGWbOa/cDqKhqmst3GzJjH5syMDzBQFZsxZZ/QdGXcd+/CDkgmw2MuG+wnG/WijYaANLhJJ9vUPDpRzWq068kPFA2hgq4qTRHh564ZzEw3OJDz4VzEMxnMkepsvx364UgeB0mg2f2cB514bI9ds2Ec0MFUwhY4Sg8sOBZxOCZPZPmB2ZjHB9KdY4zJnHmmnM1mMf0vo34Y0YTKc5a9ooBbUsB8LptEwTH03P2eDi9XjmxSFdAQxULODAximVi0jI3AFOYcqpjPwERr1bOe/aAlBK27pteDApLfI1ZAemj1PYcCu8VlSfemQCqw57EMoAH0wKB7H0T0LOsLBKfyE9omSXMmD3BggrBlUR44Wh7blVIVVHBmTpyUs4PZHMsPkNSEZb1M3VsZiGGeoSmHUIDLO6aT+trB5X3KAgqHtBdyZzPxxAHg8x/Js1TCDCS5QJ86E/DBowdHtyoY5W8uyQ9t2/paDw9EMAMHqGKC35OlAtYOr+0hV+LgYUlaX/NxuWcLKjdoOmDcXzIgO77/D3V8bzTULvHm/msiQMMMLVsPBjgY0kQN6fn06oerdQB8eNk44K5Mt1D4mvL71KGT/5uTLRjA48qs++v6/ACfXtIAdavFlfb05lL+deqnBKTOhJxdYHkwQId2hKgFj3YMsSgj6PmdpJPYX0E+EXB4MZWYz5QxG+BkOUm0OcbjHngZAhylVwP7r8vHKhoXpTOjRaGQPjBj4INBJppjVeW2YFfAX0d/CQEGMkm+e5E7a+GD5dhfN8CWUS671Rx4yhX2JCL4SmPjC+SjU4Ja2LvISeQAHFozAfLbR7myYbamak0AQUmmM41fFn8wENpGEeRevJfkX3Y45nG6X9MRnh3jfI2y2nWJC+IBpnI77heZgcY50SqQDZS6HgouO+CxzlUCbBtotFcQgImYzjXVXOtLl0/zuFAexkHeK/muyT51uD7ovj7SeaRGOntLBIXJGZ1B91+qBInDSupcoe2RY/mWO2aPOn1spDObKUwRyA88zUonn6GwX2L9ouMUsWpSonRbtP4x+1P+0aHWNQRNLpMxUAszLDCUSZPizxXvV+9oGJzmUfOywQPKmfyj5w02gwcHtCOV3d9uMNQkk44ar39aOouHwlBckwVlMGT5rP/8PrLOE6Pdn1METXUeYIkPGCjvnsmIIOCCgf049SJcg6jS5QJWnpAN2p4FypHyzxjtXiKglgw3yuTk4uamZJ3JoI8rFsUwEdtrFbrm47fv7qrHJL5L08hSJbSoI3bJ3zbe/5nG+201bzLwqPqmuXqMzJ/h7kqbLpn4uNcl066I+oI9elikXxbjhc1z1TxYTTs67AE5lMH+b192wUEMsUvnzqh0P9DIfFeeicjnazZt3LKJoyDBE0RhWDT5egurR2KKFOInvPwGzYbwc/qAf8+44kFEGLgZBFxegBqw1lF20chRl4wgHE0ZF/tnaeUv8cY8b6Qxo1xmADamNbbKf+qSC38CMwEQ/nXBtysseSblIsFdq1Gfx0V8umZFt4vockHuhsWz9nsZ/vs3L7rkoq/50D0P0qE+O6c7FnTFo5Dbu8f4/BlgZA9ei8q0hLXfXOTVNS/BfzlU5t/feett50WntyDCPX/QcAWCdLNLLqX8lK5+4uneZ5dcLj5M1EG5aNBJd8vjLffhdvM/+6qX16rRWjx9c8DLf8hdPLznU/jtA9au2les/LKhEsgJ1P/jF192O7EUBGoRpt0iumDo5gEj99sFPb/lPvwrTzMCemCE313W76blX9X/2nU/K4VQbrayjpWyveArPlJmAwrCHao3Kn1VTr9/4vLp8y88it5Adc167o4SCU1E1ckcDD01EPjH03cun3Pl8ydA4PLAGw5Un3bAcwzUxRLqIInGe/RkUbOlAVb++HR1dXX0lS69TrKh1FY22NJsDtDJQzev2aylTUUcqeuJJr5x+vZrXvutrGjaaGadTN3TJa1ktqmcnP569Rj3v/Tic2XlwjO6xjRj1GoNe7CHt8KL7uk/689Q/pdc/X5zmO8+PrWKtf/z33D1my+/v1WX3z8dnt5vRVHp/nH6y/fM+aOrf8Pte5L+Nrv+/wuu/+dP7tWTz5+e/vLLr/r6/48/v+Qz/x+Hz9zil8nrtgAAAABJRU5ErkJggg==";
+const C3_COACHES=["ניר רייכמן"];
+const C3_AREAS_DEF=["שחייה חדרה","קריטריום קיסריה","ריצה שחייה שישי","Live טריינר","רכיבת שבת C3US"];
+function c3Areas(){ let L=[]; try{ L=(cfg.locations||[]).filter(l=>(l.branch||"")==="C3US").map(l=>l.name); }catch(e){} return [...new Set(C3_AREAS_DEF.concat(L))]; }
+const c3Norm=s=>String(s||"").replace(/\s+/g," ").trim();
+function c3Athlete(){ try{ const a=store.get(ATH_KEY,null); const u=a&&a.user; if(!u) return false;
+  const ar=areaList(u.area||""), A=c3Areas(); return ar.some(x=>A.includes(x))||(u.memberships||[]).some(m=>/C3US/i.test(m.name||"")); }catch(e){ return false; } }
+function c3Coach(){ const c=coachCred(), n=c3Norm((c&&c.coachName)||""); return !!n&&C3_COACHES.includes(n); }
+function c3On(){ return document.body.classList.contains("ath-mode")?c3Athlete():c3Coach(); }
+let c3Re=null;
+function c3Rx(){ if(!c3Re){ const e=s=>s.replace(/[.*+?^${}()|[\]\\]/g,"\\$&"); c3Re=new RegExp(c3Areas().map(e).concat(["C3US"]).join("|")); } return c3Re; }
+function c3Img(cls){ const i=document.createElement("img"); i.src=C3_LOGO; i.alt="C3US"; i.className=cls; return i; }
+function c3Apply(){
+  const on=c3On(); document.body.classList.toggle("c3",on);
+  document.querySelectorAll("header .brand, .ath-hd .brand").forEach(b=>{ if(b.querySelector(".c3logo")) return; const im=b.querySelector("img"); if(!im) return;
+    const sep=document.createElement("i"); sep.className="c3sep"; im.after(sep); sep.after(c3Img("c3logo")); });
+  if(!on) return;
+  const rx=c3Rx();
+  document.querySelectorAll(".ses .nm b, .bds .nm b").forEach(b=>{ if(b.dataset.c3) return; b.dataset.c3="1";
+    const card=b.closest(".ses,.bds"); if(rx.test(card.textContent)) b.appendChild(c3Img("c3mini")); });
+  document.querySelectorAll(".ath-next").forEach(n=>{ if(n.dataset.c3) return; n.dataset.c3="1"; if(!rx.test(n.textContent)) return;
+    const t=document.createElement("span"); t.className="c3tag"; t.appendChild(c3Img("")); t.appendChild(document.createTextNode("C3US")); n.appendChild(t); });
+  document.querySelectorAll(".sheetov .sh").forEach(s=>{ if(s.dataset.c3||!/נרשמת לאימון/.test(s.textContent)) return; s.dataset.c3="1";
+    const w=document.createElement("div"); w.className="c3two"; const bl=document.querySelector("header .brand img");
+    if(bl){ const a=document.createElement("img"); a.src=bl.src; a.alt=""; w.appendChild(a); } w.appendChild(c3Img("")); s.prepend(w); });
+}
+(function(){ let q=0; const run=()=>{ q=0; try{ c3Apply(); }catch(e){} };
+  new MutationObserver(()=>{ if(!q) q=requestAnimationFrame(run); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
+  run(); })();
 
 </script>
 </body>
