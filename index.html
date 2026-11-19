@@ -697,7 +697,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · לוגו C3US</div>
+  <div class="ver">גרסה 19/11/2026 · התקנה למתאמנים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -2071,6 +2071,7 @@ function instCardShow(){
   const ipad=/iPad/.test(ua)||(/Macintosh/.test(ua)&&navigator.maxTouchPoints>1);
   const inApp=/FBAN|FBAV|Instagram|Line\/|WhatsApp|wv\)/.test(ua);
   const iosChrome=/CriOS|FxiOS|EdgiOS/.test(ua);
+  let icAth=false; try{ icAth=store.get("link-role","")==="athlete"||new URLSearchParams(location.search).get("r")==="ath"; }catch(e){}
   let steps, btn="", arrow="";
   if(inApp){
     steps=`<p>האפליקציה נפתחה בתוך ${/WhatsApp/.test(ua)?"וואטסאפ":"אפליקציה אחרת"}, ומשם אי אפשר להתקין.</p>
@@ -2088,7 +2089,7 @@ function instCardShow(){
   }
   const d=document.createElement("div"); d.id="instCard"; d.className="ic-wrap"; d.setAttribute("role","dialog"); d.setAttribute("aria-modal","true"); d.setAttribute("aria-labelledby","icTitle");
   d.innerHTML=`<div class="ic-card"><img src="icon-192.png" alt="" class="ic-logo" width="96" height="96">
-    <h2 id="icTitle">התקינו את אפליקציית הנוכחות</h2><p class="ic-sub">סמל על מסך הבית – פתיחה בלחיצה, בלי לחפש קישור</p>
+    <h2 id="icTitle">${icAth?"התקינו את אפליקציית הרישום לאימונים":"התקינו את אפליקציית הנוכחות"}</h2><p class="ic-sub">סמל על מסך הבית – פתיחה בלחיצה, בלי לחפש קישור</p>${icAth&&ios&&!inApp?`<p class="ic-sub"><b>אחרי ההתקנה:</b> פותחים מהסמל במסך הבית ומתחברים שם – פעם אחת בלבד.</p>`:""}
     ${steps}${btn}<button type="button" class="btn ic-later" id="instCardLater">לא עכשיו</button></div>${arrow}`;
   document.body.appendChild(d);
   const close=snooze=>{ if(snooze) store.set(INST_SNOOZE,Date.now()); d.remove(); };
