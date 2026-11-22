@@ -567,8 +567,8 @@ body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
 <body>
 <script>try{var _r=JSON.parse(localStorage.getItem("role-v1")||"null"),_a=JSON.parse(localStorage.getItem("ath-cred")||"null");
 if(_r&&_r.role==="athlete"&&_a&&_a.token)document.body.classList.add("ath-mode");
-else if(JSON.parse(localStorage.getItem("reg-gate")||"false")){var _c=JSON.parse(localStorage.getItem("coach-cred")||"null"),_ok=false;try{_ok=sessionStorage.getItem("coach-ok")==="1"}catch(e){}
-document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode":"gated");}}catch(e){}</script>
+else{var _c=JSON.parse(localStorage.getItem("coach-cred")||"null");
+document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":"gated");}}catch(e){}</script>
 <section class="gate" id="gate" hidden aria-label="כניסה">
   <div class="gate-in">
     <div class="gate-logo"><img id="gLogo" alt=""><h1>The Buttons Triathlon<small>נוכחות והרשמה לאימונים</small></h1></div>
@@ -705,7 +705,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 22/11/2026 · שם המאמן ומספר נרשמים בכותרת</div>
+  <div class="ver">גרסה 22/11/2026 · כניסה למסך הנוכחות רק למאמן מחובר</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -1756,7 +1756,7 @@ function sync(t,cls,retry){
 }
 let verifyT=null, tries=0;
 function postReport(r){
-  try{ fetch(scriptUrl(),{method:"POST",mode:"no-cors",keepalive:true,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(r)}).catch(()=>{}); }catch(e){}
+  try{ fetch(scriptUrl(),{method:"POST",mode:"no-cors",keepalive:true,headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify(Object.assign({},r,(typeof coachCred==="function"&&coachCred())||{}))}).catch(()=>{}); }catch(e){}
 }
 // reports waiting for reception: kept on the phone and sent by themselves when the app is open with a connection
 const OUTBOX="outbox-v1";
@@ -3011,6 +3011,7 @@ function toastOk(t){ showToast(t,true); }
 function isoOfDmy(d){ const m=String(d||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:""; }
 function mgStatus(t,err){ const s=$("mgrStatus"); s.textContent=t||""; s.classList.toggle("err",!!err); }
 async function scriptCall(payload){
+  try{ payload=Object.assign({},coachCred()||{},payload); }catch(e){}
   const url=scriptUrl(); if(!url) throw new Error("לא הוגדרה כתובת הסקריפט של הגיליון");
   const r=await jsonp(cb=>`${url}${url.includes("?")?"&":"?"}callback=${cb}&payload=${encodeURIComponent(JSON.stringify(payload))}`,30000);
   if(!r||!r.ok){ const e=new Error((r&&r.error)||"הגיליון לא אישר את השינוי"); e.resp=r; throw e; }
@@ -3439,7 +3440,7 @@ const ROLE_KEY="role-v1";                 // the device's default profile {role,
 const roleGet=()=>store.get(ROLE_KEY,null);
 const roleSet=r=>{ store.set(ROLE_KEY,r); };
 const COACH_KEY="coach-cred", ATH_KEY="ath-cred";   // logins are kept apart, so trying the athlete screens doesn't log the coach out
-const gateOn=()=>!!store.get("reg-gate",false);
+const gateOn=()=>true;   // 22/11/2026: always on – an athlete could open the attendance screen from the plain link
 // a link that says who it is for: ?r=coach → coach login only (once, then straight in) · ?r=ath → athlete screen only.
 // The choice is kept on the phone, so the next opens (and the home-screen icon) stay on that side.
 const LINK_KEY="link-role";
@@ -3561,10 +3562,10 @@ function gateStart(){
   { const r0=roleGet(); if(r0&&r0.role==="athlete"&&athCred()){ athStart(); return; } }   // an athlete who logged in here always lands in sign-up
   if(!gateOn()){ gateLeave(); if(coachCred()){ regApply(); coachVerify(); } return; }   // opening screen off: the app opens as before
   const r=roleGet();
+  if(coachCred()&&(!r||r.role==="coach")){ if(!r) roleSet({role:"coach",name:coachCred().coachName}); gateLeave(); regApply(); coachVerify(); return; }   // a coach who already logged in keeps working
   if(!r){ gateShow(); return; }
   if(r.role==="athlete"){ if(athCred()) athStart(); else gateShow("athlete"); return; }
-  let ok=false; try{ ok=sessionStorage.getItem("coach-ok")==="1"; }catch(e){}
-  if(ok&&coachCred()){ document.body.classList.remove("gated"); $("gate").hidden=true; regApply(); coachVerify(); return; }
+  if(coachCred()){ document.body.classList.remove("gated"); $("gate").hidden=true; regApply(); coachVerify(); return; }   // logged in once → straight in
   gateShow("coach");
 }
 async function coachVerify(){            // the password may have changed in the sheet since the last login
@@ -4076,7 +4077,7 @@ function edNotify(r,d,names,why){
 async function profEdInit(){
   const r=roleGet()||{}, c=store.get(COACH_KEY,null);
   $("profNow").textContent=(c&&c.token?`מחובר/ת כמאמן: ${c.name}`:"לא מחובר/ת כמאמן בטלפון הזה")+(r.role?` · ברירת מחדל: ${r.role==="coach"?"מאמן":"מתאמן"} ${r.name||""}`:"");
-  $("regGateChk").checked=gateOn();
+  $("regGateChk").checked=true; $("regGateChk").disabled=true;
   $("profRole").value=r.role||"coach"; profRoleUi(); if(r.role==="athlete") $("profAth").value=r.name||"";
   const sel=$("profCoach"), names=store.get("coach-names",[]).length?store.get("coach-names",[]):coachList();
   sel.innerHTML=names.map(n=>`<option${n===(r.role==="coach"?r.name:(c&&c.name))?" selected":""}>${esc(n)}</option>`).join("");
