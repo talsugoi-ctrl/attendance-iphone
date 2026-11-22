@@ -533,6 +533,14 @@ body.bd-open{overflow:hidden}
 /* tagline in the bottom bar: centred in the space between "נבחרו" and the button */
 .bar .tagline{flex:1;min-width:0;text-align:center;margin-inline-end:0;font-size:.74rem;letter-spacing:.12em;overflow:hidden;text-overflow:ellipsis}
 .bar .in .btn{margin-inline-start:0}
+/* coach name under the team logo; sign-up count on the "נרשמים" icon */
+.blogo{display:flex;flex-direction:column;align-items:center;gap:2px;flex:none}
+.cname{font:800 .6rem/1.15 var(--body);color:var(--accent);max-width:76px;text-align:center;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.cname[hidden]{display:none}
+#boardBtn{position:relative}
+.bdcnt{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);min-width:20px;height:17px;padding:0 5px;border-radius:999px;background:var(--ok);color:#fff;font:800 .68rem/17px var(--body);text-align:center;box-shadow:0 0 0 2px var(--bg);font-variant-numeric:tabular-nums}
+.bdcnt.z{background:var(--muted)}
+.hb:has(#boardBtn)>small{margin-top:5px}
 
 /* ---------- C3US co-branding: hidden unless body.c3 ---------- */
 .c3logo,.c3sep{display:none}
@@ -697,7 +705,7 @@ document.body.classList.add(_r&&_r.role==="coach"&&_c&&_c.token&&_ok?"coach-mode
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 19/11/2026 · התקנה למתאמנים</div>
+  <div class="ver">גרסה 22/11/2026 · שם המאמן ומספר נרשמים בכותרת</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4306,6 +4314,41 @@ hdrLabels();
 (function(){ const t=document.querySelector("header .tagline"), b=document.querySelector(".bar .in"), c=b&&b.querySelector(".count");
   if(t&&b&&c) c.after(t); })();
 
+// ---------- header: the logged-in coach's name under the team logo + how many signed up for his sessions (22/11/2026) ----------
+(function(){
+  const im=document.querySelector("header .brand img"); if(!im||im.closest(".blogo")) return;
+  const w=document.createElement("span"); w.className="blogo"; im.before(w); w.appendChild(im);
+  const n=document.createElement("small"); n.className="cname"; n.id="hdrCoach"; w.appendChild(n);
+  const sb=$("boardBtn"); if(sb){ const k=document.createElement("span"); k.className="bdcnt"; k.id="bdCnt"; k.hidden=true; sb.appendChild(k); }
+})();
+let HC={name:null,busy:false,at:0};
+function hdrCoachRender(){
+  const c=coachCred(), nm=c?bdNorm(c.coachName):"";
+  const el=$("hdrCoach"); if(el){ el.textContent=nm; el.title=nm?"מחובר/ת כמאמן: "+nm:""; el.hidden=!nm; }
+  const k=$("bdCnt"); if(!k) return;
+  const s=store.get("bd-count",null);
+  if(!nm||!s||s.name!==nm){ k.hidden=true; return; }
+  k.textContent=s.n>99?"99+":String(s.n); k.hidden=false; k.classList.toggle("z",!s.n);
+  k.title=`${s.n} נרשמים לאימונים שלך ב-7 הימים הקרובים`;
+}
+async function hdrCountLoad(force){
+  const c=coachCred(); if(!c||HC.busy||!navigator.onLine) { hdrCoachRender(); return; }
+  if(!force&&HC.name===c.coachName&&Date.now()-HC.at<5*60*1000) { hdrCoachRender(); return; }
+  HC.busy=true;
+  try{
+    const x=await api("regBoard",Object.assign({days:7},c),40000);
+    if(x&&x.ok){ const nm=bdNorm(c.coachName);
+      const n=(x.sessions||[]).filter(s=>!s.cx&&bdMine(s,nm)).reduce((a,s)=>a+s.regs.filter(bdLive).length,0);
+      store.set("bd-count",{name:nm,n,at:Date.now()}); HC.name=c.coachName; HC.at=Date.now(); }
+  }catch(e){}
+  HC.busy=false; hdrCoachRender();
+}
+hdrCoachRender(); setTimeout(()=>hdrCountLoad(true),1500);
+// login / logout / back to the app: refresh
+setInterval(()=>{ const c=coachCred(), nm=c?c.coachName:null; if(nm!==HC.seen){ HC.seen=nm; hdrCountLoad(true); } },3000);
+setInterval(()=>hdrCountLoad(false),5*60*1000);
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden) hdrCountLoad(false); });
+
 // ================= C3US co-branding (19/11/2026) =================
 // The C3US logo shows only to C3US people: an athlete with a C3US training area in Arbox, or coach ניר רייכמן.
 // Everyone else sees the app exactly as before.
@@ -4324,7 +4367,7 @@ function c3Img(cls){ const i=document.createElement("img"); i.src=C3_LOGO; i.alt
 function c3Apply(){
   const on=c3On(); document.body.classList.toggle("c3",on);
   document.querySelectorAll("header .brand, .ath-hd .brand").forEach(b=>{ if(b.querySelector(".c3logo")) return; const im=b.querySelector("img"); if(!im) return;
-    const sep=document.createElement("i"); sep.className="c3sep"; im.after(sep); sep.after(c3Img("c3logo")); });
+    const at=im.closest(".blogo")||im; const sep=document.createElement("i"); sep.className="c3sep"; at.after(sep); sep.after(c3Img("c3logo")); });
   if(!on) return;
   const rx=c3Rx();
   document.querySelectorAll(".ses .nm b, .bds .nm b").forEach(b=>{ if(b.dataset.c3) return; b.dataset.c3="1";
