@@ -788,7 +788,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · אירוע חדש – בחירת אזור אימון</div>
+  <div class="ver">גרסה 23/11/2026 · תיקון שמירת אירוע וממונה רישום</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4525,7 +4525,7 @@ async function dlgLoad(pw){
   dlgMsg("בודק…",true); const b=$("dlgPwGo"); if(b) b.disabled=true;
   try{
     const x=await api("delegSessions",Object.assign({dh:DLG.h},c),60000);
-    if(!x.ok){ DLG.h=null; dlgPw(x.error||"הכניסה נכשלה"); return; }
+    if(!x.ok||!Array.isArray(x.sessions)){ DLG.h=null; dlgPw(x.error||"השרת לא ענה כמו שצריך – נסה שוב"); return; }
     DLG.data=x; dlgList();
   }catch(e){ if(!e.auth) dlgPw("השרת לא זמין: "+e.message); else dlgClose(); }
 }
@@ -4674,7 +4674,7 @@ const evNeedsStr=L=>L.map(n=>n.qty>1?`${n.item}×${n.qty}`:n.item).join(";");
 })();
 async function evLoadList(quiet){
   const c=evCred(); if(!c||!navigator.onLine) { EV.list=evMine(EV.list)||evMine(store.get("ev-list",null)); return EV.list; }
-  try{ const x=await api("evList",c,45000); if(x&&x.ok){ EV.list=x; store.set("ev-list",x); } else if(!quiet&&x) showToast(x.error||"שגיאה"); }catch(e){}
+  try{ const x=await api("evList",c,45000); if(x&&x.ok&&Array.isArray(x.events)){ EV.list=x; store.set("ev-list",x); } else if(!quiet&&x) showToast(x.error||"שגיאה"); }catch(e){}
   if(quiet){ evBadge(); if(!$("ath").hidden) evHomeCard(); }
   return EV.list;
 }
@@ -4713,7 +4713,7 @@ function evListRender(){
 // ---------- one event + its report ----------
 async function evView(id){
   EV.view="ev"; evShow("🎉 אירוע"); const B=$("evBody"); B.innerHTML=evMsg("טוען…");
-  try{ const x=await api("evGet",Object.assign({id},evCred()),45000); if(!x.ok){ B.innerHTML=evMsg(esc(x.error||"האירוע לא נמצא")); return; } EV.cur=x; evRender(); }
+  try{ const x=await api("evGet",Object.assign({id},evCred()),45000); if(!x.ok||!x.ev||!x.sum){ B.innerHTML=evMsg(esc(x.error||"האירוע לא נמצא – נסה שוב בעוד רגע"))+`<button type="button" class="btn wide" id="evBackL">חזרה לרשימה</button>`; $("evBackL").onclick=evList; return; } EV.cur=x; evRender(); }
   catch(e){ if(!e.auth) B.innerHTML=evMsg("השרת לא זמין: "+esc(e.message)); }
 }
 function evRender(){
@@ -4869,7 +4869,7 @@ async function evSaveForm(){
   const addr=f.lat!=null?f.addr:$("efQ").value.trim();
   if(EV.busy) return; EV.busy=true; $("efGo").disabled=true; m.textContent="שומר…";
   try{ const x=await api("evSave",Object.assign({ev:{id:f.id,title:f.title,area:f.area,date:evDMY(f.date),time:f.time,resp:f.resp,desc:f.desc,deadline:evDMY(f.dl),addr,lat:f.lat,lng:f.lng,needs:evNeedsStr(f.needs)}},evCred()),45000);
-    if(!x.ok) throw new Error(x.error||"השמירה נכשלה");
+    if(!x.ok||!x.id) throw new Error(x.error||"השמירה לא אושרה בשרת – נסה שוב");
     showToast(f.id?"✓ האירוע עודכן":"✓ האירוע פורסם – אפשר לשתף בוואטסאפ",true); try{ EV.fmap&&EV.fmap.remove(); }catch(_){} EV.fmap=null; EV.list=null; evLoadList(true); evView(x.id);
   }catch(e){ if(!e.auth) m.textContent=e.message; }
   finally{ EV.busy=false; const b=$("efGo"); if(b) b.disabled=false; }
