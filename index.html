@@ -705,7 +705,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 22/11/2026 · כניסה למסך הנוכחות רק למאמן מחובר</div>
+  <div class="ver">גרסה 23/11/2026 · האימון של היום עם הנרשמים נפתח לבד</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4340,7 +4340,7 @@ async function hdrCountLoad(force){
     const x=await api("regBoard",Object.assign({days:7},c),40000);
     if(x&&x.ok){ const nm=bdNorm(c.coachName);
       const n=(x.sessions||[]).filter(s=>!s.cx&&bdMine(s,nm)).reduce((a,s)=>a+s.regs.filter(bdLive).length,0);
-      store.set("bd-count",{name:nm,n,at:Date.now()}); HC.name=c.coachName; HC.at=Date.now(); }
+      store.set("bd-count",{name:nm,n,at:Date.now()}); HC.name=c.coachName; HC.at=Date.now(); todayOpen(x.sessions||[],nm); }
   }catch(e){}
   HC.busy=false; hdrCoachRender();
 }
@@ -4349,6 +4349,32 @@ hdrCoachRender(); setTimeout(()=>hdrCountLoad(true),1500);
 setInterval(()=>{ const c=coachCred(), nm=c?c.coachName:null; if(nm!==HC.seen){ HC.seen=nm; hdrCountLoad(true); } },3000);
 setInterval(()=>hdrCountLoad(false),5*60*1000);
 document.addEventListener("visibilitychange",()=>{ if(!document.hidden) hdrCountLoad(false); });
+
+// ---------- on opening the app: today's session of the logged-in coach that already has sign-ups opens by itself (23/11/2026) ----------
+// branch + place are selected, the session's type/duration filled, and the signed-up athletes marked (regApply does the marking).
+// Once per app launch, only on today's date and only while nothing was chosen yet – a coach who already picked a place is never overridden.
+let TODAY_OPENED=false;
+function todayPick(list,nm){
+  const now=new Date(), today=dmyOf(todayISO()), hm=t=>{ const m=String(t||"").match(/(\d{1,2}):(\d{2})/); return m?(+m[1])*60+(+m[2]):null; }, mins=now.getHours()*60+now.getMinutes();
+  const mine=list.filter(s=>s.date===today&&!s.cx&&bdMine(s,nm)&&(s.regs||[]).some(bdLive));
+  if(!mine.length) return null;
+  const st=s=>hm(s.start)??0, en=s=>hm(s.end)??(st(s)+90);
+  const live=mine.filter(s=>en(s)+60>=mins).sort((a,b)=>st(a)-st(b));   // running now, or the next one today (a report up to an hour after the end)
+  return live[0]||mine.sort((a,b)=>st(b)-st(a))[0];                      // all over: the last one of the day
+}
+function todayOpen(list,nm){
+  if(TODAY_OPENED) return; TODAY_OPENED=true;
+  try{
+    if(current!=null||document.body.classList.contains("ath-mode")||document.body.classList.contains("gated")) return;
+    if(!$("resultCard").hidden||!$("sched").hidden) return;
+    if(dmyOf(trainingDate())!==dmyOf(todayISO())) return;
+    const s=todayPick(list,nm); if(!s) return;
+    const n=s.regs.filter(bdLive).length, me=$("coach").value;
+    schUse({place:s.place,area:s.area,branch:s.branch,name:s.title||"",type:s.type,start:s.start,end:s.end,coach:null});
+    if(me&&$("coach").value!==me){ $("coach").value=me; store.set("coach",me); coachSync(); }
+    if(current!=null) showToast(`📝 נפתח האימון שלך היום: ${s.title||s.place} ${s.start||""} · ${n===1?"נרשם/ה אחד/ת":n+" נרשמו"} – מסומנים ברשימה`,true);
+  }catch(e){}
+}
 
 // ================= C3US co-branding (19/11/2026) =================
 // The C3US logo shows only to C3US people: an athlete with a C3US training area in Arbox, or coach ניר רייכמן.
