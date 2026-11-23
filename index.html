@@ -786,7 +786,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · אירועים חברתיים – תיקון יצירת אירוע</div>
+  <div class="ver">גרסה 23/11/2026 · תיקון מסך ריק אצל מתאמן מחובר</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4579,11 +4579,11 @@ async function dlgSend(){
 
 // ================= athletes see who signed up to sessions in their own areas (23/11/2026) =================
 // Full names, the next 14 days; an athlete may hide his own name ("מתאמן/ת נוסף/ת" for the others). The server only answers for his areas.
-const WHO={regs:store.get("ath-who",{}),hidden:!!store.get("ath-who-hidden",false),busy:false};
-const whoKey=(dmy,start,title)=>dmy+"|"+start+"|"+normName(title||"");
-function whoNames(dmy,start,title){ return WHO.regs[whoKey(dmy,start,title)]||null; }
-const whoMe=()=>normName(((athCred()||{}).name)||"");
-const whoShow=n=>n||"מתאמן/ת נוסף/ת";
+var WHO=WHO||{regs:store.get("ath-who",{}),hidden:!!store.get("ath-who-hidden",false),busy:false};
+function whoKey(dmy,start,title){ return dmy+"|"+start+"|"+normName(title||""); }
+function whoNames(dmy,start,title){ try{ return (WHO&&WHO.regs&&WHO.regs[dmy+"|"+start+"|"+normName(title||"")])||null; }catch(e){ return null; } }
+function whoMe(){ return normName(((athCred()||{}).name)||""); }
+function whoShow(n){ return n||"מתאמן/ת נוסף/ת"; }
 function whoBtn(dmy,start,title,cap){
   const L=whoNames(dmy,start,title); if(!L||!L.length) return "";
   return `<button type="button" class="who" data-wk="${esc(whoKey(dmy,start,title))}">👥 ${L.length} נרשמו${cap?` מתוך ${cap}`:""} · מי?</button>`;
@@ -4595,6 +4595,7 @@ function whoLine(dmy,start,title){
   return `<button type="button" class="who ln" data-wk="${esc(whoKey(dmy,start,title))}">👥 מגיעים גם: ${esc(shown.join(", ")||whoShow(""))}${rest>0&&shown.length?` ועוד ${rest}`:""}</button>`;
 }
 function whoHideCard(){
+  if(!WHO) return "";
   return `<label class="card whohide"><input type="checkbox" id="whoHide"${WHO.hidden?" checked":""}><span><b>אל תציג את שמי לאחרים</b><small>מתאמנים אחרים יראו "מתאמן/ת נוסף/ת" במקום השם שלך ברשימות הנרשמים. המאמנים תמיד רואים את השם.</small></span></label>`;
 }
 function whoOpen(key){
@@ -4667,6 +4668,7 @@ const evNeedsStr=L=>L.map(n=>n.qty>1?`${n.item}×${n.qty}`:n.item).join(";");
   // home card + badge for athletes
   const _rm=athRenderMine; athRenderMine=function(){ _rm(); evHomeCard(); };
   const _al=athLoad; athLoad=async function(f){ const r=await _al(f); evLoadList(true); return r; };
+  if(!$("ath").hidden&&athCred()){ evHomeCard(); evLoadList(true); }   // auto-login at startup ran before this code
 })();
 async function evLoadList(quiet){
   const c=evCred(); if(!c||!navigator.onLine) { EV.list=evMine(EV.list)||evMine(store.get("ev-list",null)); return EV.list; }
