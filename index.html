@@ -559,6 +559,32 @@ body.c3 .ath-hd .brand h1{margin-inline-start:4px;min-width:0}
 .c3tag img{width:20px;height:20px}
 .c3two{display:flex;justify-content:center;gap:14px}.c3two img{width:58px;height:58px}
 body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
+/* "אני ממונה רישום" (23/11/2026) */
+.ath-tabs{grid-template-columns:repeat(4,1fr)}
+.dlgv{position:fixed;inset:0;z-index:80;background:var(--bg);overflow-y:auto;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(96px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px))}
+.dlgv[hidden]{display:none}
+.dlg-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px}.dlg-hd h2{margin:0;font-size:1.15rem;flex:1}
+.dlg-x{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:50%;width:38px;height:38px;font-size:1rem;cursor:pointer}
+.dlg-card{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}.dlg-card p{margin:0;line-height:1.5}
+.dlg-l{font-weight:700;font-size:.85rem;color:var(--muted)}
+.dlg-card input,.dlg-card select{font:inherit;padding:11px 12px;border:1px solid var(--line);border-radius:10px;background:var(--chip,var(--surface));color:var(--fg)}
+.dlg-msg{margin:4px 0 0;min-height:1.2em;font-size:.88rem;color:var(--danger,#c0392b);text-align:center}.dlg-msg.ok{color:var(--muted)}
+.dlg-sub{margin:0 0 8px;color:var(--muted);font-size:.9rem}
+.dlg-ses{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:right;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:12px;margin-bottom:8px;font:inherit;color:var(--fg);cursor:pointer}
+.dlg-ses .t{font-weight:800;color:var(--accent);min-width:3.4em;display:flex;flex-direction:column;align-items:center;font-variant-numeric:tabular-nums}.dlg-ses .t small{font-weight:400;white-space:nowrap;color:var(--muted)!important}
+.dlg-ses .m{display:flex;flex-direction:column;gap:2px}.dlg-ses small{color:var(--muted);font-size:.8rem}
+.dlg-ses.done{opacity:.6;cursor:default}.dlg-ses.done .m small:last-child{color:var(--ok,#1e8e3e);font-weight:700}
+.dlg-top small{color:var(--muted)}.dlg-coach{font-weight:700}
+.dlg-ppl{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:4px}
+.dlg-ppl li label{display:flex;align-items:center;gap:10px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;cursor:pointer}
+.dlg-ppl li.on label{background:color-mix(in srgb,var(--ok,#1e8e3e) 12%,transparent);border-color:var(--ok,#1e8e3e)}
+.dlg-ppl input{width:20px;height:20px;accent-color:var(--accent);flex:none}.dlg-ppl span{flex:1}
+.dlg-ppl .tg{font-style:normal;font-size:.72rem;font-weight:700;background:var(--ok,#1e8e3e);color:#fff;border-radius:99px;padding:2px 8px}.dlg-ppl .tg.tr{background:var(--accent)}
+.dlg-ppl .none{color:var(--muted);text-align:center;padding:8px}
+.dlg-add{display:flex;gap:6px}.dlg-add input{flex:1;min-width:0}.dlg-add .btn{margin:0;white-space:nowrap}
+.dlg-bar{position:fixed;inset:auto 0 0 0;z-index:81;display:flex;gap:8px;align-items:center;background:var(--surface);border-top:1px solid var(--line);padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px))}
+.dlg-bar span{flex:1;color:var(--muted)}.dlg-bar span b{font-size:1.4rem;color:var(--fg)}.dlg-bar .btn{margin:0}
+.dlg-ok{align-items:center;text-align:center}.dlg-ok .big{font-size:2.6rem;color:var(--ok,#1e8e3e)}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -705,7 +731,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · האימון של היום עם הנרשמים נפתח לבד</div>
+  <div class="ver">גרסה 23/11/2026 · ממונה רישום – מתאמן ממלא נוכחות בשם המאמן</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4408,6 +4434,91 @@ function c3Apply(){
 (function(){ let q=0; const run=()=>{ q=0; try{ c3Apply(); }catch(e){} };
   new MutationObserver(()=>{ if(!q) q=requestAnimationFrame(run); }).observe(document.body,{childList:true,subtree:true,attributes:true,attributeFilter:["class"]});
   run(); })();
+
+// ================= "אני ממונה רישום" – an athlete fills attendance for the coach (23/11/2026) =================
+// The password is asked on every entry and kept only in memory; the server checks it (registration file → "הגדרות"),
+// shows only today's sessions in the athlete's own areas, names only, one report per session, stamped "מולא ע"י".
+const DLG={h:null,data:null,s:null,sel:new Set(),trials:[],q:"",busy:false};
+(function dlgInit(){
+  const nav=$("athTabs"); if(!nav||$("dlgTab")) return;
+  const b=document.createElement("button"); b.type="button"; b.id="dlgTab"; b.innerHTML="<b>📋</b>ממונה רישום"; nav.appendChild(b);
+  b.onclick=dlgOpen;
+  const v=document.createElement("section"); v.id="dlg"; v.className="dlgv"; v.hidden=true; v.setAttribute("aria-label","ממונה רישום");
+  v.innerHTML=`<div class="dlg-hd"><button type="button" class="dlg-x" id="dlgClose" aria-label="סגירה">✕</button><h2>📋 אני ממונה רישום</h2></div><div id="dlgBody"></div>`;
+  document.body.appendChild(v);
+  $("dlgClose").onclick=dlgClose;
+})();
+function dlgOpen(){ DLG.h=null; DLG.data=null; DLG.s=null; $("dlg").hidden=false; document.body.classList.add("dlg-open"); dlgPw(); }
+function dlgClose(){ DLG.h=null; DLG.data=null; $("dlg").hidden=true; document.body.classList.remove("dlg-open"); }   // the password is forgotten on every exit
+function dlgMsg(t,ok){ const m=$("dlgMsg"); if(m){ m.textContent=t||""; m.className="dlg-msg"+(ok?" ok":""); } }
+function dlgPw(err){
+  $("dlgBody").innerHTML=`<div class="card dlg-card"><p>כאן ממלאים נוכחות <b>בשם המאמן</b> לאימון של היום באזורי האימון שלך. הדיווח נרשם עם השם שלך.</p>
+    <label class="dlg-l" for="dlgPwIn">סיסמת ממונה רישום</label><input id="dlgPwIn" type="password" autocomplete="off" placeholder="הסיסמה שקיבלת מהמאמן">
+    <button type="button" class="btn primary" id="dlgPwGo">כניסה</button><p class="dlg-msg" id="dlgMsg"></p></div>`;
+  const go=()=>dlgLoad($("dlgPwIn").value);
+  $("dlgPwGo").onclick=go; $("dlgPwIn").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+  if(err) dlgMsg(err); setTimeout(()=>{ try{ $("dlgPwIn").focus(); }catch(e){} },80);
+}
+async function dlgLoad(pw){
+  const c=athCred(); if(!c){ dlgMsg("צריך להתחבר קודם כמתאמן"); return; }
+  if(pw!=null){ pw=String(pw).trim(); if(!pw){ dlgMsg("הקלד את הסיסמה"); return; } DLG.h=await pwHash(pw); }
+  if(!navigator.onLine){ dlgMsg("צריך קליטה בשביל רישום נוכחות"); return; }
+  dlgMsg("בודק…",true); const b=$("dlgPwGo"); if(b) b.disabled=true;
+  try{
+    const x=await api("delegSessions",Object.assign({dh:DLG.h},c),60000);
+    if(!x.ok){ DLG.h=null; dlgPw(x.error||"הכניסה נכשלה"); return; }
+    DLG.data=x; dlgList();
+  }catch(e){ if(!e.auth) dlgPw("השרת לא זמין: "+e.message); else dlgClose(); }
+}
+function dlgList(){
+  const S=(DLG.data.sessions||[]).slice().sort((a,b)=>(b.mine-a.mine)||String(a.start).localeCompare(String(b.start)));
+  $("dlgBody").innerHTML=S.length?`<p class="dlg-sub">האימונים של היום באזורי האימון שלך – בחר את האימון שמגיעים אליו:</p>`+S.map((s,i)=>`
+    <button type="button" class="dlg-ses${s.done?" done":""}" data-i="${i}"${s.done?" disabled":""}>
+      <span class="t">${esc(s.start||"")}${s.end?`<small>עד ${esc(s.end)}</small>`:""}</span>
+      <span class="m"><b>${esc(s.title||s.place)}</b><small>📍 ${esc(s.place)}${s.branch?" · מרחב "+esc(s.branch):""} · 👤 ${s.coach?esc(s.coach):"מאמן לא צוין"}</small>
+      <small>${s.done?`✓ כבר דווח (${s.done} משתתפים)`:`📝 ${s.regs.length} נרשמו${s.mine?" · כולל אותך":""}`}</small></span></button>`).join("")
+    :`<div class="card dlg-card"><p>אין היום אימונים באזורי האימון שלך.</p></div>`;
+  $("dlgBody").querySelectorAll(".dlg-ses").forEach(b=>b.onclick=()=>dlgForm(S[+b.dataset.i]));
+}
+function dlgForm(s){
+  DLG.s=s; DLG.sel=new Set(s.regs); DLG.trials=[]; DLG.q="";
+  const coaches=DLG.data.coaches||[];
+  $("dlgBody").innerHTML=`<div class="card dlg-card dlg-top"><b>${esc(s.title||s.place)}</b><small>${esc(s.start||"")}${s.end?"–"+esc(s.end):""} · 📍 ${esc(s.place)}</small>
+      <label class="dlg-l" for="dlgCoach">מאמן</label>
+      ${s.coach?`<div class="dlg-coach">👤 ${esc(s.coach)}</div>`:`<select id="dlgCoach"><option value="">בחר את המאמן של האימון…</option>${coaches.map(n=>`<option>${esc(n)}</option>`).join("")}</select>`}</div>
+    <div class="card dlg-card"><input id="dlgQ" type="search" placeholder="🔎 חיפוש שם…" autocomplete="off"><ul class="dlg-ppl" id="dlgPpl"></ul>
+      <div class="dlg-add"><input id="dlgTrial" type="text" placeholder="שם מתאמן חדש שהגיע לניסיון"><button type="button" class="btn" id="dlgTrialGo">+ הוסף</button></div></div>
+    <div class="dlg-bar"><span id="dlgN"></span><button type="button" class="btn" id="dlgBack">חזרה</button><button type="button" class="btn primary" id="dlgSend">שלח דיווח</button></div><p class="dlg-msg" id="dlgMsg"></p>`;
+  $("dlgQ").oninput=e=>{ DLG.q=e.target.value.trim(); dlgPpl(); };
+  $("dlgTrialGo").onclick=()=>{ const n=normName($("dlgTrial").value); if(n.split(" ").length<2){ dlgMsg("הקלד שם פרטי ושם משפחה"); return; }
+    if(!DLG.trials.includes(n)&&!s.people.includes(n)) DLG.trials.push(n); DLG.sel.add(n); $("dlgTrial").value=""; dlgMsg(""); dlgPpl(); };
+  $("dlgBack").onclick=dlgList; $("dlgSend").onclick=dlgSend;
+  dlgPpl();
+}
+function dlgPpl(){
+  const s=DLG.s, all=[...DLG.trials,...s.people.filter(n=>!DLG.trials.includes(n))], q=DLG.q;
+  const L=all.filter(n=>!q||n.includes(q)).sort((a,b)=>(DLG.sel.has(b)-DLG.sel.has(a))||(s.regs.includes(b)-s.regs.includes(a))||a.localeCompare(b,"he"));
+  $("dlgPpl").innerHTML=L.map(n=>`<li class="${DLG.sel.has(n)?"on":""}"><label><input type="checkbox" data-n="${esc(n)}"${DLG.sel.has(n)?" checked":""}><span>${esc(n)}</span>${s.regs.includes(n)?`<i class="tg">נרשם/ה</i>`:""}${DLG.trials.includes(n)?`<i class="tg tr">ניסיון</i>`:""}</label></li>`).join("")||`<li class="none">לא נמצא</li>`;
+  $("dlgPpl").querySelectorAll("input").forEach(cb=>cb.onchange=()=>{ const n=cb.dataset.n; cb.checked?DLG.sel.add(n):DLG.sel.delete(n); cb.closest("li").classList.toggle("on",cb.checked); dlgCount(); });
+  dlgCount();
+}
+function dlgCount(){ const n=DLG.sel.size; $("dlgN").innerHTML=`<b>${n}</b> סומנו`; }
+async function dlgSend(){
+  if(DLG.busy) return; const s=DLG.s, c=athCred(), coach=s.coach||($("dlgCoach")&&$("dlgCoach").value)||"";
+  if(!coach){ dlgMsg("בחר את המאמן מהרשימה"); $("dlgCoach").focus(); return; }
+  if(!DLG.sel.size){ dlgMsg("סמן את מי שהגיע"); return; }
+  if(!confirm(`לשלוח דיווח נוכחות של ${DLG.sel.size} משתתפים בשם המאמן ${coach}?`)) return;
+  DLG.busy=true; $("dlgSend").disabled=true; dlgMsg("שולח…",true);
+  try{
+    const people=[...DLG.sel].map(n=>({name:n,trial:DLG.trials.includes(n)}));
+    const x=await api("delegReport",Object.assign({dh:DLG.h,key:s.key,coach,people},c),60000);
+    if(!x.ok){ dlgMsg(x.error||"השליחה נכשלה"); if(x.bad){ DLG.h=null; setTimeout(()=>dlgPw(x.error),1200); } return; }
+    $("dlgBody").innerHTML=`<div class="card dlg-card dlg-ok"><div class="big">✓</div><b>הדיווח נשלח</b><p>${x.n} משתתפים · ${esc(s.title||s.place)} ${esc(s.start||"")}</p><p>נרשם: <b>מולא ע"י ${esc(DLG.data.name)} בשם המאמן ${esc(x.coach)}</b></p>
+      <button type="button" class="btn primary" id="dlgDone">סיום</button></div>`;
+    $("dlgDone").onclick=dlgClose; DLG.h=null;
+  }catch(e){ if(!e.auth) dlgMsg("השרת לא זמין: "+e.message); }
+  finally{ DLG.busy=false; const b=$("dlgSend"); if(b) b.disabled=false; }
+}
 
 </script>
 </body>
