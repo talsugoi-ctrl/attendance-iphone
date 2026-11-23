@@ -616,10 +616,10 @@ body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
 .ev-warn{background:#fff3e0;border:1px solid #f6c98a;color:#7a4300;border-radius:12px;padding:10px 12px;font-weight:700}.ev-warn.soft{font-weight:400}
 .ev-map{height:150px;border-radius:14px;overflow:hidden;border:1px solid var(--line)}.ev-map.big{height:240px;margin-top:6px}
 .ev-addr{font-size:.88rem;color:var(--fg)}
-.btn.waze{background:#33ccff;border-color:#33ccff;color:#06324a}.btn.wa{background:#25d366;border-color:#25d366;color:#053b1b}.btn.danger{color:#b3261e;border-color:#f3b4ad}.btn.ok{background:var(--ok,#1e8e3e);border-color:var(--ok,#1e8e3e);color:#fff}
+.btn.waze{background:#33ccff;border-color:#33ccff;color:#06324a}.btn.wa{background:#25d366;border-color:#25d366;color:#053b1b}.btn.danger{background:#c62828;border-color:#c62828;color:#fff;font-weight:800}.btn.ok{background:var(--ok,#1e8e3e);border-color:var(--ok,#1e8e3e);color:#fff}
 .ev-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}.ev-stats div{background:var(--surface);border:1px solid var(--line);border-radius:12px;text-align:center;padding:6px 2px}.ev-stats b{display:block;font-size:1.35rem;color:var(--accent);font-variant-numeric:tabular-nums}.ev-stats small{font-size:.72rem;color:var(--muted)}
 .ev-me{border-color:var(--accent)}
-#evBody .miss{color:#b3261e}#evBody .got{color:var(--fg)}
+#evBody .miss{color:#c62828;font-weight:700}#evBody .got{color:var(--fg)}
 .tw{overflow-x:auto}.ev-tbl{width:100%;border-collapse:collapse;font-size:.84rem;margin-top:4px}.ev-tbl th{background:var(--accent);color:#fff;text-align:right;padding:6px}.ev-tbl td{padding:6px;border-bottom:1px solid var(--line);vertical-align:top}.ev-tbl tr.me td{font-weight:700}
 .ev-ask{border-color:#f3b4ad}
 .ev-ov{position:fixed;inset:0;z-index:95;background:rgba(10,20,35,.45);display:flex;align-items:flex-end;justify-content:center}
@@ -642,6 +642,10 @@ body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
 .evhome .btn{border-color:#fff!important;background:transparent!important;color:#fff!important}.evhome .btn.pri{background:#fff!important;color:#d2466f!important}
 
 .ev-areas{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ev-area{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 10px;font:700 .95rem var(--body);color:var(--accent);cursor:pointer;text-align:center}.ev-area:active{background:var(--chip)}
+
+.ev-ans{display:flex;flex-wrap:wrap;gap:6px}.ev-ans span{flex:1;min-width:30%;text-align:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:6px 4px;font-size:.82rem}.ev-ans b{font-size:1rem}
+.ev-pend .btn{margin-top:6px;text-align:center;text-decoration:none}
+.ev-ask{border:2px solid #c62828!important}.ev-cx{background:#c62828!important;color:#fff!important}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -788,7 +792,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · תיקון שמירת אירוע וממונה רישום</div>
+  <div class="ver">גרסה 23/11/2026 · אירועים – מי אישר ומי טרם ענה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4724,16 +4728,19 @@ function evRender(){
   if(x.over&&x.canEdit) h+=`<div class="ev-warn">⚠ יש יותר מ-${x.max} משתתפים – אנא עדכן את גיא כפתורי על קיום האירוע.</div>`;
   if(e.lat!=null||e.addr) h+=`${e.lat!=null?`<div class="ev-map" id="evMap"></div>`:""}${e.addr?`<div class="ev-addr">📍 ${esc(e.addr)}</div>`:""}
     <div class="row"><a class="btn waze" href="${esc(evWaze(e))}" target="_blank" rel="noopener">🚗 נווט ב-Waze</a><a class="btn" href="${esc(evGmap(e))}" target="_blank" rel="noopener">🗺️ גוגל מפות</a></div>`;
+  h+=`<div class="ev-ans"><span>✅ אישרו <b>${x.going.length}</b></span><span>❌ לא מגיעים <b>${x.notGoing.length}</b></span>${cx?"":`<span>⏳ טרם ענו <b>${(x.pending||[]).length}</b></span>`}</div>`;
   h+=`<div class="ev-stats"><div><b>${s.total}</b><small>מגיעים</small></div><div><b>${s.going}</b><small>מתאמנים</small></div><div><b>${s.partners}</b><small>בני זוג</small></div><div><b>${s.guests}</b><small>אורחים</small></div></div>`;
   if(!cx){
     const mine=my&&my.st==="מגיע"?`✓ את/ה מגיע/ה · מביא/ה ${esc(my.bring)}${my.partner?" · עם בן/בת זוג":""}${my.guests?` · +${my.guests} אורחים`:""}`:my&&my.st?"סימנת שלא תגיע/י":"";
     h+=`<div class="card ev-me">${mine?`<span>${mine}</span>`:""}${x.open?`<div class="row"><button type="button" class="btn primary" id="evYes">${my&&my.st==="מגיע"?"✏️ עדכן":"✅ מגיע/ה"}</button><button type="button" class="btn" id="evNo">❌ לא מגיע/ה</button></div>`:`<span class="m">המועד לאישור הגעה עבר${x.canEdit?" (כאחראי/ת אפשר עדיין לעדכן)":""}.</span>${x.canEdit?`<div class="row"><button type="button" class="btn primary" id="evYes">עדכן את ההגעה שלי</button></div>`:""}`}</div>`;
   }
   if(needs.length) h+=`<div class="card"><b>מה צריך להביא</b>${needs.map(n=>`<span class="${n.missing?"miss":"got"}">${n.missing?"⚠":"✅"} ${esc(n.item)}${n.qty>1?` (${n.taken}/${n.qty})`:""}${n.who.length?" – "+esc(n.who.join(", ")):""}${n.missing?" · חסר":""}</span>`).join("")}</div>`;
-  h+=`<div class="card"><b>מי מגיע (${x.going.length})</b>${x.going.length?`<div class="tw"><table class="ev-tbl"><tr><th>שם</th><th>מביא</th><th>בן/בת זוג</th><th>אורחים</th></tr>${x.going.map(r=>`<tr${r.name===x.me?' class="me"':""}><td>${esc(r.name)}</td><td>${esc(r.bring)}</td><td>${r.partner?"✓":"–"}</td><td>${r.guests?r.guests+(r.guestNames?` (${esc(r.guestNames)})`:""):"–"}</td></tr>`).join("")}</table></div>`:`<span class="m">עוד אין אישורי הגעה.</span>`}</div>`;
+  h+=`<div class="card"><b>✅ מי מגיע (${x.going.length})</b>${x.going.length?`<div class="tw"><table class="ev-tbl"><tr><th>שם</th><th>מביא</th><th>בן/בת זוג</th><th>אורחים</th></tr>${x.going.map(r=>`<tr${r.name===x.me?' class="me"':""}><td>${esc(r.name)}</td><td>${esc(r.bring)}</td><td>${r.partner?"✓":"–"}</td><td>${r.guests?r.guests+(r.guestNames?` (${esc(r.guestNames)})`:""):"–"}</td></tr>`).join("")}</table></div>`:`<span class="m">עוד אין אישורי הגעה.</span>`}</div>`;
   if(miss.length) h+=`<div class="ev-warn soft"><b>⚠ חסר:</b> ${miss.map(n=>esc(n.item)+(n.qty>1?` (${n.missing})`:"")).join(" · ")}</div>`;
   if(x.cancelled.length) h+=`<div class="card"><b>ביטלו (${x.cancelled.length})</b>${x.cancelled.map(r=>`<span class="m">${esc(r.name)} · ${esc(r.at)}${r.had?` · היה/תה מביא/ה <s>${esc(r.had)}</s>`:""}</span>`).join("")}</div>`;
-  if(x.notGoing.length) h+=`<div class="card"><b>לא מגיעים (${x.notGoing.length})</b><span class="m">${x.notGoing.map(esc).join(", ")}</span></div>`;
+  const pend=x.pending||[];
+  h+=`<div class="card"><b>❌ לא מגיעים (${x.notGoing.length})</b><span class="m">${x.notGoing.length?x.notGoing.map(esc).join(", "):"אין"}</span></div>`;
+  if(!cx) h+=`<div class="card ev-pend"><b>⏳ טרם ענו (${pend.length})</b><span class="m">${pend.length?pend.map(esc).join(", "):"כל מתאמני האזור ענו 👏"}</span>${x.canEdit&&pend.length?`<a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(`⏰ תזכורת – ${e.title}\n📅 ${evDayTxt(e.date)}${e.time?" · "+e.time:""}\nעוד לא אישרו הגעה: ${pend.join(", ")}\nאישור עד ${e.deadline||e.date} באפליקציה:\n${EV_URL}?e=${e.id}`)}" target="_blank" rel="noopener">📣 שלח תזכורת בוואטסאפ</a>`:""}</div>`;
   const share=`🎉 *${e.title}*\n📅 ${evDayTxt(e.date)}${e.time?" · "+e.time:""}\n👤 אחראי: ${e.resp}${e.addr?"\n📍 "+e.addr:""}${evWaze(e)?"\n🚗 "+evWaze(e):""}\n\nאישור הגעה באפליקציה (מה מביאים, בן/בת זוג, אורחים):\n${EV_URL}?e=${e.id}`;
   h+=`<div class="row"><a class="btn wa" href="https://wa.me/?text=${encodeURIComponent(share)}" target="_blank" rel="noopener">📤 שתף בוואטסאפ</a>${x.canEdit?`<button type="button" class="btn" id="evEdit">✏️ ערוך</button>`:""}</div>`;
   if(x.canEdit) h+=`<div class="row"><button type="button" class="btn ${cx?"":"danger"}" id="evCx">${cx?"↩ החזר את האירוע":"🚫 בטל את האירוע"}</button></div><div id="evCxAsk"></div>`;
