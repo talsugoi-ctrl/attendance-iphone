@@ -541,6 +541,13 @@ body.bd-open{overflow:hidden}
 .bdcnt{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);min-width:20px;height:17px;padding:0 5px;border-radius:999px;background:var(--ok);color:#fff;font:800 .68rem/17px var(--body);text-align:center;box-shadow:0 0 0 2px var(--bg);font-variant-numeric:tabular-nums}
 .bdcnt.z{background:var(--muted)}
 .hb:has(#boardBtn)>small{margin-top:5px}
+/* floating emergency button (23/11/2026) */
+#sosFab{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:90px;z-index:55}
+#sosFab .hb.sos{margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:0;width:62px;height:62px;border-radius:50%;background:var(--danger,#d93025);box-shadow:0 4px 14px rgba(200,30,30,.45);cursor:pointer}
+#sosFab .sos-btn{background:transparent!important;border:0!important;box-shadow:none!important;width:auto!important;height:auto!important;min-width:0!important;padding:0!important;margin:0!important;color:#fff}
+#sosFab .sos-btn svg{width:24px;height:24px}
+#sosFab small{color:#fff!important;font-size:.64rem!important;font-weight:800;line-height:1;margin-top:1px}
+body.gated #sosFab,body.ath-mode #sosFab,body.rep-open #sosFab,body.ev-open #sosFab,body.dlg-open #sosFab{display:none}
 
 /* ---------- C3US co-branding: hidden unless body.c3 ---------- */
 .c3logo,.c3sep{display:none}
@@ -792,7 +799,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · אירועים – מי אישר ומי טרם ענה</div>
+  <div class="ver">גרסה 23/11/2026 · כפתור חירום צף בתחתית המסך</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4464,6 +4471,12 @@ function todayOpen(list,nm){
     if(current!=null) showToast(`📝 נפתח האימון שלך היום: ${s.title||s.place} ${s.start||""} · ${n===1?"נרשם/ה אחד/ת":n+" נרשמו"} – מסומנים ברשימה`,true);
   }catch(e){}
 }
+
+// ---------- emergency button floats at the bottom-left, the header keeps room for the title (23/11/2026, option ה) ----------
+(function(){ const s=document.querySelector("header .hb.sos"); if(!s||document.getElementById("sosFab")) return;
+  const f=document.createElement("div"); f.id="sosFab"; document.body.appendChild(f); f.appendChild(s);
+  const bar=()=>{ const b=document.querySelector(".bar"); const h=b&&b.offsetHeight?b.offsetHeight:76; f.style.bottom=`calc(${h+14}px + 0px)`; };
+  bar(); window.addEventListener("resize",bar); setTimeout(bar,800); })();
 
 // ================= C3US co-branding (19/11/2026) =================
 // The C3US logo shows only to C3US people: an athlete with a C3US training area in Arbox, or coach ניר רייכמן.
