@@ -641,6 +641,8 @@ body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
 .evhome{background:linear-gradient(135deg,#ff8a3d,#e8508f)!important;color:#fff;border:0!important;display:flex;flex-direction:column;gap:3px}.evhome small,.evhome .m{color:#fff!important;opacity:.92}.evhome b{font-size:1.05rem}
 .evhome .btn{border-color:#fff!important;background:transparent!important;color:#fff!important}.evhome .btn.pri{background:#fff!important;color:#d2466f!important}
 
+.ev-areas{display:grid;grid-template-columns:1fr 1fr;gap:8px}.ev-area{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 10px;font:700 .95rem var(--body);color:var(--accent);cursor:pointer;text-align:center}.ev-area:active{background:var(--chip)}
+
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
 </style>
@@ -786,7 +788,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · תיקון מסך ריק אצל מתאמן מחובר</div>
+  <div class="ver">גרסה 23/11/2026 · אירוע חדש – בחירת אזור אימון</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4656,7 +4658,7 @@ const evNeedsStr=L=>L.map(n=>n.qty>1?`${n.item}×${n.qty}`:n.item).join(";");
   const v=document.createElement("section"); v.id="evv"; v.className="evv"; v.hidden=true; v.setAttribute("aria-label","אירועים");
   v.innerHTML=`<div class="ev-hd"><button type="button" class="ev-x" id="evBack" aria-label="חזרה">→</button><h2 id="evTitle">🎉 אירועים</h2><button type="button" class="ev-x" id="evClose" aria-label="סגירה">✕</button></div><div id="evBody"></div>`;
   document.body.appendChild(v);
-  $("evClose").onclick=evClose; $("evBack").onclick=()=>{ if(EV.view==="list") evClose(); else evList(); };
+  $("evClose").onclick=evClose; $("evBack").onclick=()=>{ if(EV.view==="list") evClose(); else if(EV.view==="form"&&!(EV.f&&EV.f.id)&&evMyAreas().length>1) evPickArea(); else evList(); };
   try{ const q=new URLSearchParams(location.search).get("e"); if(q) store.set("ev-open",q); }catch(e){}
   // the coach icon only for טל, גיא and מורן
   const sync=()=>{ const c=coachCred(), hb=document.querySelector(".hb.ev"); if(hb) hb.hidden=!(c&&EV_ADM.includes(normName(c.coachName))); };
@@ -4694,18 +4696,18 @@ function evMsg(t){ return `<div class="ev-empty">${t}</div>`; }
 // ---------- list ----------
 async function evList(){
   EV.view="list"; evShow("🎉 אירועים"); const B=$("evBody"); EV.list=evMine(EV.list);
-  if(EV.list) evListRender(); else B.innerHTML=evMsg("טוען את האירועים…");
+  if(EV.list) evListRender(); else { B.innerHTML=`<button type="button" class="btn primary wide" id="evNew">+ אירוע חדש</button>`+evMsg("טוען את האירועים…"); $("evNew").onclick=evPickArea; }
   await evLoadList(false); evListRender(); evBadge();
 }
 function evListRender(){
-  const B=$("evBody"), x=evMine(EV.list); if(!x){ B.innerHTML=evMsg("לא הצלחתי לטעון את האירועים – בדוק קליטה ונסה שוב.")+`<button type="button" class="btn wide" id="evRetry">נסה שוב</button>`; $("evRetry").onclick=evList; return; }
+  const B=$("evBody"), x=evMine(EV.list); if(!x){ B.innerHTML=`<button type="button" class="btn primary wide" id="evNew">+ אירוע חדש</button>`+evMsg("לא הצלחתי לטעון את האירועים הקיימים – בדוק קליטה ונסה שוב.")+`<button type="button" class="btn wide" id="evRetry">נסה שוב</button>`; $("evRetry").onclick=evList; $("evNew").onclick=evPickArea; return; }
   const L=x.events||[];
   B.innerHTML=`<button type="button" class="btn primary wide" id="evNew">+ אירוע חדש</button>`+(L.length?L.map(e=>{ const d=dateOfDmy(e.date), st=e.status==="בוטל"?`<span class="chip bad">האירוע בוטל</span>`:e.past?"":e.my==="מגיע"?`<span class="chip ok">✓ מגיע/ה${e.myGuests?" + "+e.myGuests:""}</span>`:e.my?`<span class="chip">לא מגיע/ה</span>`:`<span class="chip warn">טרם אישרת</span>`;
     return `<button type="button" class="ev-card${e.past||e.status==="בוטל"?" past":""}" data-id="${esc(e.id)}"><span class="dt"><b>${d?d.getDate():""}</b><small>${d?evMon[d.getMonth()]:""}</small></span>
       <span class="m"><b>${esc(e.title)}</b><small>${esc(evDayTxt(e.date))}${e.time?" · "+esc(e.time):""}${e.addr?" · "+esc(e.addr.split(",")[0]):""}</small><small>👤 ${esc(e.resp)} · 📍 ${esc(e.area)} · 👥 ${e.past?`${e.total} השתתפו`:`${e.total} מגיעים`}</small>${st}</span></button>`; }).join("")
     :evMsg("עוד אין אירועים באזורי האימון שלך.<br>אפשר ליצור את הראשון בכפתור למעלה 🎉"));
   B.querySelectorAll(".ev-card").forEach(b=>b.onclick=()=>evView(b.dataset.id));
-  $("evNew").onclick=()=>evForm(null);
+  $("evNew").onclick=evPickArea;
 }
 
 // ---------- one event + its report ----------
@@ -4782,12 +4784,26 @@ function evRsvpSheet(){
 }
 
 // ---------- create / edit ----------
-async function evForm(e){
+function evMyAreas(){
+  const x=evMine(EV.list);
+  if(document.body.classList.contains("ath-mode")){ let a=[]; try{ a=athPlaces(); }catch(e){} return a.length?a:((x&&x.areas)||[]); }
+  if(x&&x.areas&&x.areas.length) return x.areas;
+  return EV_ADM.includes(evMe())?[...new Set((cfg.locations||[]).map(l=>l.name))]:[];
+}
+function evPickArea(){
+  const areas=evMyAreas(); EV.view="pick";
+  if(areas.length===1){ evForm(null,areas[0]); return; }
+  evShow("🎉 אירוע חדש");
+  $("evBody").innerHTML=areas.length?`<div class="card"><b class="big">לאיזה אזור אימון האירוע?</b><span class="m">האירוע יוצג למתאמני האזור (ולטל, גיא ומורן).</span></div><div class="ev-areas">${areas.map(a=>`<button type="button" class="ev-area" data-a="${esc(a)}">📍 ${esc(a)}</button>`).join("")}</div>`
+    :evMsg("לא נמצא אזור אימון שרשום עליך – פנה/י למאמן.");
+  $("evBody").querySelectorAll(".ev-area").forEach(b=>b.onclick=()=>evForm(null,b.dataset.a));
+}
+async function evForm(e,pick){
   EV.view="form";
-  if(!evMine(EV.list)){ evShow("🎉 אירוע חדש"); $("evBody").innerHTML=evMsg("טוען את אזורי האימון שלך…"); await evLoadList(false); if(EV.view!=="form") return; }
-  const x=evMine(EV.list)||{}, me=x.me||evMe(), areas=x.areas||[];
+  const x=evMine(EV.list)||{}, me=x.me||evMe();
+  let areas=evMyAreas(); if(e&&e.area&&!areas.includes(e.area)) areas=[e.area,...areas];
   if(!areas.length){ evShow("🎉 אירוע חדש"); $("evBody").innerHTML=evMsg(evMine(EV.list)?"לא נמצא אזור אימון שרשום עליך – פנה/י למאמן.":"לא הצלחתי לטעון את אזורי האימון – בדוק קליטה ונסה שוב.")+`<button type="button" class="btn wide" id="evRetry">נסה שוב</button>`; $("evRetry").onclick=()=>evForm(e); return; }
-  const f=EV.f={id:e?e.id:"",title:e?e.title:"",area:e?e.area:(areas.length===1?areas[0]:""),date:e?evISO(e.date):"",time:e?e.time:"19:00",resp:e?e.resp:me,desc:e?e.desc:"",
+  const f=EV.f={id:e?e.id:"",title:e?e.title:"",area:e?e.area:(pick||(areas.length===1?areas[0]:"")),date:e?evISO(e.date):"",time:e?e.time:"19:00",resp:e?e.resp:me,desc:e?e.desc:"",
     dl:e?evISO(e.deadline):"",dlTouched:!!e,addr:e?e.addr:"",lat:e?e.lat:null,lng:e?e.lng:null,ok:!!(e&&(e.lat!=null||e.addr)),needs:e?evNeeds(e.needs):[]};
   evShow(e?"✏️ עריכת אירוע":"🎉 אירוע חדש");
   $("evBody").innerHTML=`<div class="card ev-form">
