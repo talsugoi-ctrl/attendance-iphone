@@ -585,6 +585,16 @@ body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
 .dlg-bar{position:fixed;inset:auto 0 0 0;z-index:81;display:flex;gap:8px;align-items:center;background:var(--surface);border-top:1px solid var(--line);padding:10px 14px calc(12px + env(safe-area-inset-bottom,0px))}
 .dlg-bar span{flex:1;color:var(--muted)}.dlg-bar span b{font-size:1.4rem;color:var(--fg)}.dlg-bar .btn{margin:0}
 .dlg-ok{align-items:center;text-align:center}.dlg-ok .big{font-size:2.6rem;color:var(--ok,#1e8e3e)}
+/* who signed up (23/11/2026) */
+.who{display:inline-flex;align-self:flex-start;margin-top:4px;border:1px solid var(--line);background:var(--chip);color:var(--accent);border-radius:99px;padding:3px 10px;font:700 .78rem var(--body);cursor:pointer;text-align:right;max-width:100%}
+.who.ln{font-weight:600;color:var(--fg);white-space:normal;line-height:1.35}
+.wholn{display:block;margin-top:4px;color:var(--muted)}
+.card.whohide{display:flex;flex-direction:row;gap:10px;align-items:flex-start;cursor:pointer}.whohide input{width:20px;height:20px;flex:none;margin-top:2px;accent-color:var(--accent)}
+.whohide span{display:flex;flex-direction:column;gap:2px}.whohide small{color:var(--muted);font-size:.78rem;line-height:1.4}
+.whoov{position:fixed;inset:0;z-index:90;background:rgba(10,20,35,.45);display:flex;align-items:flex-end;justify-content:center}
+.whosh{background:var(--surface);color:var(--fg);width:100%;max-width:520px;max-height:80vh;overflow:auto;border-radius:18px 18px 0 0;padding:14px 16px calc(16px + env(safe-area-inset-bottom,0px))}
+.whohd{display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:start;margin-bottom:8px}.whohd small{color:var(--muted);grid-column:1}.whohd .whox{grid-column:2;grid-row:1/3;border:1px solid var(--line);background:var(--bg);color:var(--fg);border-radius:50%;width:34px;height:34px;cursor:pointer}
+.whosh ol{margin:0;padding-inline-start:24px;display:flex;flex-direction:column;gap:6px}.whosh li.me{font-weight:700;color:var(--accent)}.whosh li i{font-style:normal;color:var(--muted);font-weight:400}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -731,7 +741,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 23/11/2026 · ממונה רישום – מתאמן ממלא נוכחות בשם המאמן</div>
+  <div class="ver">גרסה 23/11/2026 · מתאמנים רואים מי נרשם לאימונים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -3684,15 +3694,16 @@ function athRenderMine(){
   if(up.length){ const o=up[0], L=locOf?locOf(o.place):null;
     const nav=L&&L.lat?`<a class="pill w" href="https://waze.com/ul?ll=${L.lat},${L.lng}&navigate=yes" target="_blank" rel="noopener">🧭 ניווט</a>`:"";
     h+=`<section class="card ath-next"><small>האימון הבא שלך</small><div class="big">${esc(whenTxt(o.date))} · ${esc(o.start)}</div>
-      <div>${TYPE_ICON[o.type]||"🏅"} ${esc(o.title)}</div><small>${esc([o.place,o.coach?"מאמן: "+o.coach:""].filter(Boolean).join(" · "))}</small>
+      <div>${TYPE_ICON[o.type]||"🏅"} ${esc(o.title)}</div><small>${esc([o.place,o.coach?"מאמן: "+o.coach:""].filter(Boolean).join(" · "))}</small>${typeof whoLine==="function"?whoLine(o.date,o.start,o.title):""}
       <div class="row">${nav}<button type="button" class="pill" data-cx="${esc(o.id)}">ביטול הרשמה</button></div></section>`; }
   else h+=`<section class="card"><b>אין לך כרגע הרשמה לאימון</b><span class="hint">בלשונית "הרשמה" רואים את האימונים של השבוע הקרוב באזורי האימון שלך.</span></section>`;
   h+=`<section class="card"><div class="qrow">${ringHtml(used,Q.q)}<div><b>${Q.q?`המנוי שלך: ${esc(quotaWords(Q.q))}`:"המנוי שלך"}</b>
     <div class="hint">${Q.q?(used>=Q.q?(used>Q.q?`השבוע כבר ${used} אימונים – מעבר למנוי.`:"ניצלת את כל האימונים של השבוע."):`השבוע: ${Q.done} הגעת${Q.planned?` · ${Q.planned} רשום/ה`:""} · נשאר${Q.q-used===1?" עוד אימון אחד":`ו עוד ${Q.q-used} אימונים`}`):(Q.sub?esc(Q.sub):"לא נמצא מנוי")}</div></div></div></section>`;
   if(up.length>1){ h+=`<div class="dayh">רשום/ה גם ל:</div>`+up.slice(1).map(o=>`<div class="ses"><div class="tm">${esc(o.start)}<small>${esc(whenTxt(o.date))}</small></div>
-    <div class="nm"><b>${TYPE_ICON[o.type]||"🏅"} ${esc(o.title)}</b><small>${esc([o.place,o.coach].filter(Boolean).join(" · "))}${o.out?" · מחוץ לאזור שלך":""}</small></div>
+    <div class="nm"><b>${TYPE_ICON[o.type]||"🏅"} ${esc(o.title)}</b><small>${esc([o.place,o.coach].filter(Boolean).join(" · "))}${o.out?" · מחוץ לאזור שלך":""}</small>${typeof whoLine==="function"?whoLine(o.date,o.start,o.title):""}</div>
     <button type="button" class="go done" data-cx="${esc(o.id)}">✓ רשום/ה</button></div>`).join(""); }
   h+=`<button type="button" class="btn primary wide" id="athToSign">+ הרשמה לאימון</button>`;
+  if(typeof whoHideCard==="function") h+=whoHideCard();
   if(past.length){ h+=`<div class="dayh" style="color:var(--muted)">היסטוריה</div>`+past.slice(0,6).map(o=>`<div class="ses"><div class="tm">${esc(o.date.slice(0,5))}<small>${esc(o.start)}</small></div>
     <div class="nm"><b>${esc(o.title)}</b><small>${esc(o.place)}</small></div><span class="tag${o.st==="הגיע"?" reg":/לא הגיע|בוטל/.test(o.st)?" regout":""}">${esc(o.st)}</span></div>`).join(""); }
   box.innerHTML=h;
@@ -3744,9 +3755,10 @@ function athRenderSign(){
     else if(s.open===false) btn=`<span class="go off">סגור</span>`;
     else if(s.cap&&s.count>=s.cap) btn=`<span class="go off">מלא</span>`;
     else btn=`<button type="button" class="go${isMine(s)?"":" out"}" data-i="${all.indexOf(s)}">הירשם</button>`;
-    const sub=[s.loc!==s.title?s.loc:"",s.coach,s.arbox?"הרשמה דרך אפליקציית Arbox":(s.start&&!s.cx?`${s.count} נרשמו${s.cap?` מתוך ${s.cap}`:""}`:""),s.cx?"האימון בוטל":"",s.note].filter(Boolean);
+    const wb=(typeof whoBtn==="function"&&!s.arbox&&!s.cx&&s.start)?whoBtn(s.dmy,s.start,s.title,s.cap):"";
+    const sub=[s.loc!==s.title?s.loc:"",s.coach,s.arbox?"הרשמה דרך אפליקציית Arbox":(s.start&&!s.cx&&!wb?`${s.count} נרשמו${s.cap?` מתוך ${s.cap}`:""}`:""),s.cx?"האימון בוטל":"",s.note].filter(Boolean);
     h+=`<div class="ses${s.cx?" cx":""}"><div class="tm">${esc(s.start||"—")}<small>${esc(s.start?s.end:"טרם נקבע")}</small></div>
-      <div class="nm"><b>${TYPE_ICON[s.type]||"🏅"} ${esc(s.title)}</b><small>${sub.map(esc).join(" · ")}</small></div>${btn}</div>`;
+      <div class="nm"><b>${TYPE_ICON[s.type]||"🏅"} ${esc(s.title)}</b><small>${sub.map(esc).join(" · ")}</small>${wb}</div>${btn}</div>`;
   });
   if(!list.length&&brs.length) h+=`<div class="rep-empty">אין אימונים ${ATH.area?"ב"+esc(ATH.area)+" ":""}בימים הקרובים.</div>`;
   if(!mine.length&&!ATH.more) h+=`<div class="hint">לא מצאנו אזור אימון שאתה רשום אליו. אפשר לבחור ב"אזורי אימון נוספים".</div>`;
@@ -4519,6 +4531,56 @@ async function dlgSend(){
   }catch(e){ if(!e.auth) dlgMsg("השרת לא זמין: "+e.message); }
   finally{ DLG.busy=false; const b=$("dlgSend"); if(b) b.disabled=false; }
 }
+
+// ================= athletes see who signed up to sessions in their own areas (23/11/2026) =================
+// Full names, the next 14 days; an athlete may hide his own name ("מתאמן/ת נוסף/ת" for the others). The server only answers for his areas.
+const WHO={regs:store.get("ath-who",{}),hidden:!!store.get("ath-who-hidden",false),busy:false};
+const whoKey=(dmy,start,title)=>dmy+"|"+start+"|"+normName(title||"");
+function whoNames(dmy,start,title){ return WHO.regs[whoKey(dmy,start,title)]||null; }
+const whoMe=()=>normName(((athCred()||{}).name)||"");
+const whoShow=n=>n||"מתאמן/ת נוסף/ת";
+function whoBtn(dmy,start,title,cap){
+  const L=whoNames(dmy,start,title); if(!L||!L.length) return "";
+  return `<button type="button" class="who" data-wk="${esc(whoKey(dmy,start,title))}">👥 ${L.length} נרשמו${cap?` מתוך ${cap}`:""} · מי?</button>`;
+}
+function whoLine(dmy,start,title){
+  const L=whoNames(dmy,start,title); if(!L) return ""; const me=whoMe(), o=L.filter(n=>n!==me);
+  if(!o.length) return `<small class="wholn">👥 עוד לא נרשמו אחרים</small>`;
+  const named=o.filter(Boolean), shown=named.slice(0,3), rest=o.length-shown.length;
+  return `<button type="button" class="who ln" data-wk="${esc(whoKey(dmy,start,title))}">👥 מגיעים גם: ${esc(shown.join(", ")||whoShow(""))}${rest>0&&shown.length?` ועוד ${rest}`:""}</button>`;
+}
+function whoHideCard(){
+  return `<label class="card whohide"><input type="checkbox" id="whoHide"${WHO.hidden?" checked":""}><span><b>אל תציג את שמי לאחרים</b><small>מתאמנים אחרים יראו "מתאמן/ת נוסף/ת" במקום השם שלך ברשימות הנרשמים. המאמנים תמיד רואים את השם.</small></span></label>`;
+}
+function whoOpen(key){
+  const L=WHO.regs[key]||[], me=whoMe(), [dmy,start,title]=key.split("|");
+  const names=[...L].sort((a,b)=>(b===me)-(a===me)||(!!b-!!a)||String(a).localeCompare(String(b),"he"));
+  const ov=document.createElement("div"); ov.className="whoov";
+  ov.innerHTML=`<div class="whosh" role="dialog" aria-label="נרשמים לאימון"><div class="whohd"><b>${esc(title)}</b><small>${esc(whenTxt?whenTxt(dmy):dmy)} · ${esc(start)} · ${L.length} נרשמו</small><button type="button" class="whox" aria-label="סגירה">✕</button></div>
+    <ol>${names.map(n=>`<li${n===me?' class="me"':""}>${esc(whoShow(n))}${n===me?" <i>(את/ה)</i>":""}</li>`).join("")}</ol></div>`;
+  document.body.appendChild(ov);
+  const close=()=>ov.remove(); ov.onclick=e=>{ if(e.target===ov) close(); }; ov.querySelector(".whox").onclick=close;
+}
+async function whoLoad(){
+  const c=athCred(); if(!c||!navigator.onLine||WHO.busy) return; WHO.busy=true;
+  try{ const x=await api("athRegs",c,45000); if(x&&x.ok){ WHO.regs=x.regs||{}; WHO.hidden=!!x.hidden; store.set("ath-who",WHO.regs); store.set("ath-who-hidden",WHO.hidden); athRender(); } }catch(e){}
+  WHO.busy=false;
+}
+async function whoSetHide(on){
+  const c=athCred(), cb=$("whoHide"); if(!c) return;
+  if(!navigator.onLine){ showToast("צריך קליטה כדי לשנות את ההגדרה"); if(cb) cb.checked=WHO.hidden; return; }
+  if(cb) cb.disabled=true;
+  try{ const x=await api("athHide",Object.assign({hide:on},c),30000); if(x&&x.ok){ WHO.hidden=!!x.hidden; store.set("ath-who-hidden",WHO.hidden); showToast(WHO.hidden?"✓ השם שלך מוסתר ממתאמנים אחרים":"✓ השם שלך יוצג לאחרים",true); } else throw new Error(x&&x.error||""); }
+  catch(e){ if(!e.auth) showToast("לא הצלחתי לשמור – נסה שוב"); if(cb) cb.checked=WHO.hidden; }
+  if(cb) cb.disabled=false;
+}
+(function whoInit(){
+  const a=$("ath"); if(!a) return;
+  a.addEventListener("click",e=>{ const b=e.target.closest(".who"); if(b){ e.preventDefault(); e.stopPropagation(); whoOpen(b.dataset.wk); } });
+  a.addEventListener("change",e=>{ if(e.target&&e.target.id==="whoHide") whoSetHide(e.target.checked); });
+  const _al=athLoad; athLoad=async function(f){ const r=await _al(f); whoLoad(); return r; };
+  if(!a.hidden&&athCred()) whoLoad();
+})();
 
 </script>
 </body>
