@@ -662,6 +662,29 @@ body.c3 .ath-hd h1{font-size:1.05rem}body.c3 #athHi{white-space:nowrap}
 .dw-b{display:flex;flex-direction:column;gap:8px;margin-top:4px}.dw-b .btn{margin:0;width:100%}
 .done-note.dw-edit{background:#fff3e0;border:1px solid #f6c98a;color:#6b3a00;border-radius:10px;padding:8px 10px}
 .done-note.dw-edit a{color:var(--accent);text-decoration:underline;cursor:pointer;margin-inline-start:6px}
+#aeFab{display:none}
+body.ath-mode #aeFab{position:fixed;left:max(14px,env(safe-area-inset-left,0px));bottom:calc(90px + env(safe-area-inset-bottom,0px));z-index:79;width:62px;height:62px;border-radius:50%;border:0;background:var(--danger,#d93025);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;box-shadow:0 4px 14px rgba(200,30,30,.45);cursor:pointer;padding:0}
+#aeFab small{font-size:.64rem;font-weight:800;line-height:1}
+body.gated #aeFab,body.ev-open #aeFab,body.dlg-open #aeFab,body.ae-open #aeFab,body.rep-open #aeFab{display:none!important}
+.aev{position:fixed;inset:0;z-index:93;background:var(--bg);overflow-y:auto;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(30px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.aev[hidden]{display:none}
+.ae-hd{display:flex;align-items:center;gap:10px}.ae-hd h2{margin:0;font-size:1.25rem;color:var(--danger,#c62828);display:flex;flex-direction:column}.ae-hd h2 small{font-size:.8rem;color:var(--muted);font-weight:500}
+.ae-x{width:40px;height:40px;border-radius:50%;border:1px solid var(--line,#ddd);background:var(--card,#fff);font-size:1.1rem;color:var(--fg)}
+.ae-card{display:flex;flex-direction:column;gap:8px}.ae-card .lbl i{font-style:normal;color:var(--muted);font-weight:400}
+.ae-calls{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.ae-call{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:62px;border-radius:12px;background:var(--danger,#c62828);color:#fff;text-decoration:none;font-size:1.05rem}
+.ae-call small{font-size:.75rem;opacity:.9}.ae-call.alt{grid-column:1/-1;background:#1b5e20}
+.ae-chips{display:flex;flex-wrap:wrap;gap:6px}
+.ae-chip{border:1px solid var(--line,#ccc);background:var(--card,#fff);color:var(--fg);border-radius:20px;padding:7px 12px;font-size:.88rem}
+.ae-chip.on{background:var(--danger,#c62828);border-color:var(--danger,#c62828);color:#fff}
+#aeWhoName{padding:10px;border-radius:10px;border:1px solid var(--line,#ccc);font-size:1rem;background:var(--card,#fff);color:var(--fg)}
+.ae-map{height:170px;border-radius:12px;background:var(--bg);display:flex;align-items:center;justify-content:center;color:var(--muted);overflow:hidden}
+.ae-place{font-weight:700}
+.ae-wa{display:block;text-align:center;padding:14px;border-radius:12px;background:#25d366;color:#fff;font-weight:800;font-size:1.02rem;text-decoration:none}
+.ae-wa.coach{background:#128c7e}.ae-wa.wait{opacity:.75}
+.ae-note{margin:0;font-size:.82rem}.ae-prev summary{cursor:pointer;color:var(--muted);font-size:.85rem}
+.ae-send{position:sticky;bottom:calc(-30px - env(safe-area-inset-bottom,0px));margin:0 -14px -30px;padding:10px 14px calc(14px + env(safe-area-inset-bottom,0px));background:var(--bg);box-shadow:0 -6px 14px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:8px;z-index:3}
+.ae-map{height:140px}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -808,7 +831,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 24/11/2026 · עדכון שם המאמן איתן דהאן</div>
+  <div class="ver">גרסה 24/11/2026 · כפתור חירום למתאמנים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4947,6 +4970,105 @@ function doneEdit(id){
   const _br=buildResult; buildResult=function(s){ _br(s);
     if(REPL&&report&&REPL.key===report.date+"|"+report.location&&!report.replaces){ report.replaces=REPL.id; } };
 })();
+
+// ================= athlete emergency button (24/11/2026) =================
+// Calls 101/100/גיא, live GPS + WhatsApp to גיא כפתורי (and to the session coach when known).
+// No Arbox, no roster, no IDs. Every open and every "send" is logged on the server (registration file → "חירום").
+var AE=window.AE||{watch:null,pos:null,addr:"",addrAt:null,info:null,what:"",who:"me",whoName:"",map:null,marker:null};
+const AE_GUY={name:"גיא כפתורי",phone:"052-2549591"};
+const AE_WHAT=["נפילה מאופניים","פציעה בריצה","מצוקה במים","תאונת דרכים","אחר"];
+(function aeInit(){
+  if($("aeFab")) return;
+  const f=document.createElement("button"); f.type="button"; f.id="aeFab"; f.setAttribute("aria-label","מצב חירום");
+  f.innerHTML=`<svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg><small>חירום</small>`;
+  f.onclick=aeOpen; document.body.appendChild(f);
+  const v=document.createElement("section"); v.id="aev"; v.className="aev"; v.hidden=true; v.setAttribute("aria-label","מצב חירום");
+  v.innerHTML=`<div class="ae-hd"><button type="button" class="ae-x" id="aeClose" aria-label="סגירה">✕</button><h2>🚨 מצב חירום<small id="aeSub"></small></h2></div>
+  <div class="card ae-card"><span class="lbl">1 · מזעיקים עזרה</span>
+    <div class="ae-calls"><a class="ae-call" href="tel:101" data-to="מד״א 101"><b>מד״א 101</b><small>אמבולנס</small></a><a class="ae-call" href="tel:100" data-to="משטרה 100"><b>משטרה 100</b><small>תאונה · סכנה</small></a>
+    <a class="ae-call alt" href="tel:${AE_GUY.phone.replace(/\D/g,"")}" data-to="${AE_GUY.name}"><b>${AE_GUY.name}</b><small dir="ltr">${AE_GUY.phone}</small></a></div></div>
+  <div class="card ae-card"><span class="lbl">2 · מה קרה? <i>(לא חובה)</i></span>
+    <div class="ae-chips" id="aeWhat">${AE_WHAT.map(w=>`<button type="button" class="ae-chip" data-w="${w}">${w}</button>`).join("")}</div>
+    <div class="ae-chips" id="aeWho"><button type="button" class="ae-chip on" data-v="me">אני נפגעתי</button><button type="button" class="ae-chip" data-v="other">ספורטאי אחר נפגע</button></div>
+    <input type="text" id="aeWhoName" placeholder="שם הספורטאי שנפגע" autocomplete="off" hidden></div>
+  <div class="card ae-card"><span class="lbl">3 · המיקום שלי</span>
+    <div class="ae-map" id="aeMap">מאתר מיקום…</div><div class="ae-place" id="aePlace">מאתר מיקום GPS…</div><div class="muted" id="aeAddr"></div>
+    <details class="ae-prev"><summary>מה יישלח?</summary><div class="msgprev" id="aeMsg"></div></details></div>
+  <div class="ae-send"><a class="ae-wa wait" id="aeWaGuy" target="_blank" rel="noopener">ממתין למיקום GPS…</a><div id="aeCoachBox"></div>
+    <p class="muted ae-note">WhatsApp ייפתח עם הודעה מוכנה – צריך ללחוץ "שלח" בוואטסאפ.</p></div>`;
+  document.body.appendChild(v);
+  $("aeClose").onclick=aeClose;
+  v.querySelectorAll(".ae-call").forEach(a=>a.addEventListener("click",()=>aeLog("call",{to:a.dataset.to})));
+  $("aeWhat").querySelectorAll(".ae-chip").forEach(b=>b.onclick=()=>{ AE.what=AE.what===b.dataset.w?"":b.dataset.w; $("aeWhat").querySelectorAll(".ae-chip").forEach(x=>x.classList.toggle("on",x.dataset.w===AE.what)); aeMsg(); });
+  $("aeWho").querySelectorAll(".ae-chip").forEach(b=>b.onclick=()=>{ AE.who=b.dataset.v; $("aeWho").querySelectorAll(".ae-chip").forEach(x=>x.classList.toggle("on",x===b)); $("aeWhoName").hidden=AE.who!=="other"; if(AE.who==="other") $("aeWhoName").focus(); aeMsg(); });
+  $("aeWhoName").oninput=e=>{ AE.whoName=e.target.value.trim(); aeMsg(); };
+  $("aeWaGuy").addEventListener("click",e=>{ if(!AE.pos&&!confirm("עוד אין מיקום GPS. לשלוח בכל זאת בלי מיקום?")){ e.preventDefault(); return; } aeLog("send",{to:AE_GUY.name}); });
+})();
+function aeMe(){ try{ const a=store.get(ATH_KEY,null); return (a&&a.user&&a.user.name)||(athCred()||{}).name||""; }catch(e){ return ""; } }
+function aeSes(){ const s=AE.info&&AE.info.session; if(!s) return ""; return [s.title,s.place&&s.place!==s.title?s.place:"",s.start?(s.start+(s.end?"–"+s.end:"")):""].filter(Boolean).join(" · "); }
+function aeOpen(){
+  $("aev").hidden=false; document.body.classList.add("ae-open"); $("aev").scrollTop=0;
+  AE.what=""; AE.who="me"; AE.whoName=""; $("aeWhoName").value=""; $("aeWhoName").hidden=true;
+  $("aeWhat").querySelectorAll(".ae-chip").forEach(x=>x.classList.remove("on")); $("aeWho").querySelectorAll(".ae-chip").forEach(x=>x.classList.toggle("on",x.dataset.v==="me"));
+  $("aeSub").textContent=aeMe();
+  aeCoach(); aeMsg(); if(AE.watch==null) aeGps();
+  aeLog("open",{});
+  const c=athCred(); if(c&&navigator.onLine) api("athSosInfo",c,20000).then(x=>{ if(x&&x.ok){ AE.info=x; const S=x.session; $("aeSub").innerHTML=[esc(aeMe()),S?esc([S.title,S.place&&S.place!==S.title?S.place:""].filter(Boolean).join(" · "))+(S.start?` · <bdi dir="ltr">${esc(S.start+(S.end?"–"+S.end:""))}</bdi>`:""):""].filter(Boolean).join(" · "); aeCoach(); aeMsg(); } }).catch(()=>{});
+}
+function aeClose(){ $("aev").hidden=true; document.body.classList.remove("ae-open"); if(AE.watch!=null){ navigator.geolocation.clearWatch(AE.watch); AE.watch=null; } }
+function aeCoach(){
+  const i=AE.info||{}, box=$("aeCoachBox");
+  if(!i.coach){ box.innerHTML=""; return; }
+  if(waDigits(i.coachPhone||"").length>=11){
+    box.innerHTML=`<a class="ae-wa coach" id="aeWaCoach" target="_blank" rel="noopener">📤 שלח גם למאמן ${esc(i.coach)}</a>`;
+    $("aeWaCoach").addEventListener("click",e=>{ if(!AE.pos&&!confirm("עוד אין מיקום GPS. לשלוח בכל זאת בלי מיקום?")){ e.preventDefault(); return; } aeLog("send",{to:i.coach}); });
+  } else box.innerHTML=`<p class="muted ae-note">המאמן של האימון: <b>${esc(i.coach)}</b> – אין לו טלפון במערכת, ההודעה נשלחת לגיא.</p>`;
+  aeMsg();
+}
+function aeLink(){ const p=AE.pos; return p?`https://maps.google.com/?q=${p.lat.toFixed(6)},${p.lon.toFixed(6)}`:""; }
+function aeWaze(){ const p=AE.pos; return p?`https://waze.com/ul?ll=${p.lat.toFixed(6)},${p.lon.toFixed(6)}&navigate=yes`:""; }
+function aeMsg(){
+  const p=AE.pos, me=aeMe(), ses=aeSes(), i=AE.info||{};
+  const hurt=AE.who==="other"?(AE.whoName?`נפגע/ה: ${AE.whoName}`:"נפגע/ה: ספורטאי/ת אחר/ת"):"הנפגע/ת: אני";
+  const txt=`🚨 אירוע חירום – The Buttons\nשולח/ת: ${me||"מתאמן/ת"}${ses?`\nאימון: ${ses}`:""}${i.coach?`\nמאמן: ${i.coach}`:""}${AE.what?`\nמה קרה: ${AE.what}`:""}\n${hurt}\n`+
+    (p?`📍 Google Maps: ${aeLink()}\n🚗 Waze: ${aeWaze()}${AE.addr?`\n${AE.addr}`:""}\nדיוק ±${Math.round(p.acc)} מ׳ · ${new Date(p.t).toLocaleTimeString("he-IL",{hour:"2-digit",minute:"2-digit"})}`:"📍 מיקום: עוד לא התקבל GPS");
+  $("aeMsg").textContent=txt; AE.msg=txt;
+  const g=$("aeWaGuy"); g.href=waHref(txt,AE_GUY.phone); g.classList.toggle("wait",!p); g.textContent=p?`📤 שלח מיקום לגיא כפתורי ב-WhatsApp`:"📤 שלח לגיא (ממתין למיקום GPS…)";
+  const c=$("aeWaCoach"); if(c&&i.coachPhone){ c.href=waHref(txt,i.coachPhone); c.classList.toggle("wait",!p); }
+  return txt;
+}
+function aeLog(kind,o){
+  const c=athCred(); if(!c||!navigator.onLine) return;
+  const p=AE.pos||{}, i=AE.info||{};
+  api("athSosLog",Object.assign({},c,{kind,to:o.to||"",ses:aeSes(),coach:i.coach||"",what:AE.what,who:AE.who==="other"?(AE.whoName||"ספורטאי אחר"):"השולח",lat:p.lat,lng:p.lon,acc:p.acc,addr:AE.addr}),20000).catch(()=>{});
+}
+async function aeGeocode(){
+  const p=AE.pos; if(!p||!navigator.onLine) return;
+  if(AE.addrAt&&Math.hypot(p.lat-AE.addrAt.lat,(p.lon-AE.addrAt.lon)*0.84)<0.001) return;
+  AE.addrAt={lat:p.lat,lon:p.lon};
+  try{ const r=await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=17&accept-language=he&lat=${p.lat}&lon=${p.lon}`).then(r=>r.json());
+    const a=r.address||{}, road=a.road||a.pedestrian||a.path||a.track||"", town=a.village||a.town||a.city||a.suburb||a.hamlet||a.county||"";
+    AE.addr=[road,a.house_number,town].filter(Boolean).join(", ")||r.display_name||""; $("aeAddr").textContent=AE.addr?"כתובת משוערת: "+AE.addr:""; aeMsg(); }catch(e){}
+}
+async function aeMap(){
+  const p=AE.pos, box=$("aeMap"); if(!p) return;
+  if(!navigator.onLine&&!AE.map){ box.textContent="📴 אין קליטה – המפה לא זמינה."; return; }
+  try{ await leafletLoad();
+    if(!AE.map){ box.textContent=""; AE.map=L.map(box,{zoomControl:false,attributionControl:false}).setView([p.lat,p.lon],15);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",{maxZoom:19}).addTo(AE.map);
+      AE.marker=L.circleMarker([p.lat,p.lon],{radius:9,color:"#fff",weight:3,fillColor:"#c62828",fillOpacity:1}).addTo(AE.map); setTimeout(()=>AE.map.invalidateSize(),200); }
+    else { AE.marker.setLatLng([p.lat,p.lon]); AE.map.panTo([p.lat,p.lon]); }
+  }catch(e){ if(!AE.map) box.textContent="המפה לא נטענה – המיקום עדיין נשלח בהודעה."; }
+}
+function aeGps(){
+  if(!navigator.geolocation){ $("aePlace").textContent="הטלפון לא מאפשר GPS בדפדפן."; return; }
+  AE.watch=navigator.geolocation.watchPosition(g=>{
+    AE.pos={lat:g.coords.latitude,lon:g.coords.longitude,acc:g.coords.accuracy||0,t:g.timestamp||Date.now()};
+    $("aePlace").textContent=`📍 מיקום GPS · דיוק ±${Math.round(AE.pos.acc)} מ׳`;
+    aeMsg(); aeMap(); aeGeocode();
+  },err=>{ $("aePlace").textContent=err.code===1?"אין הרשאת מיקום – אשר/י מיקום לאפליקציה בהגדרות הטלפון.":"לא מצליח לקבל מיקום GPS – נסה/י במקום פתוח."; },
+  {enableHighAccuracy:true,maximumAge:10000,timeout:30000});
+}
 
 </script>
 </body>
