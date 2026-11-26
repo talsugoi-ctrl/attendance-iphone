@@ -880,7 +880,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 26/11/2026 · תחרויות</div>
+  <div class="ver">גרסה 26/11/2026 · תחרויות (סטטוס תשלום)</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -5252,7 +5252,7 @@ function cpView(id){
   const groups={}; c.regs.forEach(r=>{ const k=r.heat||(c.heats.length?"ללא מקצה":""); (groups[k]=groups[k]||[]).push(r); });
   const keys=Object.keys(groups).sort((a,b)=>c.heats.indexOf(a)-c.heats.indexOf(b));
   h+=`<div class="card cp-ppl"><div class="cp-pplh"><b>👥 נרשמו (${c.n})</b>${c.n?`<button type="button" class="pill" id="cpCopy">📋 העתק רשימה</button>`:""}</div>`+
-    (c.n?keys.map(k=>`${k?`<div class="cp-heat">${esc(k)} <small>(${groups[k].length})</small></div>`:""}<ul>${groups[k].map(r=>`<li${c.canEdit&&x.coach&&r.name!=="מתאמן/ת נוסף/ת"?` class="ed" data-n="${esc(r.name)}"`:""}><span>${esc(r.name)}${r.name===x.me?" (את/ה)":""}</span>${x.coach?`<span class="cp-tags">${r.paid?`<i class="pill green">💳 שולם</i>`:`<i class="pill">לא שולם</i>`}${r.bib?`<i class="pill blue"># ${esc(r.bib)}</i>`:""}</span>`:""}</li>`).join("")}</ul>`).join(""):`<p class="muted">עוד אף אחד לא נרשם.</p>`)+`</div>`;
+    (c.n?keys.map(k=>`${k?`<div class="cp-heat">${esc(k)} <small>(${groups[k].length})</small></div>`:""}<ul>${groups[k].map(r=>`<li${c.canEdit&&x.coach&&r.name!=="מתאמן/ת נוסף/ת"?` class="ed" data-n="${esc(r.name)}"`:""}><span>${esc(r.name)}${r.name===x.me?" (את/ה)":""}</span>${x.coach?`<span class="cp-tags">${r.paid?`<i class="pill green">💳 שולם</i>`:`<i class="pill">לא ידוע אם שולם</i>`}${r.bib?`<i class="pill blue"># ${esc(r.bib)}</i>`:""}</span>`:""}</li>`).join("")}</ul>`).join(""):`<p class="muted">עוד אף אחד לא נרשם.</p>`)+`</div>`;
   if(c.canEdit){
     h+=`<div class="card cp-admin"><b>ניהול</b>${open?`<button type="button" class="btn" id="cpRegOther">+ רשום ספורטאי</button>`:""}<div class="cp-acts"><button type="button" class="btn" id="cpEdit">✎ עריכת התחרות</button>
       <button type="button" class="btn ${cx?"":"danger"}" id="cpCx">${cx?"↩ החזר את התחרות":"🚫 ביטול התחרות"}</button></div></div>`;
