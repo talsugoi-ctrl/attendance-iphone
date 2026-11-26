@@ -734,6 +734,8 @@ header.hdr-many .hdr-btns{justify-content:space-between;width:100%}
 header.hdr-many .brand h1{display:block!important}
 #cpBadgeC{bottom:auto;top:24px;left:-6px;transform:none}
 .ath-tabs{grid-template-columns:repeat(6,1fr)}.ath-tabs button{font-size:.68rem;padding:0 1px;min-width:0}.ath-tabs button b{font-size:20px}
+.cp-sec{font-weight:800;color:var(--muted);font-size:.85rem;margin:6px 4px -2px}
+#cpBtn{position:relative;overflow:visible}#cpCnt{background:#e8590c}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -880,7 +882,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 26/11/2026 · תחרויות (סטטוס תשלום)</div>
+  <div class="ver">גרסה 26/11/2026 · תחרויות: כל המרחבים למאמנים + מונה למנהלים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -5141,7 +5143,7 @@ function cpMineList(){ const x=CP.list; return x&&x.comps?x.comps.filter(c=>c.mi
   if(nav&&!$("cpTab")){ const b=document.createElement("button"); b.type="button"; b.id="cpTab"; b.innerHTML=`<b>🏁</b>תחרויות`; nav.appendChild(b); b.onclick=()=>cpOpen("list"); }
   const sb=$("boardBtn");
   if(sb&&!$("cpBtn")){ const w=document.querySelector(".hb.ev")||sb.closest(".hb")||sb, b=document.createElement("button"); b.type="button"; b.id="cpBtn"; b.className=sb.className; b.title="תחרויות"; b.setAttribute("aria-label","תחרויות"); b.textContent="🏁";
-    const hb=document.createElement("span"); hb.className="hb cp"; hb.appendChild(b); const s=document.createElement("small"); s.textContent="תחרויות"; s.onclick=()=>b.click(); hb.appendChild(s); w.after(hb); b.onclick=()=>cpOpen("list"); }
+    const hb=document.createElement("span"); hb.className="hb cp"; hb.appendChild(b); const s=document.createElement("small"); s.textContent="תחרויות"; s.onclick=()=>b.click(); hb.appendChild(s); w.after(hb); b.onclick=()=>cpOpen("list"); const k=document.createElement("span"); k.className="bdcnt"; k.id="cpCnt"; k.hidden=true; b.appendChild(k); }
   // the badge under the team logo (athlete header + coach header); tapping the logo opens "my competitions"
   [$("athLogo"),document.querySelector("header .brand img")].forEach((img,i)=>{ if(!img||img.parentElement.classList.contains("cp-logo")) return;
     const w=document.createElement("span"); w.className="cp-logo"; img.before(w); w.appendChild(img);
@@ -5155,7 +5157,8 @@ function cpMineList(){ const x=CP.list; return x&&x.comps?x.comps.filter(c=>c.mi
   let seen=null; setInterval(()=>{ const c=cpCred(), k=c?(cpCoach()?"c:":"a:")+(c.coachName||c.name):""; if(k!==seen){ seen=k; CP.list=null; cpBadge(); if(c) cpLoad(true); } },3000);
   setInterval(()=>{ if(cpCred()&&document.visibilityState==="visible") cpLoad(true); },5*60*1000);
 })();
-function cpBadge(){ const n=cpMineList().length; ["cpBadgeA","cpBadgeC"].forEach(id=>{ const e=$(id); if(e){ e.textContent=n; e.hidden=!n; e.title=n?`${n} תחרויות שנרשמת אליהן`:""; e.parentElement.classList.toggle("on",!!n); } }); }
+function cpBadge(){ const n=cpMineList().length; ["cpBadgeA","cpBadgeC"].forEach(id=>{ const e=$(id); if(e){ e.textContent=n; e.hidden=!n; e.title=n?`${n} תחרויות שנרשמת אליהן`:""; e.parentElement.classList.toggle("on",!!n); } });
+  const k=$("cpCnt"), x=CP.list; if(k){ const up=x&&x.coach&&x.admin&&cpCoach()?x.comps.filter(c=>!c.past&&c.status!=="בוטל").length:0; k.textContent=up>99?"99+":String(up); k.hidden=!up; k.title=up?`${up} תחרויות קדימה`:""; } }
 async function cpLoad(quiet){
   const c=cpCred(); if(!c) return null;
   if(!navigator.onLine){ const s=store.get("cp-list",null); if(s&&s.me===(c.coachName||c.name)) CP.list=s; cpBadge(); return CP.list; }
@@ -5187,7 +5190,7 @@ function cpVisible(){
     if(CP.view==="mine") return !!c.mine&&(CP.past||!c.past);
     if(c.past&&!CP.past) return false;
     if(CP.types.size&&!CP.types.has(c.type)) return false;
-    if(CP.all) return true;
+    if(CP.all||x.coach) return true;
     return c.branch===x.all||mine.has(c.branch)||!!c.mine||(x.coach&&(x.edit||[]).includes(c.branch)&&!x.admin);
   });
 }
@@ -5198,13 +5201,16 @@ function cpList(){
   const myBr=(x.mine||[]).length?(x.mine||[]).join(", "):"";
   let h=`<div class="cp-seg"><button type="button" data-v="list" class="${CP.view==="list"?"on":""}">כל התחרויות</button><button type="button" data-v="mine" class="${CP.view==="mine"?"on":""}">התחרויות שלי${nMine?` (${nMine})`:""}</button></div>`;
   if(CP.view==="list"){
-    h+=`<div class="card cp-filters"><label class="cp-chk"><input type="checkbox" id="cpAll"${CP.all?" checked":""}> הצג תחרויות מכל המרחבים</label>
-      ${!CP.all?`<small class="muted">מוצג: ${myBr?esc(myBr)+" + ":""}${esc(x.all)}</small>`:""}
+    h+=`<div class="card cp-filters">${x.coach?`<small class="muted">מוצגות התחרויות של כל המרחבים – המרחב שלך ראשון.</small>`:`<label class="cp-chk"><input type="checkbox" id="cpAll"${CP.all?" checked":""}> הצג תחרויות מכל המרחבים</label>`}
+      ${!CP.all&&!x.coach?`<small class="muted">מוצג: ${myBr?esc(myBr)+" + ":""}${esc(x.all)}</small>`:""}
       <div class="cp-types">${CP_TYPES.map(t=>`<button type="button" class="cp-chip${CP.types.has(t)?" on":""}" data-t="${esc(t)}">${CP_ICON[t]} ${esc(t)}</button>`).join("")}</div>
       <label class="cp-chk"><input type="checkbox" id="cpPast"${CP.past?" checked":""}> הצג תחרויות שעברו</label></div>`;
     if(canAdd) h+=`<button type="button" class="btn primary cp-add" id="cpAdd">+ תחרות חדשה</button>`;
   } else h+=`<label class="cp-chk solo"><input type="checkbox" id="cpPast"${CP.past?" checked":""}> הצג גם תחרויות שעברו</label>`;
-  h+=L.length?L.map(cpCard).join(""):cpMsg(CP.view==="mine"?"עוד לא נרשמת לתחרות. בחר/י תחרות ברשימה ולחץ/י \"אני משתתף/ת\".":"אין תחרויות להצגה"+(CP.types.size?" בסינון הזה":"")+(CP.all?"":" במרחב שלך – אפשר לסמן \"הצג תחרויות מכל המרחבים\"")+".");
+  const own=c=>c.branch===x.all||new Set(x.mine||[]).has(c.branch)||!!c.mine;
+  if(x.coach&&CP.view==="list"&&L.length){ const A=L.filter(c=>!c.past&&own(c)), B=L.filter(c=>!c.past&&!own(c)), P=L.filter(c=>c.past);
+    h+=(A.length?`<div class="cp-sec">🏠 המרחב שלי${myBr?` · ${esc(myBr)}`:""}</div>`+A.map(cpCard).join(""):"")+(B.length?`<div class="cp-sec">🗺️ שאר המרחבים</div>`+B.map(cpCard).join(""):"")+(P.length?`<div class="cp-sec">⏳ תחרויות שעברו</div>`+P.map(cpCard).join(""):"");
+  } else h+=L.length?L.map(cpCard).join(""):cpMsg(CP.view==="mine"?"עוד לא נרשמת לתחרות. בחר/י תחרות ברשימה ולחץ/י \"אני משתתף/ת\".":"אין תחרויות להצגה"+(CP.types.size?" בסינון הזה":"")+(CP.all?"":" במרחב שלך – אפשר לסמן \"הצג תחרויות מכל המרחבים\"")+".");
   $("cpBody").innerHTML=h;
   $("cpBody").querySelectorAll(".cp-seg button").forEach(b=>b.onclick=()=>{ CP.view=b.dataset.v; cpList(); });
   const a=$("cpAll"); if(a) a.onchange=()=>{ CP.all=a.checked; cpList(); };
