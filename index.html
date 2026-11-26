@@ -736,6 +736,9 @@ header.hdr-many .brand h1{display:block!important}
 .ath-tabs{grid-template-columns:repeat(6,1fr)}.ath-tabs button{font-size:.68rem;padding:0 1px;min-width:0}.ath-tabs button b{font-size:20px}
 .cp-sec{font-weight:800;color:var(--muted);font-size:.85rem;margin:6px 4px -2px}
 #cpBtn{position:relative;overflow:visible}#cpCnt{background:#e8590c}
+.cp-tabn{position:absolute;top:-4px;left:-12px;background:#e8590c;color:#fff;font:700 .62rem var(--body);border-radius:99px;padding:1px 5px;font-style:normal}
+.ath-tabs button b{position:relative}
+.cp-del{display:flex;flex-direction:column;gap:6px;border-top:1px dashed var(--line,#ddd);padding-top:8px}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -882,7 +885,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 26/11/2026 · תחרויות: כל המרחבים למאמנים + מונה למנהלים</div>
+  <div class="ver">גרסה 26/11/2026 · תחרויות: מחיקה עם סיבה + מונים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -5140,7 +5143,7 @@ function cpMineList(){ const x=CP.list; return x&&x.comps?x.comps.filter(c=>c.mi
 (function cpInit(){
   if($("cpv")) return;
   const nav=$("athTabs");
-  if(nav&&!$("cpTab")){ const b=document.createElement("button"); b.type="button"; b.id="cpTab"; b.innerHTML=`<b>🏁</b>תחרויות`; nav.appendChild(b); b.onclick=()=>cpOpen("list"); }
+  if(nav&&!$("cpTab")){ const b=document.createElement("button"); b.type="button"; b.id="cpTab"; b.innerHTML=`<b>🏁<em id="cpTabN" class="cp-tabn" hidden></em></b>תחרויות`; nav.appendChild(b); b.onclick=()=>cpOpen("list"); }
   const sb=$("boardBtn");
   if(sb&&!$("cpBtn")){ const w=document.querySelector(".hb.ev")||sb.closest(".hb")||sb, b=document.createElement("button"); b.type="button"; b.id="cpBtn"; b.className=sb.className; b.title="תחרויות"; b.setAttribute("aria-label","תחרויות"); b.textContent="🏁";
     const hb=document.createElement("span"); hb.className="hb cp"; hb.appendChild(b); const s=document.createElement("small"); s.textContent="תחרויות"; s.onclick=()=>b.click(); hb.appendChild(s); w.after(hb); b.onclick=()=>cpOpen("list"); const k=document.createElement("span"); k.className="bdcnt"; k.id="cpCnt"; k.hidden=true; b.appendChild(k); }
@@ -5158,7 +5161,10 @@ function cpMineList(){ const x=CP.list; return x&&x.comps?x.comps.filter(c=>c.mi
   setInterval(()=>{ if(cpCred()&&document.visibilityState==="visible") cpLoad(true); },5*60*1000);
 })();
 function cpBadge(){ const n=cpMineList().length; ["cpBadgeA","cpBadgeC"].forEach(id=>{ const e=$(id); if(e){ e.textContent=n; e.hidden=!n; e.title=n?`${n} תחרויות שנרשמת אליהן`:""; e.parentElement.classList.toggle("on",!!n); } });
-  const k=$("cpCnt"), x=CP.list; if(k){ const up=x&&x.coach&&x.admin&&cpCoach()?x.comps.filter(c=>!c.past&&c.status!=="בוטל").length:0; k.textContent=up>99?"99+":String(up); k.hidden=!up; k.title=up?`${up} תחרויות קדימה`:""; } }
+  // the number on the 🏁 icon: active upcoming competitions – a coach sees all of them, an athlete only those of his מרחב (+ כל הקבוצה)
+  const x=CP.list, act=x&&x.comps?x.comps.filter(c=>!c.past&&c.status!=="בוטל"):[], mine=new Set((x&&x.mine)||[]);
+  const k=$("cpCnt"); if(k){ const up=x&&x.coach&&cpCoach()?act.length:0; k.textContent=up>99?"99+":String(up); k.hidden=!up; k.title=up?`${up} תחרויות פעילות`:""; }
+  const t=$("cpTabN"); if(t){ const up=x&&!x.coach&&!cpCoach()?act.filter(c=>c.branch===x.all||mine.has(c.branch)).length:0; t.textContent=up>99?"99+":String(up); t.hidden=!up; } }
 async function cpLoad(quiet){
   const c=cpCred(); if(!c) return null;
   if(!navigator.onLine){ const s=store.get("cp-list",null); if(s&&s.me===(c.coachName||c.name)) CP.list=s; cpBadge(); return CP.list; }
@@ -5283,9 +5289,13 @@ function cpRegForm(c,name){
   $("cpBody").innerHTML=`<div class="card cp-form"><b>${esc(c.title)} · ${esc(c.date)}</b>
     <label class="cp-l">שם הספורטאי</label>${name?`<div class="cp-who">👤 ${esc(name)}</div>`:`<input type="text" id="cpRWho" list="cpNames" placeholder="שם פרטי ושם משפחה" autocomplete="off"><datalist id="cpNames">${cpNames().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`}
     ${cpRegFields(r,c.heats,"cpR")}
-    <div class="cp-acts"><button type="button" class="btn primary" id="cpRSave">שמור</button>${name?`<button type="button" class="btn danger" id="cpROut">הסר מהתחרות</button>`:""}</div></div>`;
+    <div class="cp-acts"><button type="button" class="btn primary" id="cpRSave">שמור</button>${name?`<button type="button" class="btn danger" id="cpROut">🗑 מחק מהתחרות</button>`:""}</div>
+    ${name?`<div id="cpRDel" class="cp-del" hidden><label class="cp-l" for="cpRWhy">סיבת המחיקה *</label><textarea id="cpRWhy" rows="2" placeholder="למשל: ביטל השתתפות, נרשם בטעות…"></textarea>
+      <small class="muted">המחיקה נשמרת ביומן עם שמך והסיבה.</small><div class="cp-acts"><button type="button" class="btn danger" id="cpRDelGo">אשר מחיקה</button><button type="button" class="btn" id="cpRDelNo">ביטול</button></div></div>`:""}</div>`;
   $("cpRSave").onclick=()=>{ const who=name||normName($("cpRWho").value); if(!who||who.split(" ").length<2){ showToast("הקלד/י שם פרטי ושם משפחה"); return; } cpRegSend(c,cpRegRead("cpR"),who); };
-  const o=$("cpROut"); if(o) o.onclick=()=>{ if(confirm(`להסיר את ${name} מהתחרות?`)) cpRegSend(c,{cancel:true},name); };
+  const o=$("cpROut"); if(o){ o.onclick=()=>{ $("cpRDel").hidden=false; $("cpRWhy").focus(); };
+    $("cpRDelNo").onclick=()=>{ $("cpRDel").hidden=true; };
+    $("cpRDelGo").onclick=()=>{ const why=$("cpRWhy").value.trim(); if(!why){ showToast("כתוב/י את סיבת המחיקה"); $("cpRWhy").focus(); return; } cpRegSend(c,{cancel:true,reason:why},name); }; }
 }
 function cpForm(c){
   const x=CP.list; CP.view="form"; CP.f=c||{}; cpShow(c?"✎ עריכת תחרות":"🏁 תחרות חדשה");
