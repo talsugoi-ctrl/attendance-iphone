@@ -685,6 +685,55 @@ body.gated #aeFab,body.ev-open #aeFab,body.dlg-open #aeFab,body.ae-open #aeFab,b
 .ae-note{margin:0;font-size:.82rem}.ae-prev summary{cursor:pointer;color:var(--muted);font-size:.85rem}
 .ae-send{position:sticky;bottom:calc(-30px - env(safe-area-inset-bottom,0px));margin:0 -14px -30px;padding:10px 14px calc(14px + env(safe-area-inset-bottom,0px));background:var(--bg);box-shadow:0 -6px 14px rgba(0,0,0,.08);display:flex;flex-direction:column;gap:8px;z-index:3}
 .ae-map{height:140px}
+.cp-logo{position:relative;display:inline-flex;flex:none;cursor:default}
+.cp-logo.on{cursor:pointer}
+.cp-badge{position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);min-width:20px;height:18px;padding:0 5px;border-radius:9px;background:#e8590c;color:#fff;font:800 .72rem/18px system-ui,sans-serif;font-style:normal;text-align:center;box-shadow:0 0 0 2px var(--bg,#fff)}
+.cp-badge[hidden]{display:none}
+.cpv{position:fixed;inset:0;z-index:83;background:var(--bg);overflow-y:auto;padding:calc(10px + env(safe-area-inset-top,0px)) max(14px,env(safe-area-inset-right,0px)) calc(30px + env(safe-area-inset-bottom,0px)) max(14px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:10px}
+.cpv[hidden]{display:none}
+body.cp-open #aeFab,body.cp-open #sosFab{display:none!important}
+.cp-hd{display:flex;align-items:center;gap:10px}.cp-hd h2{flex:1;margin:0;font-size:1.25rem}
+.cp-x{width:40px;height:40px;border-radius:50%;border:1px solid var(--line,#ddd);background:var(--card,#fff);font-size:1.1rem;color:var(--fg)}
+.cp-seg{display:flex;background:var(--card,#fff);border-radius:12px;padding:4px;gap:4px;border:1px solid var(--line,#e3e3e3)}
+.cp-seg button{flex:1;border:0;background:transparent;padding:9px;border-radius:9px;font-weight:700;color:var(--muted)}
+.cp-seg button.on{background:var(--accent,#1f6fc5);color:#fff}
+.cp-filters{display:flex;flex-direction:column;gap:8px}
+.cp-chk{display:flex;align-items:center;gap:8px;font-weight:600}.cp-chk input{width:20px;height:20px}.cp-chk.solo{padding:0 4px}
+.cp-types{display:flex;flex-wrap:wrap;gap:6px}
+.cp-chip{border:1px solid var(--line,#ccc);background:var(--card,#fff);color:var(--fg);border-radius:18px;padding:5px 10px;font-size:.82rem}
+.cp-chip.on{background:var(--accent,#1f6fc5);border-color:var(--accent,#1f6fc5);color:#fff}
+.cp-add{width:100%}
+.cp-card{display:flex;gap:12px;align-items:stretch;text-align:right;width:100%;background:var(--card,#fff);border:1px solid var(--line,#e3e3e3);border-radius:14px;padding:10px;color:var(--fg)}
+.cp-card.me{border-color:#2e9e5b;box-shadow:inset -4px 0 0 #2e9e5b}
+.cp-card.past,.cp-top.past{opacity:.55;filter:grayscale(1)}
+.cp-card.cx .cp-main>b{text-decoration:line-through}
+.cp-date{display:flex;flex-direction:column;align-items:center;justify-content:center;min-width:52px;border-radius:10px;background:#fff1e6;color:#c2410c}
+.cp-date b{font-size:1.35rem;line-height:1}.cp-date small{font-size:.75rem;font-weight:700}
+.cp-main{display:flex;flex-direction:column;gap:3px;min-width:0}.cp-main>b{font-size:1rem}.cp-main small{color:var(--muted);font-size:.8rem}
+.cp-meta{display:flex;flex-wrap:wrap;gap:4px}
+.cpv .pill{display:inline-block;font-style:normal;font-size:.74rem;padding:2px 8px;border-radius:10px;background:var(--bg,#f1f3f6);color:var(--muted);border:1px solid var(--line,#e3e3e3)}
+.cpv .pill.blue{background:#e4f0fb;color:#1f5fa8;border-color:#c5dcf3}.cpv .pill.green{background:#e3f5ea;color:#1e7a45;border-color:#bfe5cd}.cpv .pill.red{background:#fdeceb;color:#b3261e;border-color:#f3c2be}
+.cp-top{display:flex;flex-direction:column;gap:5px}.cp-top .big{font-size:1.2rem}.cp-top .warn{color:#c2410c;font-weight:700}
+.cp-desc{white-space:pre-line;margin:4px 0;background:var(--bg);border-radius:10px;padding:8px 10px}
+.cp-link{text-align:center;text-decoration:none}
+.cp-mine,.cp-form,.cp-admin{display:flex;flex-direction:column;gap:7px}
+.cp-l{font-size:.82rem;color:var(--muted);font-weight:700;margin-bottom:-3px}
+.cpv input[type=text],.cpv input[type=url],.cpv input[type=date],.cpv select,.cpv textarea{width:100%;padding:10px;border-radius:10px;border:1px solid var(--line,#ccc);font-size:1rem;background:var(--card,#fff);color:var(--fg);font-family:inherit}
+.cp-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.cp-acts{display:flex;gap:8px;flex-wrap:wrap}.cp-acts .btn{flex:1}
+.cp-ppl ul{list-style:none;margin:0;padding:0}.cp-ppl li{display:flex;justify-content:space-between;gap:8px;padding:7px 2px;border-bottom:1px solid var(--line,#eee)}
+.cp-ppl li.ed{cursor:pointer}.cp-ppl li.ed span:first-child::after{content:" ✎";color:var(--muted);font-size:.8rem}
+.cp-pplh{display:flex;justify-content:space-between;align-items:center}
+.cp-heat{margin-top:8px;font-weight:800;color:#c2410c}
+.cp-tags{display:flex;gap:4px;flex-wrap:wrap;justify-content:flex-end}
+.cp-who{font-weight:700;padding:8px 0}
+.cp-empty{text-align:center;color:var(--muted)}
+header.hdr-many{flex-wrap:wrap;row-gap:8px}
+header.hdr-many .hdr-side{flex:1 1 100%}
+header.hdr-many .hdr-btns{justify-content:space-between;width:100%}
+header.hdr-many .brand h1{display:block!important}
+#cpBadgeC{bottom:auto;top:24px;left:-6px;transform:none}
+.ath-tabs{grid-template-columns:repeat(6,1fr)}.ath-tabs button{font-size:.68rem;padding:0 1px;min-width:0}.ath-tabs button b{font-size:20px}
 
 #athMine,#athSign,#athRep{display:flex;flex-direction:column;gap:10px}
 .gate .back{align-self:center}
@@ -831,7 +880,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 24/11/2026 · כפתור חירום למתאמנים</div>
+  <div class="ver">גרסה 26/11/2026 · תחרויות</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -4710,7 +4759,7 @@ const evNeedsStr=L=>L.map(n=>n.qty>1?`${n.item}×${n.qty}`:n.item).join(";");
   $("evClose").onclick=evClose; $("evBack").onclick=()=>{ if(EV.view==="list") evClose(); else if(EV.view==="form"&&!(EV.f&&EV.f.id)&&evMyAreas().length>1) evPickArea(); else evList(); };
   try{ const q=new URLSearchParams(location.search).get("e"); if(q) store.set("ev-open",q); }catch(e){}
   // the coach icon only for טל, גיא and מורן
-  const sync=()=>{ const c=coachCred(), hb=document.querySelector(".hb.ev"); if(hb) hb.hidden=!(c&&EV_ADM.includes(normName(c.coachName))); };
+  const sync=()=>{ const c=coachCred(), hb=document.querySelector(".hb.ev"); if(hb) hb.hidden=!c; /* 24/11: every coach sees the events of his training areas */ };
   sync(); setInterval(sync,3000);
   // a link to an event: open it once the person is logged in
   let n=0; const t=setInterval(()=>{ const id=store.get("ev-open",""); if(!id||++n>60){ clearInterval(t); return; }
@@ -5069,6 +5118,196 @@ function aeGps(){
   },err=>{ $("aePlace").textContent=err.code===1?"אין הרשאת מיקום – אשר/י מיקום לאפליקציה בהגדרות הטלפון.":"לא מצליח לקבל מיקום GPS – נסה/י במקום פתוח."; },
   {enableHighAccuracy:true,maximumAge:10000,timeout:30000});
 }
+
+// ================= 🏁 competitions (26/11/2026) =================
+// Each competition belongs to a מרחב (branch) or to the whole team. Admins (טל, גיא, אסף) + the branch's coaches add/edit.
+// Athletes see their branch first (checkbox: all branches), filter by type, register with heat + payment/receipt/bib.
+// The number of upcoming registrations shows under the team logo; tapping the logo opens "my competitions".
+var CP=window.CP||{list:null,view:"list",cur:null,all:false,past:false,types:new Set(),busy:false,f:null};
+const CP_ICON={"טריאתלון":"🏊🚴🏃","דואתלון":"🏃🚴","חצי איש ברזל":"🦾","איש ברזל":"🏅","מרתון":"🏃","תחרות ריצה":"👟","משחה":"🏊","רכיבת שטח":"🚵","רכיבת כביש":"🚴","Epic Israel":"⛰️","אירוע ספורטיבי של הקבוצה":"🤝"};
+const CP_TYPES=Object.keys(CP_ICON);
+function cpCred(){ return document.body.classList.contains("ath-mode")?athCred():coachCred(); }
+function cpCoach(){ return !document.body.classList.contains("ath-mode"); }
+const cpIso=d=>{ const m=String(d||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?`${m[3]}-${m[2].padStart(2,"0")}-${m[1].padStart(2,"0")}`:""; };
+const cpDmy=iso=>{ const m=String(iso||"").match(/(\d{4})-(\d{2})-(\d{2})/); return m?`${m[3]}/${m[2]}/${m[1]}`:""; };
+const cpDate=d=>{ const m=String(d||"").match(/(\d{1,2})\/(\d{1,2})\/(\d{4})/); return m?new Date(+m[3],+m[2]-1,+m[1]):null; };
+function cpDays(d){ const x=cpDate(d); if(!x) return null; const t=new Date(); t.setHours(0,0,0,0); return Math.round((x-t)/864e5); }
+function cpWhen(d){ const n=cpDays(d); if(n==null) return ""; return n===0?"היום!":n===1?"מחר":n>1?`בעוד ${n} ימים`:`לפני ${-n} ימים`; }
+function cpDayName(d){ const x=cpDate(d); return x?["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"][x.getDay()]:""; }
+function cpMineList(){ const x=CP.list; return x&&x.comps?x.comps.filter(c=>c.mine&&!c.past&&c.status!=="בוטל"):[]; }
+(function cpInit(){
+  if($("cpv")) return;
+  const nav=$("athTabs");
+  if(nav&&!$("cpTab")){ const b=document.createElement("button"); b.type="button"; b.id="cpTab"; b.innerHTML=`<b>🏁</b>תחרויות`; nav.appendChild(b); b.onclick=()=>cpOpen("list"); }
+  const sb=$("boardBtn");
+  if(sb&&!$("cpBtn")){ const w=document.querySelector(".hb.ev")||sb.closest(".hb")||sb, b=document.createElement("button"); b.type="button"; b.id="cpBtn"; b.className=sb.className; b.title="תחרויות"; b.setAttribute("aria-label","תחרויות"); b.textContent="🏁";
+    const hb=document.createElement("span"); hb.className="hb cp"; hb.appendChild(b); const s=document.createElement("small"); s.textContent="תחרויות"; s.onclick=()=>b.click(); hb.appendChild(s); w.after(hb); b.onclick=()=>cpOpen("list"); }
+  // the badge under the team logo (athlete header + coach header); tapping the logo opens "my competitions"
+  [$("athLogo"),document.querySelector("header .brand img")].forEach((img,i)=>{ if(!img||img.parentElement.classList.contains("cp-logo")) return;
+    const w=document.createElement("span"); w.className="cp-logo"; img.before(w); w.appendChild(img);
+    const e=document.createElement("em"); e.className="cp-badge"; e.hidden=true; e.id=i?"cpBadgeC":"cpBadgeA"; w.appendChild(e);
+    w.onclick=()=>{ if(cpMineList().length) cpOpen("mine"); }; });
+  const v=document.createElement("section"); v.id="cpv"; v.className="cpv"; v.hidden=true; v.setAttribute("aria-label","תחרויות");
+  v.innerHTML=`<div class="cp-hd"><button type="button" class="cp-x" id="cpBack" aria-label="חזרה">→</button><h2 id="cpTitle">🏁 תחרויות</h2><button type="button" class="cp-x" id="cpClose" aria-label="סגירה">✕</button></div><div id="cpBody"></div>`;
+  document.body.appendChild(v);
+  $("cpClose").onclick=cpClose; $("cpBack").onclick=()=>{ if(CP.view==="list"||CP.view==="mine") cpClose(); else if(CP.view==="reg"||(CP.view==="form"&&CP.f&&CP.f.id)) cpView(CP.cur); else cpList(); };
+  if(typeof athLoad==="function"){ const _al=athLoad; athLoad=async function(f){ const r=await _al(f); cpLoad(true); return r; }; }
+  let seen=null; setInterval(()=>{ const c=cpCred(), k=c?(cpCoach()?"c:":"a:")+(c.coachName||c.name):""; if(k!==seen){ seen=k; CP.list=null; cpBadge(); if(c) cpLoad(true); } },3000);
+  setInterval(()=>{ if(cpCred()&&document.visibilityState==="visible") cpLoad(true); },5*60*1000);
+})();
+function cpBadge(){ const n=cpMineList().length; ["cpBadgeA","cpBadgeC"].forEach(id=>{ const e=$(id); if(e){ e.textContent=n; e.hidden=!n; e.title=n?`${n} תחרויות שנרשמת אליהן`:""; e.parentElement.classList.toggle("on",!!n); } }); }
+async function cpLoad(quiet){
+  const c=cpCred(); if(!c) return null;
+  if(!navigator.onLine){ const s=store.get("cp-list",null); if(s&&s.me===(c.coachName||c.name)) CP.list=s; cpBadge(); return CP.list; }
+  try{ const x=await api("compList",c,45000); if(x&&x.ok&&Array.isArray(x.comps)){ CP.list=x; store.set("cp-list",x); } else if(!quiet&&x) showToast(x.error||"שגיאה"); }catch(e){ if(!quiet&&!e.auth) showToast("השרת לא זמין: "+e.message); }
+  cpBadge(); return CP.list;
+}
+function cpShow(t){ $("cpTitle").textContent=t; $("cpv").scrollTop=0; }
+const cpMsg=t=>`<div class="card cp-empty">${t}</div>`;
+async function cpOpen(view){
+  $("cpv").hidden=false; document.body.classList.add("cp-open"); CP.view=view||"list";
+  if(!CP.list){ cpShow("🏁 תחרויות"); $("cpBody").innerHTML=cpMsg("טוען תחרויות…"); await cpLoad(false); }
+  else cpLoad(true).then(()=>{ if(!$("cpv").hidden&&(CP.view==="list"||CP.view==="mine")) cpList(); });
+  if(!CP.list){ $("cpBody").innerHTML=cpMsg("לא הצלחתי לטעון את התחרויות – בדוק קליטה ונסה שוב."); return; }
+  cpList();
+}
+function cpClose(){ $("cpv").hidden=true; document.body.classList.remove("cp-open"); }
+function cpCard(c){
+  const d=cpDate(c.date), dd=d?d.getDate():"", mm=d?["ינו׳","פבר׳","מרץ","אפר׳","מאי","יוני","יולי","אוג׳","ספט׳","אוק׳","נוב׳","דצמ׳"][d.getMonth()]:"";
+  const cx=c.status==="בוטל";
+  return `<button type="button" class="cp-card${c.past?" past":""}${cx?" cx":""}${c.mine?" me":""}" data-id="${esc(c.id)}">
+    <span class="cp-date"><b>${dd}</b><small>${mm}</small></span>
+    <span class="cp-main"><b>${CP_ICON[c.type]||"🏁"} ${esc(c.title)}</b>
+      <small>${esc(c.type)} · ${esc(c.place||"")}${c.place?" · ":""}${esc(c.branch)}</small>
+      <small class="cp-meta">${cx?`<i class="pill red">בוטלה</i>`:c.past?`<i class="pill">הסתיימה</i>`:`<i class="pill blue">${cpWhen(c.date)}</i>`}<i class="pill">👥 ${c.n} נרשמו</i>${c.mine?`<i class="pill green">✓ רשום/ה${c.mine.heat?" · "+esc(c.mine.heat):""}</i>`:""}</small></span></button>`;
+}
+function cpVisible(){
+  const x=CP.list, mine=new Set(x.mine||[]);
+  return x.comps.filter(c=>{
+    if(CP.view==="mine") return !!c.mine&&(CP.past||!c.past);
+    if(c.past&&!CP.past) return false;
+    if(CP.types.size&&!CP.types.has(c.type)) return false;
+    if(CP.all) return true;
+    return c.branch===x.all||mine.has(c.branch)||!!c.mine||(x.coach&&(x.edit||[]).includes(c.branch)&&!x.admin);
+  });
+}
+function cpList(){
+  const x=CP.list; if(CP.view!=="mine") CP.view="list"; CP.cur=null;
+  cpShow(CP.view==="mine"?"🏁 התחרויות שלי":"🏁 תחרויות");
+  const L=cpVisible(), nMine=x.comps.filter(c=>c.mine&&!c.past).length, canAdd=x.coach&&(x.edit||[]).length;
+  const myBr=(x.mine||[]).length?(x.mine||[]).join(", "):"";
+  let h=`<div class="cp-seg"><button type="button" data-v="list" class="${CP.view==="list"?"on":""}">כל התחרויות</button><button type="button" data-v="mine" class="${CP.view==="mine"?"on":""}">התחרויות שלי${nMine?` (${nMine})`:""}</button></div>`;
+  if(CP.view==="list"){
+    h+=`<div class="card cp-filters"><label class="cp-chk"><input type="checkbox" id="cpAll"${CP.all?" checked":""}> הצג תחרויות מכל המרחבים</label>
+      ${!CP.all?`<small class="muted">מוצג: ${myBr?esc(myBr)+" + ":""}${esc(x.all)}</small>`:""}
+      <div class="cp-types">${CP_TYPES.map(t=>`<button type="button" class="cp-chip${CP.types.has(t)?" on":""}" data-t="${esc(t)}">${CP_ICON[t]} ${esc(t)}</button>`).join("")}</div>
+      <label class="cp-chk"><input type="checkbox" id="cpPast"${CP.past?" checked":""}> הצג תחרויות שעברו</label></div>`;
+    if(canAdd) h+=`<button type="button" class="btn primary cp-add" id="cpAdd">+ תחרות חדשה</button>`;
+  } else h+=`<label class="cp-chk solo"><input type="checkbox" id="cpPast"${CP.past?" checked":""}> הצג גם תחרויות שעברו</label>`;
+  h+=L.length?L.map(cpCard).join(""):cpMsg(CP.view==="mine"?"עוד לא נרשמת לתחרות. בחר/י תחרות ברשימה ולחץ/י \"אני משתתף/ת\".":"אין תחרויות להצגה"+(CP.types.size?" בסינון הזה":"")+(CP.all?"":" במרחב שלך – אפשר לסמן \"הצג תחרויות מכל המרחבים\"")+".");
+  $("cpBody").innerHTML=h;
+  $("cpBody").querySelectorAll(".cp-seg button").forEach(b=>b.onclick=()=>{ CP.view=b.dataset.v; cpList(); });
+  const a=$("cpAll"); if(a) a.onchange=()=>{ CP.all=a.checked; cpList(); };
+  const p=$("cpPast"); if(p) p.onchange=()=>{ CP.past=p.checked; cpList(); };
+  $("cpBody").querySelectorAll(".cp-chip").forEach(b=>b.onclick=()=>{ const t=b.dataset.t; CP.types.has(t)?CP.types.delete(t):CP.types.add(t); cpList(); });
+  const ad=$("cpAdd"); if(ad) ad.onclick=()=>cpForm(null);
+  $("cpBody").querySelectorAll(".cp-card").forEach(b=>b.onclick=()=>cpView(b.dataset.id));
+}
+function cpGet(id){ return ((CP.list||{}).comps||[]).find(c=>c.id===id); }
+function cpRegFields(r,heats,pre){
+  r=r||{};
+  return `${heats.length?`<label class="cp-l">מקצה</label><select id="${pre}Heat"><option value="">בחר מקצה…</option>${heats.map(h=>`<option${h===r.heat?" selected":""}>${esc(h)}</option>`).join("")}</select>`:""}
+    <label class="cp-chk"><input type="checkbox" id="${pre}Paid"${r.paid?" checked":""}> שילמתי</label>
+    <div class="cp-row"><div><label class="cp-l">תאריך תשלום</label><input type="date" id="${pre}PayDate" value="${cpIso(r.payDate)}"></div>
+    <div><label class="cp-l">מספר קבלה</label><input type="text" id="${pre}Receipt" value="${esc(r.receipt||"")}" inputmode="numeric" autocomplete="off"></div></div>
+    <label class="cp-l">מספר חזה</label><input type="text" id="${pre}Bib" value="${esc(r.bib||"")}" inputmode="numeric" autocomplete="off" placeholder="אם כבר ידוע">`;
+}
+function cpRegRead(pre){ const g=id=>$(pre+id); return { heat:g("Heat")?g("Heat").value:"", paid:g("Paid").checked, payDate:cpDmy(g("PayDate").value), receipt:g("Receipt").value.trim(), bib:g("Bib").value.trim() }; }
+async function cpRegSend(c,o,who){
+  if(CP.busy) return; if(c.heats.length&&!o.cancel&&!o.heat){ showToast("בחר/י מקצה"); return; }
+  CP.busy=true;
+  try{ const x=await api("compReg",Object.assign({},cpCred(),o,{id:c.id,who:who||""}),45000);
+    if(!x.ok){ showToast(x.error||"השמירה נכשלה"); return; }
+    showToast(o.cancel?"✓ ההרשמה בוטלה":"✓ נשמר",true); await cpLoad(true); cpView(c.id);
+  }catch(e){ if(!e.auth) showToast("השרת לא זמין: "+e.message); } finally{ CP.busy=false; }
+}
+function cpView(id){
+  const c=cpGet(id); if(!c){ cpList(); return; }
+  CP.view="view"; CP.cur=id; cpShow(`${CP_ICON[c.type]||"🏁"} ${c.type}`);
+  const x=CP.list, cx=c.status==="בוטל", open=!c.past&&!cx, dl=c.deadline?cpDays(c.deadline):null;
+  let h=`<div class="card cp-top${c.past?" past":""}"><b class="big">${esc(c.title)}</b>
+    <span>📅 יום ${cpDayName(c.date)} ${esc(c.date)}${open?` · <b>${cpWhen(c.date)}</b>`:""}</span>${c.place?`<span>📍 ${esc(c.place)}</span>`:""}<span>🗺️ ${esc(c.branch)}</span>
+    ${c.heats.length?`<span>🏷️ מקצים: ${c.heats.map(esc).join(" · ")}</span>`:""}
+    ${c.deadline?`<span class="${dl!=null&&dl<=7&&dl>=0?"warn":""}">⏰ הרשמה עד ${esc(c.deadline)}${dl!=null&&dl>=0?` (${cpWhen(c.deadline)})`:dl!=null?" – עבר":""}</span>`:""}
+    ${cx?`<span class="pill red">התחרות בוטלה</span>`:""}
+    ${c.desc?`<p class="cp-desc">${esc(c.desc)}</p>`:""}
+    ${c.link?`<a class="btn cp-link" href="${esc(c.link)}" target="_blank" rel="noopener">🔗 להרשמה הרשמית לתחרות</a>`:""}
+    <small class="muted">ההרשמה כאן מסמנת השתתפות מטעם הקבוצה ולא מחליפה את ההרשמה הרשמית.</small></div>`;
+  // my registration
+  if(c.mine){ h+=`<div class="card cp-mine"><b>✓ את/ה רשום/ה${c.mine.heat?" · "+esc(c.mine.heat):""}</b>${cpRegFields(c.mine,c.heats,"cpM")}
+      <div class="cp-acts"><button type="button" class="btn primary" id="cpMSave">שמור</button>${open?`<button type="button" class="btn" id="cpMOut">ביטול ההרשמה</button>`:""}</div></div>`; }
+  else if(open) h+=`<div class="card cp-mine"><b>משתתף/ת?</b>${c.heats.length?`<select id="cpJHeat"><option value="">בחר מקצה…</option>${c.heats.map(x=>`<option>${esc(x)}</option>`).join("")}</select>`:""}
+      <button type="button" class="btn primary" id="cpJoin">🙋 אני משתתף/ת</button><small class="muted">אחרי ההרשמה אפשר לעדכן תשלום, מספר קבלה ומספר חזה.</small></div>`;
+  // registered list
+  const groups={}; c.regs.forEach(r=>{ const k=r.heat||(c.heats.length?"ללא מקצה":""); (groups[k]=groups[k]||[]).push(r); });
+  const keys=Object.keys(groups).sort((a,b)=>c.heats.indexOf(a)-c.heats.indexOf(b));
+  h+=`<div class="card cp-ppl"><div class="cp-pplh"><b>👥 נרשמו (${c.n})</b>${c.n?`<button type="button" class="pill" id="cpCopy">📋 העתק רשימה</button>`:""}</div>`+
+    (c.n?keys.map(k=>`${k?`<div class="cp-heat">${esc(k)} <small>(${groups[k].length})</small></div>`:""}<ul>${groups[k].map(r=>`<li${c.canEdit&&x.coach&&r.name!=="מתאמן/ת נוסף/ת"?` class="ed" data-n="${esc(r.name)}"`:""}><span>${esc(r.name)}${r.name===x.me?" (את/ה)":""}</span>${x.coach?`<span class="cp-tags">${r.paid?`<i class="pill green">💳 שולם</i>`:`<i class="pill">לא שולם</i>`}${r.bib?`<i class="pill blue"># ${esc(r.bib)}</i>`:""}</span>`:""}</li>`).join("")}</ul>`).join(""):`<p class="muted">עוד אף אחד לא נרשם.</p>`)+`</div>`;
+  if(c.canEdit){
+    h+=`<div class="card cp-admin"><b>ניהול</b>${open?`<button type="button" class="btn" id="cpRegOther">+ רשום ספורטאי</button>`:""}<div class="cp-acts"><button type="button" class="btn" id="cpEdit">✎ עריכת התחרות</button>
+      <button type="button" class="btn ${cx?"":"danger"}" id="cpCx">${cx?"↩ החזר את התחרות":"🚫 ביטול התחרות"}</button></div></div>`;
+  }
+  $("cpBody").innerHTML=h;
+  const on=(id,f)=>{ const e=$(id); if(e) e.onclick=f; };
+  on("cpJoin",()=>cpRegSend(c,{heat:$("cpJHeat")?$("cpJHeat").value:""}));
+  on("cpMSave",()=>cpRegSend(c,cpRegRead("cpM")));
+  on("cpMOut",()=>{ if(confirm("לבטל את ההרשמה לתחרות?")) cpRegSend(c,{cancel:true}); });
+  on("cpCopy",()=>{ const t=`🏁 ${c.title} · ${c.date}\n`+keys.map(k=>(k?`\n${k}:\n`:"\n")+groups[k].map((r,i)=>`${i+1}. ${r.name}${x.coach&&r.bib?" #"+r.bib:""}`).join("\n")).join("\n");
+    (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast("✓ הרשימה הועתקה",true)).catch(()=>prompt("העתק:",t)); });
+  on("cpEdit",()=>cpForm(c));
+  on("cpCx",async()=>{ if(!confirm(cx?"להחזיר את התחרות?":"לבטל את התחרות? כל הנרשמים יראו \"בוטלה\".")) return;
+    try{ const r=await api("compCancel",Object.assign({},cpCred(),{id:c.id,undo:cx}),30000); if(!r.ok) throw new Error(r.error); showToast(cx?"✓ התחרות הוחזרה":"✓ התחרות בוטלה",true); await cpLoad(true); cpView(c.id); }catch(e){ if(!e.auth) showToast(e.message); } });
+  on("cpRegOther",()=>cpRegForm(c,null));
+  $("cpBody").querySelectorAll(".cp-ppl li.ed").forEach(li=>li.onclick=()=>cpRegForm(c,li.dataset.n));
+}
+function cpNames(){ const s=new Set(); try{ (ARB.lite||[]).filter(u=>u.active).forEach(u=>arbSplit(u.name).forEach(n=>s.add(n))); }catch(e){} try{ allPeople().forEach(p=>s.add(p.name)); }catch(e){} return [...s].sort((a,b)=>a.localeCompare(b,"he")); }
+function cpRegForm(c,name){
+  CP.view="reg"; cpShow(name?"עדכון הרשמה":"רישום ספורטאי");
+  const r=name?c.regs.find(x=>x.name===name)||{}:{};
+  $("cpBody").innerHTML=`<div class="card cp-form"><b>${esc(c.title)} · ${esc(c.date)}</b>
+    <label class="cp-l">שם הספורטאי</label>${name?`<div class="cp-who">👤 ${esc(name)}</div>`:`<input type="text" id="cpRWho" list="cpNames" placeholder="שם פרטי ושם משפחה" autocomplete="off"><datalist id="cpNames">${cpNames().map(n=>`<option value="${esc(n)}">`).join("")}</datalist>`}
+    ${cpRegFields(r,c.heats,"cpR")}
+    <div class="cp-acts"><button type="button" class="btn primary" id="cpRSave">שמור</button>${name?`<button type="button" class="btn danger" id="cpROut">הסר מהתחרות</button>`:""}</div></div>`;
+  $("cpRSave").onclick=()=>{ const who=name||normName($("cpRWho").value); if(!who||who.split(" ").length<2){ showToast("הקלד/י שם פרטי ושם משפחה"); return; } cpRegSend(c,cpRegRead("cpR"),who); };
+  const o=$("cpROut"); if(o) o.onclick=()=>{ if(confirm(`להסיר את ${name} מהתחרות?`)) cpRegSend(c,{cancel:true},name); };
+}
+function cpForm(c){
+  const x=CP.list; CP.view="form"; CP.f=c||{}; cpShow(c?"✎ עריכת תחרות":"🏁 תחרות חדשה");
+  const br=(x.edit||[]).slice().sort((a,b)=>(a===x.all)-(b===x.all)||a.localeCompare(b,"he"));
+  const v=c||{};
+  $("cpBody").innerHTML=`<div class="card cp-form">
+    <label class="cp-l">שם התחרות *</label><input type="text" id="cpFTitle" value="${esc(v.title||"")}" placeholder="למשל: טריאתלון אילת" maxlength="120">
+    <label class="cp-l">סוג *</label><select id="cpFType"><option value="">בחר סוג…</option>${CP_TYPES.map(t=>`<option${t===v.type?" selected":""}>${esc(t)}</option>`).join("")}</select>
+    <div class="cp-row"><div><label class="cp-l">תאריך *</label><input type="date" id="cpFDate" value="${cpIso(v.date)}"></div>
+    <div><label class="cp-l">מרחב *</label><select id="cpFBranch">${br.length>1?`<option value="">בחר…</option>`:""}${br.map(b=>`<option${b===v.branch?" selected":""}>${esc(b)}</option>`).join("")}</select></div></div>
+    <label class="cp-l">מקום</label><input type="text" id="cpFPlace" value="${esc(v.place||"")}" placeholder="עיר / מקום התחרות">
+    <label class="cp-l">מקצים</label><input type="text" id="cpFHeats" value="${esc((v.heats||[]).join(", "))}" placeholder="למשל: ספרינט, אולימפי, שליחים – מופרדים בפסיק">
+    <label class="cp-l">קישור להרשמה הרשמית</label><input type="url" id="cpFLink" value="${esc(v.link||"")}" placeholder="https://…" dir="ltr">
+    <label class="cp-l">מועד אחרון להרשמה</label><input type="date" id="cpFDl" value="${cpIso(v.deadline)}">
+    <label class="cp-l">כמה מילים</label><textarea id="cpFDesc" rows="4" placeholder="מה חשוב לדעת: הסעה, לינה, מפגש לפני הזינוק…">${esc(v.desc||"")}</textarea>
+    <button type="button" class="btn primary" id="cpFSave">${c?"שמור שינויים":"פרסם תחרות"}</button></div>`;
+  $("cpFSave").onclick=async()=>{
+    if(CP.busy) return;
+    const comp={id:v.id||"",title:$("cpFTitle").value.trim(),type:$("cpFType").value,date:cpDmy($("cpFDate").value),branch:$("cpFBranch").value,place:$("cpFPlace").value.trim(),heats:$("cpFHeats").value,link:$("cpFLink").value.trim(),deadline:cpDmy($("cpFDl").value),desc:$("cpFDesc").value.trim()};
+    if(!comp.title||!comp.type||!comp.date||!comp.branch){ showToast("חסר שם, סוג, תאריך או מרחב"); return; }
+    CP.busy=true; $("cpFSave").disabled=true;
+    try{ const r=await api("compSave",Object.assign({},cpCred(),{comp}),45000); if(!r.ok){ showToast(r.error||"השמירה נכשלה"); return; }
+      showToast(c?"✓ התחרות עודכנה":"✓ התחרות פורסמה",true); await cpLoad(true); cpView(r.id);
+    }catch(e){ if(!e.auth) showToast("השרת לא זמין: "+e.message); } finally{ CP.busy=false; const b=$("cpFSave"); if(b) b.disabled=false; }
+  };
+}
+// coach header: with more than 5 buttons (נרשמים, אירועים, תחרויות, מערכת, דוחות, הגדרות) they move to a second row under the logo and title
+setInterval(function hdrFit(){ const h=document.querySelector(".wrap>header"); if(!h) return; const n=[...h.querySelectorAll(".hdr-btns .hb")].filter(x=>!x.hidden&&x.offsetParent!==null).length; h.classList.toggle("hdr-many",n>5); },1000);
 
 </script>
 </body>
