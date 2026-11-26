@@ -885,7 +885,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 26/11/2026 · תחרויות: מחיקה עם סיבה + מונים</div>
+  <div class="ver">גרסה 26/11/2026 · ביטול תחרות בסיסמה</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -5267,7 +5267,7 @@ function cpView(id){
     (c.n?keys.map(k=>`${k?`<div class="cp-heat">${esc(k)} <small>(${groups[k].length})</small></div>`:""}<ul>${groups[k].map(r=>`<li${c.canEdit&&x.coach&&r.name!=="מתאמן/ת נוסף/ת"?` class="ed" data-n="${esc(r.name)}"`:""}><span>${esc(r.name)}${r.name===x.me?" (את/ה)":""}</span>${x.coach?`<span class="cp-tags">${r.paid?`<i class="pill green">💳 שולם</i>`:`<i class="pill">לא ידוע אם שולם</i>`}${r.bib?`<i class="pill blue"># ${esc(r.bib)}</i>`:""}</span>`:""}</li>`).join("")}</ul>`).join(""):`<p class="muted">עוד אף אחד לא נרשם.</p>`)+`</div>`;
   if(c.canEdit){
     h+=`<div class="card cp-admin"><b>ניהול</b>${open?`<button type="button" class="btn" id="cpRegOther">+ רשום ספורטאי</button>`:""}<div class="cp-acts"><button type="button" class="btn" id="cpEdit">✎ עריכת התחרות</button>
-      <button type="button" class="btn ${cx?"":"danger"}" id="cpCx">${cx?"↩ החזר את התחרות":"🚫 ביטול התחרות"}</button></div></div>`;
+      <button type="button" class="btn ${cx?"":"danger"}" id="cpCx">${cx?"↩ החזר את התחרות":"🚫 ביטול התחרות"}</button></div><div id="cpCxAsk" class="cp-del" hidden></div></div>`;
   }
   $("cpBody").innerHTML=h;
   const on=(id,f)=>{ const e=$(id); if(e) e.onclick=f; };
@@ -5277,8 +5277,16 @@ function cpView(id){
   on("cpCopy",()=>{ const t=`🏁 ${c.title} · ${c.date}\n`+keys.map(k=>(k?`\n${k}:\n`:"\n")+groups[k].map((r,i)=>`${i+1}. ${r.name}${x.coach&&r.bib?" #"+r.bib:""}`).join("\n")).join("\n");
     (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>showToast("✓ הרשימה הועתקה",true)).catch(()=>prompt("העתק:",t)); });
   on("cpEdit",()=>cpForm(c));
-  on("cpCx",async()=>{ if(!confirm(cx?"להחזיר את התחרות?":"לבטל את התחרות? כל הנרשמים יראו \"בוטלה\".")) return;
-    try{ const r=await api("compCancel",Object.assign({},cpCred(),{id:c.id,undo:cx}),30000); if(!r.ok) throw new Error(r.error); showToast(cx?"✓ התחרות הוחזרה":"✓ התחרות בוטלה",true); await cpLoad(true); cpView(c.id); }catch(e){ if(!e.auth) showToast(e.message); } });
+  // cancelling a competition needs the password (server checks it; "הגדרות" → "סיסמת ביטול תחרות"); restoring does not
+  on("cpCx",async()=>{
+    if(cx){ if(!confirm("להחזיר את התחרות?")) return; return cpCxSend(c,{undo:true}); }
+    const box=$("cpCxAsk"); if(!box) return; box.hidden=false;
+    box.innerHTML=`<label class="cp-l" for="cpCxPw">סיסמה לביטול התחרות *</label><input type="password" id="cpCxPw" autocomplete="off" placeholder="סיסמה">
+      <small class="muted">כל הנרשמים יראו "בוטלה".</small><div class="cp-acts"><button type="button" class="btn danger" id="cpCxGo">בטל את התחרות</button><button type="button" class="btn" id="cpCxNo">חזרה</button></div>`;
+    $("cpCxPw").focus(); $("cpCxNo").onclick=()=>{ box.hidden=true; box.innerHTML=""; };
+    const go=async()=>{ const pw=$("cpCxPw").value.trim(); if(!pw){ showToast("הקלד/י סיסמה"); return; } cpCxSend(c,{dh:await pwHash(pw)}); };
+    $("cpCxGo").onclick=go; $("cpCxPw").addEventListener("keydown",e=>{ if(e.key==="Enter"){ e.preventDefault(); go(); } });
+  });
   on("cpRegOther",()=>cpRegForm(c,null));
   $("cpBody").querySelectorAll(".cp-ppl li.ed").forEach(li=>li.onclick=()=>cpRegForm(c,li.dataset.n));
 }
@@ -5324,6 +5332,13 @@ function cpForm(c){
 }
 // coach header: with more than 5 buttons (נרשמים, אירועים, תחרויות, מערכת, דוחות, הגדרות) they move to a second row under the logo and title
 setInterval(function hdrFit(){ const h=document.querySelector(".wrap>header"); if(!h) return; const n=[...h.querySelectorAll(".hdr-btns .hb")].filter(x=>!x.hidden&&x.offsetParent!==null).length; h.classList.toggle("hdr-many",n>5); },1000);
+async function cpCxSend(c,o){
+  if(CP.busy) return; CP.busy=true;
+  try{ const r=await api("compCancel",Object.assign({},cpCred(),{id:c.id},o),30000);
+    if(!r.ok){ showToast(r.error||"הפעולה נכשלה"); const f=$("cpCxPw"); if(f){ f.value=""; f.focus(); } return; }
+    showToast(o.undo?"✓ התחרות הוחזרה":"✓ התחרות בוטלה",true); await cpLoad(true); cpView(c.id);
+  }catch(e){ if(!e.auth) showToast("השרת לא זמין: "+e.message); } finally{ CP.busy=false; }
+}
 
 </script>
 </body>
