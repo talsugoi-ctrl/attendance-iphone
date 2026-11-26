@@ -885,7 +885,7 @@ document.body.classList.add((!_r||_r.role==="coach")&&_c&&_c.token?"coach-mode":
     <div class="sync" id="syncStatus" hidden></div>
 
   </section>
-  <div class="ver">גרסה 26/11/2026 · ביטול תחרות בסיסמה</div>
+  <div class="ver">גרסה 26/11/2026 · מחנה אימונים עם טווח תאריכים</div>
   <div class="ver" dir="ltr">Coded by Tal Shalem</div>
 </div>
 
@@ -5129,7 +5129,7 @@ function aeGps(){
 // Athletes see their branch first (checkbox: all branches), filter by type, register with heat + payment/receipt/bib.
 // The number of upcoming registrations shows under the team logo; tapping the logo opens "my competitions".
 var CP=window.CP||{list:null,view:"list",cur:null,all:false,past:false,types:new Set(),busy:false,f:null};
-const CP_ICON={"טריאתלון":"🏊🚴🏃","דואתלון":"🏃🚴","חצי איש ברזל":"🦾","איש ברזל":"🏅","מרתון":"🏃","תחרות ריצה":"👟","משחה":"🏊","רכיבת שטח":"🚵","רכיבת כביש":"🚴","Epic Israel":"⛰️","אירוע ספורטיבי של הקבוצה":"🤝"};
+const CP_ICON={"טריאתלון":"🏊🚴🏃","דואתלון":"🏃🚴","חצי איש ברזל":"🦾","איש ברזל":"🏅","מרתון":"🏃","תחרות ריצה":"👟","משחה":"🏊","רכיבת שטח":"🚵","רכיבת כביש":"🚴","Epic Israel":"⛰️","אירוע ספורטיבי של הקבוצה":"🤝","מחנה אימונים":"⛺"};
 const CP_TYPES=Object.keys(CP_ICON);
 function cpCred(){ return document.body.classList.contains("ath-mode")?athCred():coachCred(); }
 function cpCoach(){ return !document.body.classList.contains("ath-mode"); }
@@ -5185,7 +5185,7 @@ function cpCard(c){
   const d=cpDate(c.date), dd=d?d.getDate():"", mm=d?["ינו׳","פבר׳","מרץ","אפר׳","מאי","יוני","יולי","אוג׳","ספט׳","אוק׳","נוב׳","דצמ׳"][d.getMonth()]:"";
   const cx=c.status==="בוטל";
   return `<button type="button" class="cp-card${c.past?" past":""}${cx?" cx":""}${c.mine?" me":""}" data-id="${esc(c.id)}">
-    <span class="cp-date"><b>${dd}</b><small>${mm}</small></span>
+    <span class="cp-date"><b dir="ltr">${dd}${c.end&&cpDate(c.end)?"–"+cpDate(c.end).getDate():""}</b><small>${mm}</small></span>
     <span class="cp-main"><b>${CP_ICON[c.type]||"🏁"} ${esc(c.title)}</b>
       <small>${esc(c.type)} · ${esc(c.place||"")}${c.place?" · ":""}${esc(c.branch)}</small>
       <small class="cp-meta">${cx?`<i class="pill red">בוטלה</i>`:c.past?`<i class="pill">הסתיימה</i>`:`<i class="pill blue">${cpWhen(c.date)}</i>`}<i class="pill">👥 ${c.n} נרשמו</i>${c.mine?`<i class="pill green">✓ רשום/ה${c.mine.heat?" · "+esc(c.mine.heat):""}</i>`:""}</small></span></button>`;
@@ -5248,7 +5248,7 @@ function cpView(id){
   CP.view="view"; CP.cur=id; cpShow(`${CP_ICON[c.type]||"🏁"} ${c.type}`);
   const x=CP.list, cx=c.status==="בוטל", open=!c.past&&!cx, dl=c.deadline?cpDays(c.deadline):null;
   let h=`<div class="card cp-top${c.past?" past":""}"><b class="big">${esc(c.title)}</b>
-    <span>📅 יום ${cpDayName(c.date)} ${esc(c.date)}${open?` · <b>${cpWhen(c.date)}</b>`:""}</span>${c.place?`<span>📍 ${esc(c.place)}</span>`:""}<span>🗺️ ${esc(c.branch)}</span>
+    <span>📅 ${c.end?`ימים ${cpDayName(c.date)}–${cpDayName(c.end)} · <bdi dir="ltr">${esc(c.date.slice(0,5))}–${esc(c.end)}</bdi> · ${Math.round((cpDate(c.end)-cpDate(c.date))/864e5)+1} ימים`:`יום ${cpDayName(c.date)} ${esc(c.date)}`}${open?` · <b>${cpWhen(c.date)}</b>`:""}</span>${c.place?`<span>📍 ${esc(c.place)}</span>`:""}<span>🗺️ ${esc(c.branch)}</span>
     ${c.heats.length?`<span>🏷️ מקצים: ${c.heats.map(esc).join(" · ")}</span>`:""}
     ${c.deadline?`<span class="${dl!=null&&dl<=7&&dl>=0?"warn":""}">⏰ הרשמה עד ${esc(c.deadline)}${dl!=null&&dl>=0?` (${cpWhen(c.deadline)})`:dl!=null?" – עבר":""}</span>`:""}
     ${cx?`<span class="pill red">התחרות בוטלה</span>`:""}
@@ -5312,8 +5312,9 @@ function cpForm(c){
   $("cpBody").innerHTML=`<div class="card cp-form">
     <label class="cp-l">שם התחרות *</label><input type="text" id="cpFTitle" value="${esc(v.title||"")}" placeholder="למשל: טריאתלון אילת" maxlength="120">
     <label class="cp-l">סוג *</label><select id="cpFType"><option value="">בחר סוג…</option>${CP_TYPES.map(t=>`<option${t===v.type?" selected":""}>${esc(t)}</option>`).join("")}</select>
-    <div class="cp-row"><div><label class="cp-l">תאריך *</label><input type="date" id="cpFDate" value="${cpIso(v.date)}"></div>
+    <div class="cp-row"><div><label class="cp-l">תאריך (התחלה) *</label><input type="date" id="cpFDate" value="${cpIso(v.date)}"></div>
     <div><label class="cp-l">מרחב *</label><select id="cpFBranch">${br.length>1?`<option value="">בחר…</option>`:""}${br.map(b=>`<option${b===v.branch?" selected":""}>${esc(b)}</option>`).join("")}</select></div></div>
+    <label class="cp-l">עד תאריך <i class="muted">(לאירוע של כמה ימים, כמו מחנה אימונים)</i></label><input type="date" id="cpFEnd" value="${cpIso(v.end)}">
     <label class="cp-l">מקום</label><input type="text" id="cpFPlace" value="${esc(v.place||"")}" placeholder="עיר / מקום התחרות">
     <label class="cp-l">מקצים</label><input type="text" id="cpFHeats" value="${esc((v.heats||[]).join(", "))}" placeholder="למשל: ספרינט, אולימפי, שליחים – מופרדים בפסיק">
     <label class="cp-l">קישור להרשמה הרשמית</label><input type="url" id="cpFLink" value="${esc(v.link||"")}" placeholder="https://…" dir="ltr">
@@ -5322,8 +5323,10 @@ function cpForm(c){
     <button type="button" class="btn primary" id="cpFSave">${c?"שמור שינויים":"פרסם תחרות"}</button></div>`;
   $("cpFSave").onclick=async()=>{
     if(CP.busy) return;
-    const comp={id:v.id||"",title:$("cpFTitle").value.trim(),type:$("cpFType").value,date:cpDmy($("cpFDate").value),branch:$("cpFBranch").value,place:$("cpFPlace").value.trim(),heats:$("cpFHeats").value,link:$("cpFLink").value.trim(),deadline:cpDmy($("cpFDl").value),desc:$("cpFDesc").value.trim()};
+    const comp={id:v.id||"",title:$("cpFTitle").value.trim(),type:$("cpFType").value,date:cpDmy($("cpFDate").value),branch:$("cpFBranch").value,place:$("cpFPlace").value.trim(),heats:$("cpFHeats").value,link:$("cpFLink").value.trim(),deadline:cpDmy($("cpFDl").value),endDate:cpDmy($("cpFEnd").value),desc:$("cpFDesc").value.trim()};
     if(!comp.title||!comp.type||!comp.date||!comp.branch){ showToast("חסר שם, סוג, תאריך או מרחב"); return; }
+    if(comp.endDate&&cpDate(comp.endDate)<=cpDate(comp.date)){ showToast("\"עד תאריך\" צריך להיות אחרי תאריך ההתחלה"); return; }
+    if(comp.type==="מחנה אימונים"&&!comp.endDate&&!confirm("למחנה אימונים לא הוגדר \"עד תאריך\". לשמור כאירוע של יום אחד?")) return;
     CP.busy=true; $("cpFSave").disabled=true;
     try{ const r=await api("compSave",Object.assign({},cpCred(),{comp}),45000); if(!r.ok){ showToast(r.error||"השמירה נכשלה"); return; }
       showToast(c?"✓ התחרות עודכנה":"✓ התחרות פורסמה",true); await cpLoad(true); cpView(r.id);
